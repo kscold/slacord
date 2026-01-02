@@ -27,7 +27,8 @@ export default function DashboardPage() {
 
     const fetchTeams = async () => {
         try {
-            const response = await fetch('http://localhost:8082/api/teams');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082';
+            const response = await fetch(`${apiUrl}/api/teams`);
             const data = await response.json();
             if (data.success) {
                 setTeams(data.data);
