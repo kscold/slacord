@@ -25,7 +25,8 @@ export default function NewTeamPage() {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:8082/api/teams', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082';
+            const response = await fetch(`${apiUrl}/api/teams`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -8,6 +8,7 @@ import { DiscordModule } from './discord/discord.module';
 import { RelayModule } from './relay/relay.module';
 import { MessageModule } from './message/message.module';
 import { TeamModule } from './team/team.module';
+import { AuthModule } from './auth/auth.module';
 
 /**
  * Slacord 앱 모듈
@@ -33,6 +34,7 @@ import { TeamModule } from './team/team.module';
         RelayModule,
         MessageModule,
         TeamModule,
+        AuthModule,
     ],
     controllers: [AppController],
     providers: [AppService],

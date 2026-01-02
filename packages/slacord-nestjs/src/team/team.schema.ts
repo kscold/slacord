@@ -23,6 +23,51 @@ export class Team {
     description?: string;
 
     /**
+     * 팀장 (생성자)
+     */
+    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+    ownerId: Types.ObjectId;
+
+    /**
+     * 팀 멤버 목록
+     */
+    @Prop({
+        type: [
+            {
+                userId: { type: Types.ObjectId, ref: 'User' },
+                role: { type: String, enum: ['owner', 'admin', 'member'], default: 'member' },
+                joinedAt: { type: Date, default: Date.now },
+            },
+        ],
+        default: [],
+    })
+    members: {
+        userId: Types.ObjectId;
+        role: 'owner' | 'admin' | 'member';
+        joinedAt: Date;
+    }[];
+
+    /**
+     * 초대 링크 정보
+     */
+    @Prop({
+        type: {
+            token: String,
+            expiresAt: Date,
+            isActive: { type: Boolean, default: true },
+            maxUses: Number,
+            currentUses: { type: Number, default: 0 },
+        },
+    })
+    inviteLink?: {
+        token: string;
+        expiresAt: Date;
+        isActive: boolean;
+        maxUses?: number;
+        currentUses: number;
+    };
+
+    /**
      * Slack Workspace 정보
      */
     @Prop({

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Logger, UseGuards, Request, Query } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { TeamService } from './team.service';
 import { Team } from './team.schema';
 import { Room } from './room.schema';
@@ -175,6 +176,100 @@ export class TeamController {
         return {
             success: true,
             message: 'Room이 삭제되었습니다.',
+        };
+    }
+
+    /**
+     * 초대 링크 생성 (팀장만 가능)
+     * POST /api/teams/:teamId/invite
+     */
+    @Post(':teamId/invite')
+    @UseGuards(AuthGuard('jwt'))
+    async generateInviteLink(
+        @Param('teamId') teamId: string,
+        @Query('expiresInDays') expiresInDays?: number,
+        @Query('maxUses') maxUses?: number,
+    ) {
+        this.logger.log(`[generateInviteLink] 초대 링크 생성: ${teamId}`);
+
+        const result = await this.teamService.generateInviteLink(teamId, expiresInDays || 7, maxUses);
+
+        return {
+            success: true,
+            data: result,
+            message: '초대 링크가 생성되었습니다.',
+        };
+    }
+
+    /**
+     * 초대 링크로 팀 참여
+     * POST /api/teams/join/:inviteToken
+     */
+    @Post('join/:inviteToken')
+    @UseGuards(AuthGuard('jwt'))
+    async joinTeamByInvite(@Param('inviteToken') inviteToken: string, @Request() req: any) {
+        this.logger.log(`[joinTeamByInvite] 팀 참여 요청: ${inviteToken}`);
+
+        const userId = req.user._id;
+        const team = await this.teamService.joinTeamByInvite(inviteToken, userId);
+
+        return {
+            success: true,
+            data: team,
+            message: '팀에 참여했습니다.',
+        };
+    }
+
+    /**
+     * 초대 링크 비활성화
+     * DELETE /api/teams/:teamId/invite
+     */
+    @Delete(':teamId/invite')
+    @UseGuards(AuthGuard('jwt'))
+    async deactivateInviteLink(@Param('teamId') teamId: string) {
+        this.logger.log(`[deactivateInviteLink] 초대 링크 비활성화: ${teamId}`);
+
+        await this.teamService.deactivateInviteLink(teamId);
+
+        return {
+            success: true,
+            message: '초대 링크가 비활성화되었습니다.',
+        };
+    }
+
+    /**
+     * 팀 멤버 목록 조회
+     * GET /api/teams/:teamId/members
+     */
+    @Get(':teamId/members')
+    @UseGuards(AuthGuard('jwt'))
+    async getTeamMembers(@Param('teamId') teamId: string) {
+        this.logger.log(`[getTeamMembers] 멤버 목록 조회: ${teamId}`);
+
+        const members = await this.teamService.getTeamMembers(teamId);
+
+        return {
+            success: true,
+            data: members,
+            count: members.length,
+        };
+    }
+
+    /**
+     * 팀 멤버 제거 (팀장만 가능)
+     * DELETE /api/teams/:teamId/members/:userId
+     */
+    @Delete(':teamId/members/:userId')
+    @UseGuards(AuthGuard('jwt'))
+    async removeMember(@Param('teamId') teamId: string, @Param('userId') userId: string, @Request() req: any) {
+        this.logger.log(`[removeMember] 멤버 제거: ${teamId} - ${userId}`);
+
+        const requestUserId = req.user._id;
+        await this.teamService.removeMember(teamId, userId, requestUserId);
+
+        return {
+            success: true,
+            message: '멤버가 제거되었습니다.',
         };
     }
 }
