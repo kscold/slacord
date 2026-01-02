@@ -85,15 +85,16 @@ slacord/
 **책임**: Slack Workspace와 연동하여 메시지 이벤트 수신
 
 - **SlackService**: Slack Bot API 클라이언트
-  - `onMessage()`: 메시지 핸들러 등록
-  - `getChannelInfo()`: 채널 정보 조회
-  - `getUserInfo()`: 사용자 정보 조회
-  - `sendMessage()`: Slack으로 메시지 전송 (추후 기능)
+    - `onMessage()`: 메시지 핸들러 등록
+    - `getChannelInfo()`: 채널 정보 조회
+    - `getUserInfo()`: 사용자 정보 조회
+    - `sendMessage()`: Slack으로 메시지 전송 (추후 기능)
 
 - **SlackController**: Slack Event API HTTP 엔드포인트
-  - `POST /api/slack/events`: URL Verification + Event Callback
+    - `POST /api/slack/events`: URL Verification + Event Callback
 
 **연동 방식**:
+
 - Socket Mode (WebSocket): 실시간 이벤트 수신 (개발 환경)
 - Event API (HTTP): Slack 서버 → Slacord 서버 (프로덕션)
 
@@ -102,11 +103,12 @@ slacord/
 **책임**: Discord Webhook을 통한 메시지 백업
 
 - **DiscordService**: Discord Webhook API 클라이언트
-  - `sendMessage()`: 일반 메시지 전송
-  - `sendMessageWithFile()`: 파일 포함 메시지
-  - `sendEmbed()`: 구조화된 임베드 메시지
+    - `sendMessage()`: 일반 메시지 전송
+    - `sendMessageWithFile()`: 파일 포함 메시지
+    - `sendEmbed()`: 구조화된 임베드 메시지
 
 **특징**:
+
 - Webhook 방식으로 인증 불필요
 - Discord를 읽기 전용 저장소로 활용
 - 파일/이미지 URL 백업 지원
@@ -116,12 +118,13 @@ slacord/
 **책임**: Slack과 Discord 간 메시지 중계 로직
 
 - **RelayService**: 메시지 흐름 제어
-  - `handleSlackMessage()`: Slack 메시지 → Discord 변환
-  - `addTargetChannel()`: 백업 채널 추가
-  - `removeTargetChannel()`: 백업 채널 제거
-  - `getTargetChannels()`: 백업 채널 목록 조회
+    - `handleSlackMessage()`: Slack 메시지 → Discord 변환
+    - `addTargetChannel()`: 백업 채널 추가
+    - `removeTargetChannel()`: 백업 채널 제거
+    - `getTargetChannels()`: 백업 채널 목록 조회
 
 **메시지 흐름**:
+
 1. Slack에서 메시지 발생
 2. SlackService가 이벤트 감지
 3. RelayService가 채널 필터링
@@ -153,16 +156,16 @@ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 
 1. **Slack App 생성**: https://api.slack.com/apps
 2. **Bot Token Scopes** 추가:
-   - `channels:history` - 공개 채널 메시지 읽기
-   - `channels:read` - 채널 정보 조회
-   - `users:read` - 사용자 정보 조회
-   - `chat:write` - 메시지 전송 (추후)
+    - `channels:history` - 공개 채널 메시지 읽기
+    - `channels:read` - 채널 정보 조회
+    - `users:read` - 사용자 정보 조회
+    - `chat:write` - 메시지 전송 (추후)
 
 3. **Event Subscriptions** 활성화:
-   - `message.channels` - 채널 메시지 이벤트
+    - `message.channels` - 채널 메시지 이벤트
 
 4. **Socket Mode** 활성화 (개발 환경):
-   - App-Level Token 생성
+    - App-Level Token 생성
 
 ### Discord Webhook 설정 가이드
 
@@ -274,15 +277,15 @@ logger.warn('[onModuleInit] SLACK_TARGET_CHANNELS 미설정. 모든 채널 백�
 
 ## 11. 기술 스택
 
-| 항목 | 기술 |
-|------|------|
-| 프레임워크 | NestJS 10.x |
-| 언어 | TypeScript 5.x |
-| Slack SDK | @slack/bolt 4.x |
-| HTTP 클라이언트 | axios |
-| 검증 | class-validator |
-| 변환 | class-transformer |
-| 설정 | @nestjs/config |
+| 항목            | 기술              |
+| --------------- | ----------------- |
+| 프레임워크      | NestJS 10.x       |
+| 언어            | TypeScript 5.x    |
+| Slack SDK       | @slack/bolt 4.x   |
+| HTTP 클라이언트 | axios             |
+| 검증            | class-validator   |
+| 변환            | class-transformer |
+| 설정            | @nestjs/config    |
 
 ## 12. 프로젝트 목표
 

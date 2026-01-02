@@ -11,17 +11,17 @@ import { RelayModule } from './relay/relay.module';
  * - Slack 메시지를 Discord로 자동 백업하는 중계 서버
  */
 @Module({
-  imports: [
-    // 환경변수 설정
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
-    SlackModule,
-    DiscordModule,
-    RelayModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [
+        // 환경변수 설정
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: '.env',
+        }),
+        SlackModule,
+        DiscordModule,
+        RelayModule,
+    ],
+    controllers: [AppController],
+    providers: [AppService],
 })
 export class AppModule {}
