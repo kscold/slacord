@@ -1,0 +1,23 @@
+@import 'tailwindcss' layer(base);
+
+@layer theme {
+    :root {
+        /* Slacord Heritage Colors - 중간톤, 눈에 편한 색상 */
+        --color-primary-50: #f5f3f7;
+        --color-primary-100: #e9e5ed;
+        --color-primary-200: #d3cad9;
+        --color-primary-300: #bdb0c6;
+        --color-primary-400: #a795b3;
+        --color-primary-500: #8b7aa0;
+        --color-primary-600: #6f6280;
+        --color-primary-700: #534960;
+        --color-primary-800: #383140;
+        --color-primary-900: #1c1820;
+
+        /* Accent Colors */
+        --color-accent-teal: #5b9e8d;
+        --color-accent-coral: #d88d8d;
+        --color-accent-sage: #a6c4a0;
+        --color-accent-amber: #e8b86d;
+    }
+}
