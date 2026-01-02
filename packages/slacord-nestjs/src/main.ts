@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 
 /**
  * Slacord 중계 서버
@@ -12,8 +13,16 @@ async function bootstrap() {
 
     const app = await NestFactory.create(AppModule);
 
-    // CORS 설정 (추후 프론트엔드 연동 시 필요)
-    app.enableCors();
+    // Cookie Parser 미들웨어 적용
+    app.use(cookieParser());
+
+    // CORS 설정 (프론트엔드 연동)
+    app.enableCors({
+        origin: true, // 개발 환경에서는 모든 origin 허용
+        credentials: true, // 쿠키 전송 허용
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+    });
 
     // 글로벌 프리픽스 설정
     app.setGlobalPrefix('api');
@@ -25,4 +34,8 @@ async function bootstrap() {
     logger.log(`📡 API 엔드포인트: http://localhost:${port}/api`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+    const logger = new Logger('Bootstrap');
+    logger.error('서버 시작 실패:', err);
+    process.exit(1);
+});

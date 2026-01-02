@@ -2,22 +2,97 @@
 
 @layer theme {
     :root {
-        /* Slacord Heritage Colors - 중간톤, 눈에 편한 색상 */
-        --color-primary-50: #f5f3f7;
-        --color-primary-100: #e9e5ed;
-        --color-primary-200: #d3cad9;
-        --color-primary-300: #bdb0c6;
-        --color-primary-400: #a795b3;
-        --color-primary-500: #8b7aa0;
-        --color-primary-600: #6f6280;
-        --color-primary-700: #534960;
-        --color-primary-800: #383140;
-        --color-primary-900: #1c1820;
+        /* Deep Forest Heritage - 검은색 베이스 + 그린 포인트 */
+        --color-bg-primary: #0a0f0d; /* 거의 검은색 배경 */
+        --color-bg-secondary: #141a17; /* 약간 밝은 검정 */
+        --color-bg-tertiary: #1c2420; /* 카드 배경 */
+        --color-bg-hover: #0d4a35; /* 호버 - 헤리티지 그린 */
+        --color-bg-active: #14563d; /* 활성 상태 */
 
-        /* Accent Colors */
-        --color-accent-teal: #5b9e8d;
-        --color-accent-coral: #d88d8d;
-        --color-accent-sage: #a6c4a0;
-        --color-accent-amber: #e8b86d;
+        /* Text Colors */
+        --color-text-primary: #ffffff;
+        --color-text-secondary: #d1d2d3;
+        --color-text-tertiary: #898989;
+        --color-text-muted: #616061;
+
+        /* Border Colors - 숲의 빛 */
+        --color-border-primary: rgba(46, 182, 125, 0.15);
+        --color-border-secondary: rgba(46, 182, 125, 0.08);
+        --color-border-glow: rgba(46, 182, 125, 0.3);
+
+        /* Brand Colors - Slack 컬러풀 + Discord 블루 */
+        --color-slack-teal: #36c5f0; /* Slack 청록 */
+        --color-slack-green: #2eb67d; /* Slack 초록 */
+        --color-slack-coral: #e01e5a; /* Slack 산호 */
+        --color-slack-yellow: #ecb22e; /* Slack 노랑 */
+        --color-discord-blue: #5865f2; /* Discord 블루 */
+        --color-discord-glow: rgba(88, 101, 242, 0.5); /* Discord 글로우 */
+
+        /* Heritage Green - 주요 브랜드 (숲의 깊이) */
+        --color-brand-50: #f0fdf7;
+        --color-brand-100: #dcfce8;
+        --color-brand-200: #bbf7d2;
+        --color-brand-300: #86efb0;
+        --color-brand-400: #4ade86;
+        --color-brand-500: #2eb67d;
+        --color-brand-600: #14563d;
+        --color-brand-700: #0f4630;
+        --color-brand-800: #0a3323;
+        --color-brand-900: #062118;
+
+        /* Accent Colors - 로고 기반 */
+        --color-accent-teal: #36c5f0;
+        --color-accent-coral: #e01e5a;
+        --color-accent-sage: #2eb67d;
+        --color-accent-amber: #ecb22e;
+
+        /* Functional Colors */
+        --color-success: #2eb67d;
+        --color-error: #e01e5a;
+        --color-warning: #ecb22e;
+        --color-info: #36c5f0;
+
+        /* Forest Shadows - 숲 속의 그림자 */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+        --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+        --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.7);
+
+        /* Glow Effects - 숲 속의 빛 */
+        --glow-sm: 0 0 10px rgba(46, 182, 125, 0.3);
+        --glow-md: 0 0 20px rgba(46, 182, 125, 0.4), 0 0 40px rgba(54, 197, 240, 0.2);
+        --glow-lg: 0 0 30px rgba(46, 182, 125, 0.5), 0 0 60px rgba(54, 197, 240, 0.3);
+    }
+}
+
+@layer base {
+    * {
+        border-color: var(--color-border-primary);
+    }
+
+    body {
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--color-bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-bg-hover);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-bg-active);
     }
 }

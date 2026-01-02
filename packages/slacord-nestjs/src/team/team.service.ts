@@ -2,11 +2,15 @@ import { Injectable, Logger, BadRequestException, NotFoundException } from '@nes
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as crypto from 'crypto';
-import { Team, TeamDocument } from './team.schema';
-import { Room, RoomDocument } from './room.schema';
+import { Team, TeamDocument } from '../schema/team.schema';
+import { Room, RoomDocument } from '../schema/room.schema';
+import { SlackService } from '../slack/slack.service';
+import { DiscordService } from '../discord/discord.service';
 
 /**
- * Team 관리 서비스
+ * Team 관리 서비스 (중앙집중식 MVP)
+ * - Slacord 공식 Slack Workspace에 채널 자동 생성
+ * - Slacord 공식 Discord Server에 채널 자동 생성
  */
 @Injectable()
 export class TeamService {
@@ -15,20 +19,80 @@ export class TeamService {
     constructor(
         @InjectModel(Team.name) private teamModel: Model<TeamDocument>,
         @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
+        private slackService: SlackService,
+        private discordService: DiscordService,
     ) {}
 
     /**
-     * 팀 생성
+     * 팀 생성 (중앙집중식 MVP)
+     * - Slacord 공식 Slack Workspace에 채널 자동 생성
+     * - Slacord 공식 Discord Server에 채널 자동 생성
+     * @param name 채널 이름
+     * @param description 채널 설명 (선택)
+     * @param ownerId 팀장 사용자 ID
      */
-    async createTeam(teamData: Partial<Team>): Promise<TeamDocument> {
+    async createTeam(name: string, description: string | undefined, ownerId: Types.ObjectId): Promise<TeamDocument> {
         try {
-            const team = new this.teamModel(teamData);
+            this.logger.log(`[createTeam] 채널 생성 시작: ${name}`);
+
+            // 1. Slack 채널 생성
+            const slackChannel = await this.slackService.createChannel(name, description);
+            this.logger.log(
+                `[createTeam] Slack 채널 생성 완료: ${slackChannel.channelName} (${slackChannel.channelId})`,
+            );
+
+            // 2. Discord 채널 생성
+            const discordChannel = await this.discordService.createChannel(name, description);
+            this.logger.log(
+                `[createTeam] Discord 채널 생성 완료: ${discordChannel.channelName} (${discordChannel.channelId})`,
+            );
+
+            // 3. Team 문서 생성
+            const team = new this.teamModel({
+                name,
+                description,
+                ownerId,
+                members: [
+                    {
+                        userId: ownerId,
+                        role: 'owner',
+                        joinedAt: new Date(),
+                    },
+                ],
+                slackConfig: {
+                    channelId: slackChannel.channelId,
+                    channelName: slackChannel.channelName,
+                    workspaceName: 'Slacord Official',
+                },
+                discordConfig: {
+                    channelId: discordChannel.channelId,
+                    channelName: discordChannel.channelName,
+                    webhookUrl: discordChannel.webhookUrl,
+                    serverName: 'Slacord Official',
+                },
+                isActive: true,
+            });
+
             const saved = await team.save();
-            this.logger.log(`[createTeam] 팀 생성 완료: ${saved.name}`);
+            this.logger.log(`[createTeam] 팀 생성 완료: ${saved.name} (${saved._id})`);
             return saved;
         } catch (error) {
             this.logger.error(`[createTeam] 팀 생성 실패: ${error.message}`, error.stack);
-            throw new BadRequestException('팀 생성에 실패했습니다.');
+
+            // Slack API 에러 메시지를 사용자 친화적으로 변환
+            if (error.message.includes('name_taken')) {
+                throw new BadRequestException(`'${name}' 채널은 이미 존재합니다. 다른 이름을 사용해주세요.`);
+            } else if (error.message.includes('invalid_name')) {
+                throw new BadRequestException(
+                    '채널 이름이 올바르지 않습니다. 영문 소문자, 숫자, 하이픈(-), 언더스코어(_)만 사용 가능합니다.',
+                );
+            } else if (error.message.includes('invalid_name_required')) {
+                throw new BadRequestException(
+                    '채널 이름은 필수이며, 영문 소문자, 숫자, 하이픈(-), 언더스코어(_)만 사용 가능합니다.',
+                );
+            }
+
+            throw new BadRequestException(`채널 생성에 실패했습니다: ${error.message}`);
         }
     }
 
@@ -130,7 +194,10 @@ export class TeamService {
      */
     async getRoomsByTeam(teamId: string): Promise<RoomDocument[]> {
         try {
-            const rooms = await this.roomModel.find({ teamId: new Types.ObjectId(teamId) }).sort({ createdAt: -1 }).exec();
+            const rooms = await this.roomModel
+                .find({ teamId: new Types.ObjectId(teamId) })
+                .sort({ createdAt: -1 })
+                .exec();
             this.logger.log(`[getRoomsByTeam] Room 목록 조회: ${rooms.length}개`);
             return rooms;
         } catch (error) {
@@ -337,7 +404,10 @@ export class TeamService {
      */
     async getTeamMembers(teamId: string): Promise<any[]> {
         try {
-            const team = await this.teamModel.findById(teamId).populate('members.userId', 'username email profileImage').exec();
+            const team = await this.teamModel
+                .findById(teamId)
+                .populate('members.userId', 'username email profileImage')
+                .exec();
 
             if (!team) {
                 throw new NotFoundException('팀을 찾을 수 없습니다.');
