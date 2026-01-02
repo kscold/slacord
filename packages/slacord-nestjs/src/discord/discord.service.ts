@@ -13,7 +13,7 @@ export class DiscordService {
     private webhookUrl: string;
 
     constructor(private configService: ConfigService) {
-        this.webhookUrl = this.configService.get<string>('DISCORD_WEBHOOK_URL');
+        this.webhookUrl = this.configService.get<string>('DISCORD_WEBHOOK_URL') || '';
     }
 
     /**

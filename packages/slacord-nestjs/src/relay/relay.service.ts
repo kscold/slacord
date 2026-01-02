@@ -2,11 +2,13 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SlackService } from '../slack/slack.service';
 import { DiscordService } from '../discord/discord.service';
+import { MessageService } from '../message/message.service';
 
 /**
  * Relay 서비스
  * - Slack 메시지 이벤트를 감지하여 Discord로 전달
  * - 특정 채널만 필터링하여 백업
+ * - MongoDB에 메시지 영구 저장
  */
 @Injectable()
 export class RelayService implements OnModuleInit {
@@ -16,6 +18,7 @@ export class RelayService implements OnModuleInit {
     constructor(
         private slackService: SlackService,
         private discordService: DiscordService,
+        private messageService: MessageService,
         private configService: ConfigService,
     ) {}
 
@@ -76,6 +79,20 @@ export class RelayService implements OnModuleInit {
             }
 
             this.logger.log('[handleSlackMessage] Discord 백업 완료');
+
+            // MongoDB에 메시지 저장
+            await this.messageService.saveMessage({
+                slackMessageId: message.ts || message.client_msg_id,
+                channelId: channel,
+                channelName,
+                userId: user,
+                username,
+                text,
+                fileUrls: files?.map((f: any) => f.url_private) || [],
+                sentAt: new Date(parseFloat(message.ts) * 1000), // Slack timestamp를 Date로 변환
+            });
+
+            this.logger.log('[handleSlackMessage] MongoDB 저장 완료');
         } catch (error) {
             this.logger.error(`[handleSlackMessage] 메시지 처리 실패: ${error.message}`, error.stack);
         }

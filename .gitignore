@@ -1,6 +1,9 @@
 # compiled output
 /dist
 /node_modules
+/packages/*/dist
+/packages/*/node_modules
+/packages/*/.next
 
 # Logs
 logs
@@ -17,6 +20,7 @@ lerna-debug.log*
 # Tests
 /coverage
 /.nyc_output
+/packages/*/coverage
 
 # IDEs and editors
 /.idea
@@ -39,6 +43,11 @@ lerna-debug.log*
 .env.local
 .env.development
 .env.production
+/packages/*/.env
+/packages/*/.env.local
+/packages/*/.env.development
+/packages/*/.env.production
 
 # Project documentation
 CLAUDE.md
+/packages/*/CLAUDE.md

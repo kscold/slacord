@@ -18,7 +18,7 @@ async function bootstrap() {
     // 글로벌 프리픽스 설정
     app.setGlobalPrefix('api');
 
-    const port = process.env.PORT ?? 3000;
+    const port = process.env.PORT ?? 8082;
     await app.listen(port);
 
     logger.log(`🚀 Slacord 서버가 http://localhost:${port} 에서 실행 중입니다.`);
