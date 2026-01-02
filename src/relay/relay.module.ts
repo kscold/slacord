@@ -9,8 +9,8 @@ import { DiscordModule } from '../discord/discord.module';
  * - Slack 메시지를 Discord로 자동 백업
  */
 @Module({
-  imports: [SlackModule, DiscordModule],
-  providers: [RelayService],
-  exports: [RelayService],
+    imports: [SlackModule, DiscordModule],
+    providers: [RelayService],
+    exports: [RelayService],
 })
 export class RelayModule {}
