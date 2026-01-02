@@ -1,125 +1,214 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Message, MessageDocument } from '../schema/message.schema';
+import { Team, TeamDocument } from '../schema/team.schema';
 import { SlackService } from '../slack/slack.service';
 import { DiscordService } from '../discord/discord.service';
-import { MessageService } from '../message/message.service';
 
 /**
- * Relay 서비스
- * - Slack 메시지 이벤트를 감지하여 Discord로 전달
- * - 특정 채널만 필터링하여 백업
- * - MongoDB에 메시지 영구 저장
+ * Relay Service (중앙집중식 MVP)
+ * - Slack 메시지를 수신하여 Discord로 자동 백업
+ * - MongoDB에 메시지 저장
+ * - 90일 제한 없는 영구 보관
  */
 @Injectable()
 export class RelayService implements OnModuleInit {
     private readonly logger = new Logger(RelayService.name);
-    private targetChannels: string[] = [];
 
     constructor(
+        @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
+        @InjectModel(Team.name) private teamModel: Model<TeamDocument>,
         private slackService: SlackService,
         private discordService: DiscordService,
-        private messageService: MessageService,
-        private configService: ConfigService,
     ) {}
 
     async onModuleInit() {
-        // 백업할 Slack 채널 ID 목록 (환경변수에서 읽기)
-        const channelIds = this.configService.get<string>('SLACK_TARGET_CHANNELS');
-        if (channelIds) {
-            this.targetChannels = channelIds.split(',').map((id) => id.trim());
-            this.logger.log(`[onModuleInit] 백업 대상 채널: ${this.targetChannels.join(', ')}`);
-        } else {
-            this.logger.warn('[onModuleInit] SLACK_TARGET_CHANNELS 미설정. 모든 채널 백업.');
-        }
-
-        // Slack 메시지 핸들러 등록
-        this.slackService.onMessage(async (message) => {
-            await this.handleSlackMessage(message);
+        // Slack 메시지 이벤트 리스너 등록
+        this.slackService.onMessage(async (event) => {
+            await this.handleSlackMessage(event);
         });
 
-        this.logger.log('[onModuleInit] Relay 서비스 초기화 완료');
+        this.logger.log('[onModuleInit] Relay Service 시작 - Slack 메시지 이벤트 리스너 등록 완료');
     }
 
     /**
-     * Slack 메시지 처리 및 Discord로 전달
+     * Slack 메시지 수신 처리
+     * 1. MongoDB에 저장
+     * 2. Discord로 백업 전송
      */
-    private async handleSlackMessage(message: any): Promise<void> {
+    private async handleSlackMessage(event: any): Promise<void> {
         try {
-            const { channel, user, text, files } = message;
+            // 1. 메시지 정보 추출
+            const {
+                ts: slackMessageId,
+                channel: slackChannelId,
+                user: slackUserId,
+                text: content,
+                thread_ts: threadTs,
+                files,
+            } = event;
 
-            // 채널 필터링 (설정된 채널만 백업)
-            if (this.targetChannels.length > 0 && !this.targetChannels.includes(channel)) {
-                this.logger.debug(`[handleSlackMessage] 채널 ${channel}은 백업 대상이 아닙니다.`);
+            if (!slackMessageId || !slackChannelId || !content) {
+                this.logger.warn('[handleSlackMessage] 필수 필드 누락:', event);
                 return;
             }
 
-            // 사용자 정보 조회
-            const userInfo = await this.slackService.getUserInfo(user);
-            const username = userInfo?.real_name || userInfo?.name || 'Unknown User';
-            const avatarUrl = userInfo?.profile?.image_72;
+            // 2. 채널에 해당하는 Team 조회
+            const team = await this.teamModel.findOne({ 'slackConfig.channelId': slackChannelId }).exec();
 
-            // 채널 정보 조회
-            const channelInfo = await this.slackService.getChannelInfo(channel);
-            const channelName = channelInfo?.name || channel;
-
-            this.logger.log(`[handleSlackMessage] 메시지 백업: #${channelName} - ${username}`);
-
-            // 메시지 내용 포맷팅
-            const formattedMessage = `**[#${channelName}]** ${username}: ${text}`;
-
-            // Discord로 전송
-            if (files && files.length > 0) {
-                // 파일이 있는 경우
-                for (const file of files) {
-                    await this.discordService.sendMessageWithFile(formattedMessage, file.url_private, username);
-                }
-            } else {
-                // 일반 메시지
-                await this.discordService.sendMessage(formattedMessage, username, avatarUrl);
+            if (!team) {
+                this.logger.warn(`[handleSlackMessage] Team을 찾을 수 없음: Slack Channel=${slackChannelId}`);
+                return;
             }
 
-            this.logger.log('[handleSlackMessage] Discord 백업 완료');
+            // 3. Slack 사용자 정보 조회
+            const slackUser = await this.slackService.getUserInfo(slackUserId);
+            const username = slackUser?.real_name || slackUser?.name || 'Unknown User';
+            const userIcon = slackUser?.profile?.image_72;
 
-            // MongoDB에 메시지 저장
-            await this.messageService.saveMessage({
-                slackMessageId: message.ts || message.client_msg_id,
-                channelId: channel,
-                channelName,
-                userId: user,
+            // 4. 첨부 파일 정보 추출
+            const attachments =
+                files?.map((file: any) => ({
+                    fileName: file.name,
+                    fileUrl: file.url_private,
+                    fileType: file.mimetype,
+                    fileSize: file.size,
+                })) || [];
+
+            // 5. MongoDB에 메시지 저장
+            const message = new this.messageModel({
+                teamId: team._id,
+                slackMessageId,
+                slackChannelId,
+                slackChannelName: team.slackConfig.channelName,
+                slackUserId,
                 username,
-                text,
-                fileUrls: files?.map((f: any) => f.url_private) || [],
-                sentAt: new Date(parseFloat(message.ts) * 1000), // Slack timestamp를 Date로 변환
+                userIcon,
+                content,
+                type: threadTs ? 'thread_reply' : files?.length > 0 ? 'file_share' : 'message',
+                threadTs,
+                attachments,
+                discordChannelId: team.discordConfig.channelId,
+                discordWebhookUrl: team.discordConfig.webhookUrl,
+                sentAt: new Date(parseFloat(slackMessageId) * 1000),
             });
 
-            this.logger.log('[handleSlackMessage] MongoDB 저장 완료');
+            const savedMessage = await message.save();
+
+            this.logger.log(
+                `[handleSlackMessage] MongoDB 저장 완료: ${savedMessage.slackMessageId} - "${content.substring(0, 50)}"`,
+            );
+
+            // 6. Discord로 백업 전송
+            try {
+                const discordResult = await this.discordService.sendWebhookMessage(team.discordConfig.webhookUrl, {
+                    content,
+                    username,
+                    avatar_url: userIcon,
+                    embeds: attachments.map((att) => ({
+                        title: att.fileName,
+                        url: att.fileUrl,
+                        description: `파일 크기: ${(att.fileSize / 1024).toFixed(2)} KB`,
+                    })),
+                });
+
+                // Discord 메시지 ID 업데이트
+                savedMessage.discordMessageId = discordResult.id;
+                savedMessage.backedUpAt = new Date();
+                await savedMessage.save();
+
+                this.logger.log(
+                    `[handleSlackMessage] Discord 백업 완료: Slack=${slackMessageId}, Discord=${discordResult.id}`,
+                );
+            } catch (discordError) {
+                this.logger.error(
+                    `[handleSlackMessage] Discord 백업 실패: ${discordError.message}`,
+                    discordError.stack,
+                );
+                // Discord 백업 실패해도 MongoDB 저장은 완료됨
+            }
         } catch (error) {
             this.logger.error(`[handleSlackMessage] 메시지 처리 실패: ${error.message}`, error.stack);
         }
     }
 
     /**
-     * 특정 채널 백업 활성화
+     * 과거 메시지 백업 (최초 셋업 시 사용)
+     * @param teamId 팀 ID
+     * @param limit 백업할 메시지 개수 (기본 100)
      */
-    addTargetChannel(channelId: string): void {
-        if (!this.targetChannels.includes(channelId)) {
-            this.targetChannels.push(channelId);
-            this.logger.log(`[addTargetChannel] 채널 추가: ${channelId}`);
+    async backupHistoryMessages(teamId: string, limit: number = 100): Promise<{ backupCount: number }> {
+        try {
+            // 1. Team 조회
+            const team = await this.teamModel.findById(teamId).exec();
+            if (!team) {
+                throw new Error('Team을 찾을 수 없습니다.');
+            }
+
+            // 2. Slack 메시지 히스토리 조회
+            const slackMessages = await this.slackService.getMessages(team.slackConfig.channelId, limit);
+
+            let backupCount = 0;
+
+            // 3. 각 메시지 처리
+            for (const msg of slackMessages.messages) {
+                try {
+                    // 이미 저장된 메시지인지 확인
+                    const existingMessage = await this.messageModel.findOne({ slackMessageId: msg.messageId }).exec();
+
+                    if (existingMessage) {
+                        this.logger.log(`[backupHistoryMessages] 이미 백업됨: ${msg.messageId}`);
+                        continue;
+                    }
+
+                    // MongoDB에 저장
+                    const message = new this.messageModel({
+                        teamId: team._id,
+                        slackMessageId: msg.messageId,
+                        slackChannelId: team.slackConfig.channelId,
+                        slackChannelName: team.slackConfig.channelName,
+                        slackUserId: '', // 히스토리 조회에서는 사용자 ID 제공 안 됨
+                        username: msg.username,
+                        content: msg.content,
+                        type: 'message',
+                        attachments: [],
+                        discordChannelId: team.discordConfig.channelId,
+                        discordWebhookUrl: team.discordConfig.webhookUrl,
+                        sentAt: new Date(msg.timestamp),
+                    });
+
+                    await message.save();
+
+                    // Discord로 백업
+                    try {
+                        const discordResult = await this.discordService.sendWebhookMessage(
+                            team.discordConfig.webhookUrl,
+                            {
+                                content: msg.content,
+                                username: msg.username,
+                            },
+                        );
+
+                        message.discordMessageId = discordResult.id;
+                        message.backedUpAt = new Date();
+                        await message.save();
+
+                        backupCount++;
+                    } catch (discordError) {
+                        this.logger.error(`[backupHistoryMessages] Discord 백업 실패: ${discordError.message}`);
+                    }
+                } catch (msgError) {
+                    this.logger.error(`[backupHistoryMessages] 메시지 처리 실패: ${msgError.message}`);
+                }
+            }
+
+            this.logger.log(`[backupHistoryMessages] 백업 완료: Team=${teamId}, Count=${backupCount}`);
+
+            return { backupCount };
+        } catch (error) {
+            this.logger.error(`[backupHistoryMessages] 백업 실패: ${error.message}`, error.stack);
+            throw error;
         }
-    }
-
-    /**
-     * 특정 채널 백업 비활성화
-     */
-    removeTargetChannel(channelId: string): void {
-        this.targetChannels = this.targetChannels.filter((id) => id !== channelId);
-        this.logger.log(`[removeTargetChannel] 채널 제거: ${channelId}`);
-    }
-
-    /**
-     * 현재 백업 대상 채널 목록 조회
-     */
-    getTargetChannels(): string[] {
-        return [...this.targetChannels];
     }
 }

@@ -1,17 +1,20 @@
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import { RelayService } from './relay.service';
+import { Message, MessageSchema } from '../schema/message.schema';
+import { Team, TeamSchema } from '../schema/team.schema';
 import { SlackModule } from '../slack/slack.module';
 import { DiscordModule } from '../discord/discord.module';
-import { MessageModule } from '../message/message.module';
 
-/**
- * Relay 모듈
- * - Slack과 Discord 간 메시지 중계
- * - Slack 메시지를 Discord로 자동 백업
- * - MongoDB에 메시지 영구 저장
- */
 @Module({
-    imports: [SlackModule, DiscordModule, MessageModule],
+    imports: [
+        MongooseModule.forFeature([
+            { name: Message.name, schema: MessageSchema },
+            { name: Team.name, schema: TeamSchema },
+        ]),
+        SlackModule,
+        DiscordModule,
+    ],
     providers: [RelayService],
     exports: [RelayService],
 })

@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Logger, UseGuards, Request, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+
 import { TeamService } from './team.service';
-import { Team } from './team.schema';
-import { Room } from './room.schema';
+
+import { Team } from '../schema/team.schema';
+import { Room } from '../schema/room.schema';
 
 /**
  * Team & Room 관리 API 컨트롤러
@@ -14,19 +16,26 @@ export class TeamController {
     constructor(private readonly teamService: TeamService) {}
 
     /**
-     * 팀 생성
+     * 채널 생성 (중앙집중식 MVP)
      * POST /api/teams
+     * - JWT 인증 필수
+     * - Slacord 공식 Slack/Discord에 채널 자동 생성
      */
     @Post()
-    async createTeam(@Body() teamData: Partial<Team>) {
-        this.logger.log(`[createTeam] 팀 생성 요청: ${teamData.name}`);
+    @UseGuards(AuthGuard('jwt'))
+    async createTeam(@Request() req: any, @Body() body: { name: string; description?: string }) {
+        this.logger.log(`[createTeam] 채널 생성 요청: ${body.name}`);
 
-        const team = await this.teamService.createTeam(teamData);
+        // JwtStrategy의 validate()에서 반환한 userId 사용
+        const userId = req.user.userId;
+        this.logger.log(`[createTeam] 사용자 ID: ${userId}`);
+
+        const team = await this.teamService.createTeam(body.name, body.description, userId);
 
         return {
             success: true,
             data: team,
-            message: '팀이 생성되었습니다.',
+            message: '채널이 생성되었습니다.',
         };
     }
 
