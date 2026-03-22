@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import type { IUserRepository } from "../../domain/auth.port";
+import type { IUserRepository } from '../../domain/auth.port';
 import { USER_REPOSITORY } from '../../domain/auth.port';
 
 export interface LoginInput {

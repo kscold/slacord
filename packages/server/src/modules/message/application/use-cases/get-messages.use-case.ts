@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { IMessageRepository } from "../../domain/message.port";
+import type { IMessageRepository } from '../../domain/message.port';
 import { MESSAGE_REPOSITORY } from '../../domain/message.port';
 import { MessageEntity } from '../../domain/message.entity';
 

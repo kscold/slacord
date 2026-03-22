@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { ITeamRepository } from "../../domain/team.port";
+import type { ITeamRepository } from '../../domain/team.port';
 import { TEAM_REPOSITORY } from '../../domain/team.port';
 import { TeamEntity } from '../../domain/team.entity';
 

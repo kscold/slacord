@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import type { IChannelRepository } from "../../domain/channel.port";
+import type { IChannelRepository } from '../../domain/channel.port';
 import { CHANNEL_REPOSITORY } from '../../domain/channel.port';
 import { ChannelEntity, ChannelType } from '../../domain/channel.entity';
 

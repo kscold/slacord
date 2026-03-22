@@ -10,11 +10,7 @@ import { ChannelController } from './infrastructure/http/channel.controller';
 @Module({
     imports: [MongooseModule.forFeature([{ name: Channel.name, schema: ChannelSchema }])],
     controllers: [ChannelController],
-    providers: [
-        { provide: CHANNEL_REPOSITORY, useClass: ChannelRepository },
-        CreateChannelUseCase,
-        GetChannelsUseCase,
-    ],
+    providers: [{ provide: CHANNEL_REPOSITORY, useClass: ChannelRepository }, CreateChannelUseCase, GetChannelsUseCase],
     exports: [CHANNEL_REPOSITORY],
 })
 export class ChannelModule {}

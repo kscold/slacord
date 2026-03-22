@@ -39,29 +39,20 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
     /** 채널 입장 - Socket Room으로 채널 격리 */
     @SubscribeMessage('join_channel')
-    handleJoinChannel(
-        @MessageBody() data: { channelId: string },
-        @ConnectedSocket() client: Socket,
-    ) {
+    handleJoinChannel(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
         client.join(`channel:${data.channelId}`);
         client.emit('joined_channel', { channelId: data.channelId });
     }
 
     /** 채널 퇴장 */
     @SubscribeMessage('leave_channel')
-    handleLeaveChannel(
-        @MessageBody() data: { channelId: string },
-        @ConnectedSocket() client: Socket,
-    ) {
+    handleLeaveChannel(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
         client.leave(`channel:${data.channelId}`);
     }
 
     /** 메시지 전송 - DB 저장 후 채널 전체에 브로드캐스트 */
     @SubscribeMessage('send_message')
-    async handleSendMessage(
-        @MessageBody() payload: SendMessagePayload,
-        @ConnectedSocket() client: Socket,
-    ) {
+    async handleSendMessage(@MessageBody() payload: SendMessagePayload, @ConnectedSocket() client: Socket) {
         try {
             const message = await this.sendMessageUseCase.execute(payload);
             const data = message.toPublic();

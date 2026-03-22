@@ -15,11 +15,7 @@ export class MessageRepository implements IMessageRepository {
         if (before) {
             query.createdAt = { $lt: before };
         }
-        const docs = await this.messageModel
-            .find(query)
-            .sort({ createdAt: -1 })
-            .limit(limit)
-            .lean();
+        const docs = await this.messageModel.find(query).sort({ createdAt: -1 }).limit(limit).lean();
         return docs.reverse().map((doc) => this.toEntity(doc));
     }
 
