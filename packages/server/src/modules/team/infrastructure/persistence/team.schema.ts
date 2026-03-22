@@ -17,6 +17,21 @@ class TeamMemberSchema {
 
 const TeamMemberSchemaFactory = SchemaFactory.createForClass(TeamMemberSchema);
 
+/** GitHub Webhook 설정 서브도큐먼트 */
+@Schema({ _id: false })
+class GitHubConfigSchema {
+    @Prop({ required: true })
+    repoUrl: string;
+
+    @Prop({ required: true })
+    webhookSecret: string;
+
+    @Prop({ required: true })
+    notifyChannelId: string;
+}
+
+const GitHubConfigSchemaFactory = SchemaFactory.createForClass(GitHubConfigSchema);
+
 /** 팀(워크스페이스) MongoDB 스키마 */
 @Schema({ timestamps: true, collection: 'teams' })
 export class Team {
@@ -34,6 +49,9 @@ export class Team {
 
     @Prop({ type: [TeamMemberSchemaFactory], default: [] })
     members: TeamMemberSchema[];
+
+    @Prop({ type: GitHubConfigSchemaFactory, default: null })
+    githubConfig: GitHubConfigSchema | null;
 
     createdAt: Date;
     updatedAt: Date;

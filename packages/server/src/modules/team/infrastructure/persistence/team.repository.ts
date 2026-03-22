@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ITeamRepository } from '../../domain/team.port';
-import { TeamEntity, TeamMember } from '../../domain/team.entity';
+import { TeamEntity, TeamMember, type GitHubConfig } from '../../domain/team.entity';
 import { Team, TeamDocument } from './team.schema';
 
 /** Team Repository Adapter - MongoDB 구현체 */
@@ -47,6 +47,13 @@ export class TeamRepository implements ITeamRepository {
         return !!(await this.teamModel.exists({ slug }));
     }
 
+    async updateGithubConfig(teamId: string, config: GitHubConfig): Promise<TeamEntity | null> {
+        const doc = await this.teamModel
+            .findByIdAndUpdate(teamId, { $set: { githubConfig: config } }, { new: true })
+            .lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
     private toEntity(doc: any): TeamEntity {
         return new TeamEntity(
             doc._id.toString(),
@@ -59,6 +66,7 @@ export class TeamRepository implements ITeamRepository {
                 role: m.role,
                 joinedAt: m.joinedAt,
             })),
+            doc.githubConfig ?? null,
             doc.createdAt,
         );
     }

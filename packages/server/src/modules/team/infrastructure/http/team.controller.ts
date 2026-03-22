@@ -1,25 +1,13 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches, MinLength } from 'class-validator';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { CreateTeamUseCase } from '../../application/use-cases/create-team.use-case';
 import { GetTeamsUseCase } from '../../application/use-cases/get-teams.use-case';
 import { JoinTeamUseCase } from '../../application/use-cases/join-team.use-case';
-
-class CreateTeamDto {
-    @IsString()
-    @MinLength(2)
-    name: string;
-
-    @IsString()
-    @Matches(/^[a-z0-9-]+$/, { message: '슬러그는 소문자, 숫자, 하이픈만 허용됩니다.' })
-    slug: string;
-
-    @IsOptional()
-    @IsString()
-    description?: string;
-}
+import { UpdateGithubConfigUseCase } from '../../application/use-cases/update-github-config.use-case';
+import { CreateTeamDto } from './dto/create-team.dto';
+import { UpdateGithubConfigDto } from './dto/update-github-config.dto';
 
 /** 팀(워크스페이스) API */
 @ApiTags('team')
@@ -31,6 +19,7 @@ export class TeamController {
         private readonly createTeamUseCase: CreateTeamUseCase,
         private readonly getTeamsUseCase: GetTeamsUseCase,
         private readonly joinTeamUseCase: JoinTeamUseCase,
+        private readonly updateGithubConfigUseCase: UpdateGithubConfigUseCase,
     ) {}
 
     @Get()
@@ -54,6 +43,16 @@ export class TeamController {
     async joinTeam(@CurrentUser() user: { userId: string }, @Param('slug') slug: string) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.joinTeamUseCase.execute({ slug, userId: user.userId });
+        return { success: true, data: team.toPublic() };
+    }
+
+    @Patch(':teamId/github')
+    @ApiOperation({ summary: 'GitHub Webhook 설정 (repoUrl, webhookSecret, notifyChannelId)' })
+    async updateGithubConfig(
+        @Param('teamId') teamId: string,
+        @Body() dto: UpdateGithubConfigDto,
+    ) {
+        const team = await this.updateGithubConfigUseCase.execute(teamId, dto);
         return { success: true, data: team.toPublic() };
     }
 }

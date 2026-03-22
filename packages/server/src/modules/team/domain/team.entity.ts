@@ -6,6 +6,13 @@ export interface TeamMember {
     joinedAt: Date;
 }
 
+/** GitHub Webhook 연동 설정 */
+export interface GitHubConfig {
+    repoUrl: string;
+    webhookSecret: string;
+    notifyChannelId: string;
+}
+
 /** 팀(워크스페이스) 도메인 엔티티 */
 export class TeamEntity {
     constructor(
@@ -15,6 +22,7 @@ export class TeamEntity {
         public readonly description: string | null,
         public readonly iconUrl: string | null,
         public readonly members: TeamMember[],
+        public readonly githubConfig: GitHubConfig | null,
         public readonly createdAt: Date,
     ) {}
 
@@ -38,6 +46,7 @@ export class TeamEntity {
             description: this.description,
             iconUrl: this.iconUrl,
             memberCount: this.members.length,
+            githubConfig: this.githubConfig,
             createdAt: this.createdAt,
         };
     }

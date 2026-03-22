@@ -1,4 +1,4 @@
-import { TeamEntity, TeamMember } from './team.entity';
+import { TeamEntity, TeamMember, GitHubConfig } from './team.entity';
 
 export interface ITeamRepository {
     findById(id: string): Promise<TeamEntity | null>;
@@ -13,6 +13,7 @@ export interface ITeamRepository {
     }): Promise<TeamEntity>;
     addMember(teamId: string, member: TeamMember): Promise<TeamEntity>;
     existsBySlug(slug: string): Promise<boolean>;
+    updateGithubConfig(teamId: string, config: GitHubConfig): Promise<TeamEntity | null>;
 }
 
 export const TEAM_REPOSITORY = Symbol('ITeamRepository');

@@ -5,6 +5,11 @@ import { AuthModule } from './modules/auth/auth.module';
 import { TeamModule } from './modules/team/team.module';
 import { ChannelModule } from './modules/channel/channel.module';
 import { MessageModule } from './modules/message/message.module';
+import { PresenceModule } from './modules/presence/presence.module';
+import { GithubModule } from './modules/github/github.module';
+import { IssueModule } from './modules/issue/issue.module';
+import { AnnouncementModule } from './modules/announcement/announcement.module';
+import { DocumentModule } from './modules/document/document.module';
 
 /**
  * Slacord 앱 루트 모듈
@@ -26,6 +31,11 @@ import { MessageModule } from './modules/message/message.module';
         TeamModule,
         ChannelModule,
         MessageModule,
+        PresenceModule,
+        GithubModule,
+        IssueModule,
+        AnnouncementModule,
+        DocumentModule,
     ],
 })
 export class AppModule {}

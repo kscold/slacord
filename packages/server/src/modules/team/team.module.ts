@@ -6,6 +6,7 @@ import { TEAM_REPOSITORY } from './domain/team.port';
 import { CreateTeamUseCase } from './application/use-cases/create-team.use-case';
 import { GetTeamsUseCase } from './application/use-cases/get-teams.use-case';
 import { JoinTeamUseCase } from './application/use-cases/join-team.use-case';
+import { UpdateGithubConfigUseCase } from './application/use-cases/update-github-config.use-case';
 import { TeamController } from './infrastructure/http/team.controller';
 
 @Module({
@@ -16,6 +17,7 @@ import { TeamController } from './infrastructure/http/team.controller';
         CreateTeamUseCase,
         GetTeamsUseCase,
         JoinTeamUseCase,
+        UpdateGithubConfigUseCase,
     ],
     exports: [TEAM_REPOSITORY],
 })
