@@ -1,18 +1,18 @@
 {
   "name": "slacord",
   "version": "1.0.0",
-  "description": "Slack to Discord message relay monorepo",
+  "description": "팀 올인원 협업 툴 모노레포",
   "private": true,
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "dev:server": "yarn workspace @slacord/nestjs start:dev",
-    "dev:web": "yarn workspace @slacord/nextjs dev",
-    "build:server": "yarn workspace @slacord/nestjs build",
-    "build:web": "yarn workspace @slacord/nextjs build",
-    "start:server": "yarn workspace @slacord/nestjs start:prod",
-    "start:web": "yarn workspace @slacord/nextjs start",
+    "dev:server": "yarn workspace @slacord/server start:dev",
+    "dev:web": "yarn workspace @slacord/web dev",
+    "build:server": "yarn workspace @slacord/server build",
+    "build:web": "yarn workspace @slacord/web build",
+    "start:server": "yarn workspace @slacord/server start:prod",
+    "start:web": "yarn workspace @slacord/web start",
     "lint": "yarn workspaces run lint",
     "clean": "yarn workspaces run clean && rm -rf node_modules"
   },
