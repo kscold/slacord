@@ -22,7 +22,8 @@ export default function NewTeamPage() {
 
         try {
             // API 클라이언트 사용 - 순수 쿠키 인증
-            const response = await teamApi.createTeam(formData.name, formData.description);
+            const slug = formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            const response = await teamApi.createTeam({ name: formData.name, slug, description: formData.description });
 
             if (response.success) {
                 router.push('/dashboard');

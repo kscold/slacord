@@ -74,28 +74,37 @@ export const authApi = {
  * 팀 API
  */
 export const teamApi = {
-    /**
-     * 팀 목록 조회
-     */
+    async getMyTeams() {
+        return apiFetch('/api/team');
+    },
+    async createTeam(data: { name: string; slug: string; description?: string }) {
+        return apiFetch('/api/team', { method: 'POST', body: JSON.stringify(data) });
+    },
+    async joinTeam(slug: string) {
+        return apiFetch(`/api/team/${slug}/join`, { method: 'POST' });
+    },
+    async updateGithubConfig(teamId: string, data: { repoUrl: string; webhookSecret: string; notifyChannelId: string }) {
+        return apiFetch(`/api/team/${teamId}/github`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    /** @deprecated 이전 코드 호환성 */
     async getTeams() {
-        return apiFetch('/api/teams');
+        return apiFetch('/api/team');
     },
-
-    /**
-     * 팀 생성
-     */
-    async createTeam(name: string, description?: string) {
-        return apiFetch('/api/teams', {
-            method: 'POST',
-            body: JSON.stringify({ name, description }),
-        });
-    },
-
-    /**
-     * 팀 상세 조회
-     */
+    /** @deprecated 이전 코드 호환성 */
     async getTeam(teamId: string) {
-        return apiFetch(`/api/teams/${teamId}`);
+        return apiFetch(`/api/team/${teamId}`);
+    },
+};
+
+/**
+ * 채널 API
+ */
+export const channelApi = {
+    async getChannels(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/channel`);
+    },
+    async createChannel(teamId: string, data: { name: string; type?: string }) {
+        return apiFetch(`/api/team/${teamId}/channel`, { method: 'POST', body: JSON.stringify(data) });
     },
 };
 
@@ -103,22 +112,85 @@ export const teamApi = {
  * 메시지 API
  */
 export const messageApi = {
-    /**
-     * 메시지 전송
-     */
-    async sendMessage(teamId: string, content: string, username?: string) {
-        return apiFetch('/api/messages', {
-            method: 'POST',
-            body: JSON.stringify({ teamId, content, username }),
+    async getMessages(channelId: string, before?: string, limit = 50) {
+        const params = new URLSearchParams({ limit: String(limit) });
+        if (before) params.set('before', before);
+        return apiFetch(`/api/channel/${channelId}/message?${params}`);
+    },
+    async editMessage(channelId: string, messageId: string, content: string) {
+        return apiFetch(`/api/channel/${channelId}/message/${messageId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ content }),
         });
     },
+    async deleteMessage(channelId: string, messageId: string) {
+        return apiFetch(`/api/channel/${channelId}/message/${messageId}`, { method: 'DELETE' });
+    },
+};
 
-    /**
-     * 메시지 조회
-     */
-    async getMessages(teamId: string, before?: string, limit: number = 50) {
-        const params = new URLSearchParams({ teamId, limit: limit.toString() });
-        if (before) params.append('before', before);
-        return apiFetch(`/api/messages?${params.toString()}`);
+/**
+ * 이슈 API
+ */
+export const issueApi = {
+    async getIssues(teamId: string, status?: string) {
+        const params = status ? `?status=${status}` : '';
+        return apiFetch(`/api/team/${teamId}/issue${params}`);
+    },
+    async createIssue(teamId: string, data: { title: string; description?: string; priority?: string; assigneeIds?: string[]; labels?: string[] }) {
+        return apiFetch(`/api/team/${teamId}/issue`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updateIssue(teamId: string, issueId: string, data: object) {
+        return apiFetch(`/api/team/${teamId}/issue/${issueId}`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    async deleteIssue(teamId: string, issueId: string) {
+        return apiFetch(`/api/team/${teamId}/issue/${issueId}`, { method: 'DELETE' });
+    },
+};
+
+/**
+ * 공지사항 API
+ */
+export const announcementApi = {
+    async getAnnouncements(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/announcement`);
+    },
+    async createAnnouncement(teamId: string, data: { title: string; content: string }) {
+        return apiFetch(`/api/team/${teamId}/announcement`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async pinAnnouncement(teamId: string, announcementId: string, isPinned: boolean) {
+        return apiFetch(`/api/team/${teamId}/announcement/${announcementId}/pin`, {
+            method: 'PATCH',
+            body: JSON.stringify({ isPinned }),
+        });
+    },
+};
+
+/**
+ * 문서 API
+ */
+export const documentApi = {
+    async getDocuments(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/document`);
+    },
+    async getDocument(teamId: string, documentId: string) {
+        return apiFetch(`/api/team/${teamId}/document/${documentId}`);
+    },
+    async createDocument(teamId: string, data: { title: string; content?: string; parentId?: string | null }) {
+        return apiFetch(`/api/team/${teamId}/document`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updateDocument(teamId: string, documentId: string, data: { title?: string; content?: string }) {
+        return apiFetch(`/api/team/${teamId}/document/${documentId}`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    async deleteDocument(teamId: string, documentId: string) {
+        return apiFetch(`/api/team/${teamId}/document/${documentId}`, { method: 'DELETE' });
+    },
+};
+
+/**
+ * 프레즌스 API
+ */
+export const presenceApi = {
+    async getPresence(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/presence`);
     },
 };
