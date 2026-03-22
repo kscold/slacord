@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { SendMessageUseCase } from '../../application/use-cases/send-message.use-case';
+import { ReactMessageUseCase } from '../../application/use-cases/react-message.use-case';
 
 interface SendMessagePayload {
     teamId: string;
@@ -17,6 +18,13 @@ interface SendMessagePayload {
     authorId: string;
     content: string;
     replyToId?: string;
+}
+
+interface ReactionPayload {
+    messageId: string;
+    channelId: string;
+    emoji: string;
+    userId: string;
 }
 
 /** 실시간 채팅 WebSocket Gateway */
@@ -27,14 +35,17 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
     private readonly logger = new Logger(MessageGateway.name);
 
-    constructor(private readonly sendMessageUseCase: SendMessageUseCase) {}
+    constructor(
+        private readonly sendMessageUseCase: SendMessageUseCase,
+        private readonly reactMessageUseCase: ReactMessageUseCase,
+    ) {}
 
     handleConnection(client: Socket) {
-        this.logger.log(`클라이언트 연결: ${client.id}`);
+        this.logger.log(`Client connected: ${client.id}`);
     }
 
     handleDisconnect(client: Socket) {
-        this.logger.log(`클라이언트 연결 해제: ${client.id}`);
+        this.logger.log(`Client disconnected: ${client.id}`);
     }
 
     /** 채널 입장 - Socket Room으로 채널 격리 */
@@ -59,7 +70,19 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
             this.server.to(`channel:${payload.channelId}`).emit('new_message', data);
             return { success: true, data };
         } catch (error) {
-            client.emit('error', { message: '메시지 전송에 실패했습니다.' });
+            client.emit('error', { message: 'Failed to send message.' });
+        }
+    }
+
+    /** 이모지 반응 토글 - DB 저장 후 채널 브로드캐스트 */
+    @SubscribeMessage('add_reaction')
+    async handleReaction(@MessageBody() payload: ReactionPayload, @ConnectedSocket() client: Socket) {
+        try {
+            const message = await this.reactMessageUseCase.execute(payload.messageId, payload.emoji, payload.userId);
+            this.server.to(`channel:${payload.channelId}`).emit('reaction_updated', message.toPublic());
+            return { success: true };
+        } catch (error) {
+            client.emit('error', { message: 'Failed to add reaction.' });
         }
     }
 

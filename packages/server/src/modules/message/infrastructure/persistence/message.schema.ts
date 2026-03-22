@@ -18,7 +18,18 @@ class AttachmentSchema {
     mimeType: string;
 }
 
+/** 이모지 반응 서브도큐먼트 */
+@Schema({ _id: false })
+class ReactionSchema {
+    @Prop({ required: true })
+    emoji: string;
+
+    @Prop({ type: [String], default: [] })
+    userIds: string[];
+}
+
 const AttachmentSchemaFactory = SchemaFactory.createForClass(AttachmentSchema);
+const ReactionSchemaFactory = SchemaFactory.createForClass(ReactionSchema);
 
 /** 순수 채팅 메시지 MongoDB 스키마 - Slack/Discord 의존성 없음 */
 @Schema({ timestamps: true, collection: 'messages' })
@@ -43,6 +54,15 @@ export class Message {
 
     @Prop({ type: Types.ObjectId, ref: 'Message', default: null })
     replyToId: Types.ObjectId | null;
+
+    @Prop({ type: [ReactionSchemaFactory], default: [] })
+    reactions: ReactionSchema[];
+
+    @Prop({ type: [String], default: [] })
+    mentions: string[];
+
+    @Prop({ default: false })
+    isEdited: boolean;
 
     createdAt: Date;
     updatedAt: Date;

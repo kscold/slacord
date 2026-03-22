@@ -17,6 +17,14 @@ export class SendMessageUseCase {
     constructor(@Inject(MESSAGE_REPOSITORY) private readonly messageRepo: IMessageRepository) {}
 
     async execute(input: SendMessageInput): Promise<MessageEntity> {
+        /** @mention 파싱: content에서 @userId 형태의 멘션 추출 */
+        const mentionPattern = /@([a-f0-9]{24})/g;
+        const mentions: string[] = [];
+        let match: RegExpExecArray | null;
+        while ((match = mentionPattern.exec(input.content)) !== null) {
+            mentions.push(match[1]);
+        }
+
         return this.messageRepo.save({
             teamId: input.teamId,
             channelId: input.channelId,
@@ -25,6 +33,7 @@ export class SendMessageUseCase {
             type: 'text',
             attachments: [],
             replyToId: input.replyToId ?? null,
+            mentions,
         });
     }
 }

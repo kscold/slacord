@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IMessageRepository } from '../../domain/message.port';
-import { MessageEntity, MessageType, Attachment } from '../../domain/message.entity';
+import { MessageEntity, MessageType, Attachment, Reaction } from '../../domain/message.entity';
 import { Message, MessageDocument } from './message.schema';
 
 /** Message Repository Adapter - MongoDB 구현체 */
@@ -19,6 +19,11 @@ export class MessageRepository implements IMessageRepository {
         return docs.reverse().map((doc) => this.toEntity(doc));
     }
 
+    async findById(id: string): Promise<MessageEntity | null> {
+        const doc = await this.messageModel.findById(id).lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
     async save(data: {
         teamId: string;
         channelId: string;
@@ -27,8 +32,44 @@ export class MessageRepository implements IMessageRepository {
         type: MessageType;
         attachments: Attachment[];
         replyToId: string | null;
+        mentions: string[];
     }): Promise<MessageEntity> {
         const doc = await this.messageModel.create(data);
+        return this.toEntity(doc.toObject());
+    }
+
+    async updateContent(id: string, content: string): Promise<MessageEntity | null> {
+        const doc = await this.messageModel
+            .findByIdAndUpdate(id, { content, isEdited: true }, { new: true })
+            .lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
+    async deleteById(id: string): Promise<boolean> {
+        const result = await this.messageModel.findByIdAndDelete(id);
+        return result !== null;
+    }
+
+    async toggleReaction(id: string, emoji: string, userId: string): Promise<MessageEntity | null> {
+        const doc = await this.messageModel.findById(id);
+        if (!doc) return null;
+
+        const existing = doc.reactions.find((r: any) => r.emoji === emoji);
+        if (existing) {
+            const idx = existing.userIds.indexOf(userId);
+            if (idx >= 0) {
+                existing.userIds.splice(idx, 1);
+                if (existing.userIds.length === 0) {
+                    doc.reactions = doc.reactions.filter((r: any) => r.emoji !== emoji);
+                }
+            } else {
+                existing.userIds.push(userId);
+            }
+        } else {
+            doc.reactions.push({ emoji, userIds: [userId] } as any);
+        }
+
+        await doc.save();
         return this.toEntity(doc.toObject());
     }
 
@@ -42,7 +83,11 @@ export class MessageRepository implements IMessageRepository {
             doc.type as MessageType,
             doc.attachments ?? [],
             doc.replyToId?.toString() ?? null,
+            (doc.reactions ?? []) as Reaction[],
+            doc.mentions ?? [],
+            doc.isEdited ?? false,
             doc.createdAt,
+            doc.updatedAt,
         );
     }
 }

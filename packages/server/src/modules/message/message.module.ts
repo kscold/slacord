@@ -5,6 +5,9 @@ import { MessageRepository } from './infrastructure/persistence/message.reposito
 import { MESSAGE_REPOSITORY } from './domain/message.port';
 import { SendMessageUseCase } from './application/use-cases/send-message.use-case';
 import { GetMessagesUseCase } from './application/use-cases/get-messages.use-case';
+import { EditMessageUseCase } from './application/use-cases/edit-message.use-case';
+import { DeleteMessageUseCase } from './application/use-cases/delete-message.use-case';
+import { ReactMessageUseCase } from './application/use-cases/react-message.use-case';
 import { MessageController } from './infrastructure/http/message.controller';
 import { MessageGateway } from './infrastructure/websocket/message.gateway';
 
@@ -15,7 +18,11 @@ import { MessageGateway } from './infrastructure/websocket/message.gateway';
         { provide: MESSAGE_REPOSITORY, useClass: MessageRepository },
         SendMessageUseCase,
         GetMessagesUseCase,
+        EditMessageUseCase,
+        DeleteMessageUseCase,
+        ReactMessageUseCase,
         MessageGateway,
     ],
+    exports: [MESSAGE_REPOSITORY, SendMessageUseCase],
 })
 export class MessageModule {}
