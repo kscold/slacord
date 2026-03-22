@@ -1,0 +1,22 @@
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Team, TeamSchema } from './infrastructure/persistence/team.schema';
+import { TeamRepository } from './infrastructure/persistence/team.repository';
+import { TEAM_REPOSITORY } from './domain/team.port';
+import { CreateTeamUseCase } from './application/use-cases/create-team.use-case';
+import { GetTeamsUseCase } from './application/use-cases/get-teams.use-case';
+import { JoinTeamUseCase } from './application/use-cases/join-team.use-case';
+import { TeamController } from './infrastructure/http/team.controller';
+
+@Module({
+    imports: [MongooseModule.forFeature([{ name: Team.name, schema: TeamSchema }])],
+    controllers: [TeamController],
+    providers: [
+        { provide: TEAM_REPOSITORY, useClass: TeamRepository },
+        CreateTeamUseCase,
+        GetTeamsUseCase,
+        JoinTeamUseCase,
+    ],
+    exports: [TEAM_REPOSITORY],
+})
+export class TeamModule {}
