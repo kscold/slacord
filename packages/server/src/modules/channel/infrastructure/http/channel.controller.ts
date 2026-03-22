@@ -1,25 +1,10 @@
 import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { CreateChannelUseCase } from '../../application/use-cases/create-channel.use-case';
 import { GetChannelsUseCase } from '../../application/use-cases/get-channels.use-case';
-import type { ChannelType } from '../../domain/channel.entity';
-
-class CreateChannelDto {
-    @IsString()
-    @MinLength(1)
-    name: string;
-
-    @IsOptional()
-    @IsString()
-    description?: string;
-
-    @IsOptional()
-    @IsEnum(['public', 'private'])
-    type?: ChannelType;
-}
+import { CreateChannelDto } from './dto/create-channel.dto';
 
 /** 채널 API */
 @ApiTags('channel')

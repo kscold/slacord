@@ -1,31 +1,11 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
 import { LoginUseCase, LoginOutput } from '../../application/use-cases/login.use-case';
 import { RegisterUseCase } from '../../application/use-cases/register.use-case';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
-
-class RegisterDto {
-    @IsEmail()
-    email: string;
-
-    @IsString()
-    @MinLength(2)
-    username: string;
-
-    @IsString()
-    @MinLength(6)
-    password: string;
-}
-
-class LoginDto {
-    @IsEmail()
-    email: string;
-
-    @IsString()
-    password: string;
-}
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 /** 인증 API - 회원가입, 로그인, 내 정보 */
 @ApiTags('auth')
