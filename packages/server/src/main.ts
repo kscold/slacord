@@ -45,8 +45,8 @@ async function bootstrap() {
     const port = process.env.PORT ?? 8082;
     await app.listen(port);
 
-    logger.log(`🚀 서버 실행 중: http://localhost:${port}`);
-    logger.log(`📖 Swagger: http://localhost:${port}/api/docs`);
+    logger.log(`Server running on http://localhost:${port}`);
+    logger.log(`Swagger docs: http://localhost:${port}/api/docs`);
 }
 
 bootstrap().catch((err) => {
