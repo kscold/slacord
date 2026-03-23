@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { LoginUseCase, LoginOutput } from '../../application/use-cases/login.use-case';
 import { RegisterUseCase } from '../../application/use-cases/register.use-case';
+import { GetMeUseCase } from '../../application/use-cases/get-me.use-case';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { RegisterDto } from './dto/register.dto';
@@ -15,6 +16,7 @@ export class AuthController {
     constructor(
         private readonly loginUseCase: LoginUseCase,
         private readonly registerUseCase: RegisterUseCase,
+        private readonly getMeUseCase: GetMeUseCase,
     ) {}
 
     private isSecureCookie() {
@@ -61,7 +63,7 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: '내 정보 조회' })
-    getMe(@CurrentUser() user: { userId: string; email: string }) {
-        return { success: true, data: user };
+    async getMe(@CurrentUser() user: { userId: string }) {
+        return { success: true, data: await this.getMeUseCase.execute(user.userId) };
     }
 }

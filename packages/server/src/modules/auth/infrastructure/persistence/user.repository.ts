@@ -15,6 +15,12 @@ export class UserRepository implements IUserRepository {
         return doc ? this.toEntity(doc) : null;
     }
 
+    async findByIds(ids: string[]): Promise<UserEntity[]> {
+        const docs = await this.userModel.find({ _id: { $in: ids } }).lean();
+        const users = docs.map((doc) => this.toEntity(doc));
+        return ids.map((id) => users.find((user) => user.id === id)).filter(Boolean) as UserEntity[];
+    }
+
     async findByEmail(email: string): Promise<UserEntity | null> {
         const doc = await this.userModel.findOne({ email }).lean();
         return doc ? this.toEntity(doc) : null;

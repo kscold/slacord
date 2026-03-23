@@ -6,6 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 export interface JwtPayload {
     sub: string;
     email: string;
+    username?: string;
 }
 
 /** JWT Passport 전략 - Authorization Bearer 헤더에서 토큰 추출 */
@@ -23,6 +24,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     validate(payload: JwtPayload) {
-        return { userId: payload.sub, email: payload.email };
+        return { userId: payload.sub, email: payload.email, username: payload.username };
     }
 }

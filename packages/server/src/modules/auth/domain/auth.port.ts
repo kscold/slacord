@@ -13,6 +13,7 @@ export interface UserSaveData {
  */
 export interface IUserRepository {
     findById(id: string): Promise<UserEntity | null>;
+    findByIds(ids: string[]): Promise<UserEntity[]>;
     findByEmail(email: string): Promise<UserEntity | null>;
     save(user: UserSaveData): Promise<UserEntity>;
     existsByEmail(email: string): Promise<boolean>;

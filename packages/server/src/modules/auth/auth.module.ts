@@ -8,6 +8,7 @@ import { UserRepository } from './infrastructure/persistence/user.repository';
 import { USER_REPOSITORY } from './domain/auth.port';
 import { LoginUseCase } from './application/use-cases/login.use-case';
 import { RegisterUseCase } from './application/use-cases/register.use-case';
+import { GetMeUseCase } from './application/use-cases/get-me.use-case';
 import { AuthController } from './infrastructure/http/auth.controller';
 import { JwtStrategy } from '../../shared/strategy/jwt.strategy';
 
@@ -25,7 +26,13 @@ import { JwtStrategy } from '../../shared/strategy/jwt.strategy';
         }),
     ],
     controllers: [AuthController],
-    providers: [{ provide: USER_REPOSITORY, useClass: UserRepository }, LoginUseCase, RegisterUseCase, JwtStrategy],
-    exports: [JwtStrategy, PassportModule, JwtModule],
+    providers: [
+        { provide: USER_REPOSITORY, useClass: UserRepository },
+        LoginUseCase,
+        RegisterUseCase,
+        GetMeUseCase,
+        JwtStrategy,
+    ],
+    exports: [USER_REPOSITORY, JwtStrategy, PassportModule, JwtModule],
 })
 export class AuthModule {}

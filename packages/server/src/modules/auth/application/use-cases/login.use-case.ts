@@ -33,7 +33,7 @@ export class LoginUseCase {
             throw new BadRequestException('이메일 또는 비밀번호가 올바르지 않습니다.');
         }
 
-        const payload = { sub: user.id, email: user.email };
+        const payload = { sub: user.id, email: user.email, username: user.username };
         const accessToken = this.jwtService.sign(payload);
 
         return { accessToken, user: user.toPublic() };
