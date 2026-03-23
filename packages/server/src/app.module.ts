@@ -10,6 +10,7 @@ import { GithubModule } from './modules/github/github.module';
 import { IssueModule } from './modules/issue/issue.module';
 import { AnnouncementModule } from './modules/announcement/announcement.module';
 import { DocumentModule } from './modules/document/document.module';
+import { HealthController } from './shared/http/health.controller';
 
 /**
  * Slacord 앱 루트 모듈
@@ -18,6 +19,7 @@ import { DocumentModule } from './modules/document/document.module';
  * - 실시간 채팅은 Socket.IO WebSocket으로 처리
  */
 @Module({
+    controllers: [HealthController],
     imports: [
         ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
         MongooseModule.forRootAsync({

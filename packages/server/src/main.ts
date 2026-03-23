@@ -3,6 +3,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { HttpLoggingInterceptor } from './shared/interceptors/http-logging.interceptor';
 
 /**
  * Slacord 서버
@@ -15,6 +16,7 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     app.use(cookieParser());
+    app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
     app.enableCors({
         origin: true,
