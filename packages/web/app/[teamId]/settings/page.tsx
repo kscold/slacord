@@ -3,12 +3,11 @@
 import { useState } from 'react';
 import { use } from 'react';
 import { teamApi } from '@/lib/api-client';
+import { publicAppUrl } from '@/lib/runtime-config';
 
 interface Props {
     params: Promise<{ teamId: string }>;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082';
 
 export default function SettingsPage({ params }: Props) {
     const { teamId } = use(params);
@@ -36,7 +35,7 @@ export default function SettingsPage({ params }: Props) {
         }
     };
 
-    const webhookUrl = `${API_URL}/api/github/webhook`;
+    const webhookUrl = `${publicAppUrl()}/api/github/webhook`;
 
     return (
         <div className="max-w-2xl mx-auto p-6">

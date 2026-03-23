@@ -22,13 +22,8 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            // 순수 쿠키 기반 인증 - API 클라이언트 사용
             await authApi.register(formData.email, formData.password, formData.username);
-
-            // 쿠키는 서버에서 자동으로 Set-Cookie 헤더를 통해 설정됨
-            // localStorage 사용 안 함
-
-            // 대시보드로 이동
+            await authApi.login(formData.email, formData.password);
             router.push('/dashboard');
         } catch (err: any) {
             setError(err.message);

@@ -1,17 +1,17 @@
 import { io, Socket } from 'socket.io-client';
-
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082';
+import { socketUrl } from '@/lib/runtime-config';
 
 /** 채팅 Socket.IO 싱글톤 */
 let chatSocket: Socket | null = null;
 
 export function getChatSocket(token: string): Socket {
     if (!chatSocket || !chatSocket.connected) {
-        chatSocket = io(SOCKET_URL, {
+        const options = {
             path: '/socket.io',
             auth: { token },
             transports: ['websocket'],
-        });
+        };
+        chatSocket = socketUrl() ? io(socketUrl(), options) : io(options);
     }
     return chatSocket;
 }

@@ -4,7 +4,7 @@
  * - localStorage 사용 안 함
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082';
+import { toApiUrl } from './runtime-config';
 
 interface ApiResponse<T = any> {
     success: boolean;
@@ -18,7 +18,7 @@ interface ApiResponse<T = any> {
  * - credentials: 'include'를 자동으로 추가
  */
 async function apiFetch<T = any>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
-    const response = await fetch(`${API_URL}${url}`, {
+    const response = await fetch(toApiUrl(url), {
         ...options,
         credentials: 'include', // 모든 요청에 쿠키 포함
         headers: {

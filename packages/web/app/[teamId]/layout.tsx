@@ -1,5 +1,5 @@
 import { TeamSidebar } from '@/src/features/workspace/ui/TeamSidebar';
-import { channelApi, teamApi } from '@/lib/api-client';
+import { fetchWorkspaceLayoutData } from '@/lib/server-workspace-data';
 import type { Channel } from '@/src/entities/channel/types';
 
 interface Props {
@@ -14,18 +14,9 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     let channels: Channel[] = [];
 
     try {
-        const [teamsRes, channelsRes] = await Promise.all([
-            teamApi.getMyTeams(),
-            channelApi.getChannels(teamId),
-        ]);
-
-        if (teamsRes.success && Array.isArray(teamsRes.data)) {
-            const team = teamsRes.data.find((t: any) => t.id === teamId);
-            if (team) teamName = team.name;
-        }
-        if (channelsRes.success && Array.isArray(channelsRes.data)) {
-            channels = channelsRes.data;
-        }
+        const data = await fetchWorkspaceLayoutData(teamId);
+        teamName = data.teamName;
+        channels = data.channels;
     } catch {
         // 서버 컴포넌트에서 인증 실패 시 빈 상태로 렌더링
     }
