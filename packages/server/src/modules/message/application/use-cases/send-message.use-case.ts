@@ -1,13 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { IMessageRepository } from '../../domain/message.port';
 import { MESSAGE_REPOSITORY } from '../../domain/message.port';
-import { MessageEntity } from '../../domain/message.entity';
+import { Attachment, MessageEntity, MessageType } from '../../domain/message.entity';
 
 export interface SendMessageInput {
     teamId: string;
     channelId: string;
     authorId: string;
-    content: string;
+    authorName: string | null;
+    content?: string;
+    type?: MessageType;
+    attachments?: Attachment[];
     replyToId?: string;
 }
 
@@ -17,11 +20,15 @@ export class SendMessageUseCase {
     constructor(@Inject(MESSAGE_REPOSITORY) private readonly messageRepo: IMessageRepository) {}
 
     async execute(input: SendMessageInput): Promise<MessageEntity> {
+        const content = input.content?.trim() ?? '';
+        const attachments = input.attachments ?? [];
+        const type = attachments.length > 0 ? 'file' : input.type ?? 'text';
+
         /** @mention 파싱: content에서 @userId 형태의 멘션 추출 */
         const mentionPattern = /@([a-f0-9]{24})/g;
         const mentions: string[] = [];
         let match: RegExpExecArray | null;
-        while ((match = mentionPattern.exec(input.content)) !== null) {
+        while ((match = mentionPattern.exec(content)) !== null) {
             mentions.push(match[1]);
         }
 
@@ -29,9 +36,10 @@ export class SendMessageUseCase {
             teamId: input.teamId,
             channelId: input.channelId,
             authorId: input.authorId,
-            content: input.content,
-            type: 'text',
-            attachments: [],
+            authorName: input.authorName,
+            content: content || attachments.map((attachment) => attachment.name).join(', '),
+            type,
+            attachments,
             replyToId: input.replyToId ?? null,
             mentions,
         });

@@ -24,10 +24,21 @@ export class MessageRepository implements IMessageRepository {
         return doc ? this.toEntity(doc) : null;
     }
 
+    async findThreadReplies(parentId: string): Promise<MessageEntity[]> {
+        const docs = await this.messageModel.find({ replyToId: parentId }).sort({ createdAt: 1 }).lean();
+        return docs.map((doc) => this.toEntity(doc));
+    }
+
+    async findPinnedByChannel(channelId: string): Promise<MessageEntity[]> {
+        const docs = await this.messageModel.find({ channelId, isPinned: true }).sort({ pinnedAt: -1 }).lean();
+        return docs.map((doc) => this.toEntity(doc));
+    }
+
     async save(data: {
         teamId: string;
         channelId: string;
         authorId: string;
+        authorName: string | null;
         content: string;
         type: MessageType;
         attachments: Attachment[];
@@ -41,6 +52,17 @@ export class MessageRepository implements IMessageRepository {
     async updateContent(id: string, content: string): Promise<MessageEntity | null> {
         const doc = await this.messageModel
             .findByIdAndUpdate(id, { content, isEdited: true }, { new: true })
+            .lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
+    async setPinned(id: string, isPinned: boolean): Promise<MessageEntity | null> {
+        const doc = await this.messageModel
+            .findByIdAndUpdate(
+                id,
+                { isPinned, pinnedAt: isPinned ? new Date() : null },
+                { new: true },
+            )
             .lean();
         return doc ? this.toEntity(doc) : null;
     }
@@ -79,6 +101,7 @@ export class MessageRepository implements IMessageRepository {
             doc.teamId.toString(),
             doc.channelId.toString(),
             doc.authorId,
+            doc.authorName ?? null,
             doc.content,
             doc.type as MessageType,
             doc.attachments ?? [],
@@ -86,6 +109,8 @@ export class MessageRepository implements IMessageRepository {
             (doc.reactions ?? []) as Reaction[],
             doc.mentions ?? [],
             doc.isEdited ?? false,
+            doc.isPinned ?? false,
+            doc.pinnedAt ?? null,
             doc.createdAt,
             doc.updatedAt,
         );

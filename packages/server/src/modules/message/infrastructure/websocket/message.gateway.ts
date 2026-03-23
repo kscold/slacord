@@ -7,16 +7,18 @@ import {
     OnGatewayConnection,
     OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { JwtService } from '@nestjs/jwt';
+import { Logger, UnauthorizedException } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
 import { SendMessageUseCase } from '../../application/use-cases/send-message.use-case';
 import { ReactMessageUseCase } from '../../application/use-cases/react-message.use-case';
+import { Attachment } from '../../domain/message.entity';
 
 interface SendMessagePayload {
     teamId: string;
     channelId: string;
-    authorId: string;
-    content: string;
+    content?: string;
+    attachments?: Attachment[];
     replyToId?: string;
 }
 
@@ -24,7 +26,12 @@ interface ReactionPayload {
     messageId: string;
     channelId: string;
     emoji: string;
+}
+
+interface SocketUser {
     userId: string;
+    email: string;
+    username?: string;
 }
 
 /** 실시간 채팅 WebSocket Gateway */
@@ -38,9 +45,18 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     constructor(
         private readonly sendMessageUseCase: SendMessageUseCase,
         private readonly reactMessageUseCase: ReactMessageUseCase,
+        private readonly jwtService: JwtService,
     ) {}
 
     handleConnection(client: Socket) {
+        try {
+            client.data.user = this.authenticate(client);
+        } catch (error) {
+            this.logger.warn(`Client rejected: ${client.id}`);
+            client.emit('error', { message: 'Authentication required.' });
+            client.disconnect();
+            return;
+        }
         this.logger.log(`Client connected: ${client.id}`);
     }
 
@@ -65,9 +81,14 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @SubscribeMessage('send_message')
     async handleSendMessage(@MessageBody() payload: SendMessagePayload, @ConnectedSocket() client: Socket) {
         try {
-            const message = await this.sendMessageUseCase.execute(payload);
+            const user = this.getUser(client);
+            const message = await this.sendMessageUseCase.execute({
+                ...payload,
+                authorId: user.userId,
+                authorName: user.username ?? null,
+            });
             const data = message.toPublic();
-            this.server.to(`channel:${payload.channelId}`).emit('new_message', data);
+            this.emitNewMessage(payload.channelId, data);
             return { success: true, data };
         } catch (error) {
             client.emit('error', { message: 'Failed to send message.' });
@@ -78,7 +99,8 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @SubscribeMessage('add_reaction')
     async handleReaction(@MessageBody() payload: ReactionPayload, @ConnectedSocket() client: Socket) {
         try {
-            const message = await this.reactMessageUseCase.execute(payload.messageId, payload.emoji, payload.userId);
+            const user = this.getUser(client);
+            const message = await this.reactMessageUseCase.execute(payload.messageId, payload.emoji, user.userId);
             this.server.to(`channel:${payload.channelId}`).emit('reaction_updated', message.toPublic());
             return { success: true };
         } catch (error) {
@@ -89,12 +111,58 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     /** 타이핑 표시 - DB 저장 없이 브로드캐스트만 */
     @SubscribeMessage('typing')
     handleTyping(
-        @MessageBody() data: { channelId: string; userId: string; username: string },
+        @MessageBody() data: { channelId: string },
         @ConnectedSocket() client: Socket,
     ) {
+        const user = this.getUser(client);
         client.to(`channel:${data.channelId}`).emit('user_typing', {
-            userId: data.userId,
-            username: data.username,
+            userId: user.userId,
+            username: user.username ?? '동료',
         });
+    }
+
+    private authenticate(client: Socket): SocketUser {
+        const token = this.extractToken(client);
+        if (!token) {
+            throw new UnauthorizedException('Missing token');
+        }
+        const payload = this.jwtService.verify(token) as {
+            sub: string;
+            email: string;
+            username?: string;
+        };
+        return { userId: payload.sub, email: payload.email, username: payload.username };
+    }
+
+    private extractToken(client: Socket) {
+        const authToken = client.handshake.auth?.token;
+        if (typeof authToken === 'string' && authToken.trim()) {
+            return authToken;
+        }
+        const authorization = client.handshake.headers.authorization;
+        if (typeof authorization === 'string' && authorization.startsWith('Bearer ')) {
+            return authorization.slice(7);
+        }
+        const cookieHeader = client.handshake.headers.cookie;
+        if (!cookieHeader) {
+            return null;
+        }
+        return cookieHeader
+            .split(';')
+            .map((value) => value.trim())
+            .find((value) => value.startsWith('access_token='))
+            ?.slice('access_token='.length) ?? null;
+    }
+
+    private getUser(client: Socket): SocketUser {
+        return client.data.user as SocketUser;
+    }
+
+    emitNewMessage(channelId: string, message: Record<string, unknown>) {
+        this.server.to(`channel:${channelId}`).emit('new_message', message);
+    }
+
+    emitPinnedUpdated(channelId: string, message: Record<string, unknown>) {
+        this.server.to(`channel:${channelId}`).emit('pinned_message_updated', message);
     }
 }

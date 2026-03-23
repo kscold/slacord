@@ -43,6 +43,9 @@ export class Message {
     @Prop({ required: true, index: true })
     authorId: string;
 
+    @Prop({ type: String, default: null })
+    authorName: string | null;
+
     @Prop({ required: true })
     content: string;
 
@@ -63,6 +66,12 @@ export class Message {
 
     @Prop({ default: false })
     isEdited: boolean;
+
+    @Prop({ default: false, index: true })
+    isPinned: boolean;
+
+    @Prop({ type: Date, default: null })
+    pinnedAt: Date | null;
 
     createdAt: Date;
     updatedAt: Date;

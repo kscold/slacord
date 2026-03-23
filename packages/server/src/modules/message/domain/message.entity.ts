@@ -20,6 +20,7 @@ export class MessageEntity {
         public readonly teamId: string,
         public readonly channelId: string,
         public readonly authorId: string,
+        public readonly authorName: string | null,
         public readonly content: string,
         public readonly type: MessageType,
         public readonly attachments: Attachment[],
@@ -27,6 +28,8 @@ export class MessageEntity {
         public readonly reactions: Reaction[],
         public readonly mentions: string[],
         public readonly isEdited: boolean,
+        public readonly isPinned: boolean,
+        public readonly pinnedAt: Date | null,
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
     ) {}
@@ -36,6 +39,7 @@ export class MessageEntity {
             id: this.id,
             channelId: this.channelId,
             authorId: this.authorId,
+            authorName: this.authorName,
             content: this.content,
             type: this.type,
             attachments: this.attachments,
@@ -43,6 +47,8 @@ export class MessageEntity {
             reactions: this.reactions,
             mentions: this.mentions,
             isEdited: this.isEdited,
+            isPinned: this.isPinned,
+            pinnedAt: this.pinnedAt,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
