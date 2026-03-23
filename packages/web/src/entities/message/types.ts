@@ -15,8 +15,9 @@ export interface Attachment {
 export interface Message {
     id: string;
     channelId: string;
-    teamId: string;
+    teamId?: string;
     authorId: string;
+    authorName?: string | null;
     content: string;
     type: MessageType;
     attachments: Attachment[];
@@ -24,6 +25,8 @@ export interface Message {
     reactions: Reaction[];
     mentions: string[];
     isEdited: boolean;
+    isPinned: boolean;
+    pinnedAt: string | null;
     createdAt: string;
     updatedAt: string;
 }

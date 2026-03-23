@@ -5,6 +5,7 @@ export interface User {
     email: string;
     username: string;
     avatarUrl?: string | null;
+    createdAt?: string;
 }
 
 export interface Presence {

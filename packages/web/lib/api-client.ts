@@ -5,6 +5,7 @@
  */
 
 import { toApiUrl } from './runtime-config';
+import type { ChannelType } from '@/src/entities/channel/types';
 
 interface ApiResponse<T = any> {
     success: boolean;
@@ -18,11 +19,12 @@ interface ApiResponse<T = any> {
  * - credentials: 'include'를 자동으로 추가
  */
 async function apiFetch<T = any>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
+    const isFormData = typeof FormData !== 'undefined' && options?.body instanceof FormData;
     const response = await fetch(toApiUrl(url), {
         ...options,
         credentials: 'include', // 모든 요청에 쿠키 포함
         headers: {
-            'Content-Type': 'application/json',
+            ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
             ...options?.headers,
         },
     });
@@ -60,6 +62,10 @@ export const authApi = {
         });
     },
 
+    async getMe() {
+        return apiFetch('/api/auth/me');
+    },
+
     /**
      * 로그아웃
      */
@@ -79,6 +85,9 @@ export const teamApi = {
     },
     async createTeam(data: { name: string; slug: string; description?: string }) {
         return apiFetch('/api/team', { method: 'POST', body: JSON.stringify(data) });
+    },
+    async getMembers(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/member`);
     },
     async joinTeam(slug: string) {
         return apiFetch(`/api/team/${slug}/join`, { method: 'POST' });
@@ -103,7 +112,7 @@ export const channelApi = {
     async getChannels(teamId: string) {
         return apiFetch(`/api/team/${teamId}/channel`);
     },
-    async createChannel(teamId: string, data: { name: string; type?: string }) {
+    async createChannel(teamId: string, data: { name: string; description?: string; type?: ChannelType; memberIds?: string[] }) {
         return apiFetch(`/api/team/${teamId}/channel`, { method: 'POST', body: JSON.stringify(data) });
     },
 };
@@ -116,6 +125,27 @@ export const messageApi = {
         const params = new URLSearchParams({ limit: String(limit) });
         if (before) params.set('before', before);
         return apiFetch(`/api/channel/${channelId}/message?${params}`);
+    },
+    async getPinnedMessages(channelId: string) {
+        return apiFetch(`/api/channel/${channelId}/message/pinned`);
+    },
+    async getThreadMessages(channelId: string, messageId: string) {
+        return apiFetch(`/api/channel/${channelId}/message/${messageId}/thread`);
+    },
+    async uploadAttachment(channelId: string, teamId: string, file: File) {
+        const formData = new FormData();
+        formData.append('teamId', teamId);
+        formData.append('file', file);
+        return apiFetch(`/api/channel/${channelId}/message/attachment`, {
+            method: 'POST',
+            body: formData,
+        });
+    },
+    async pinMessage(channelId: string, messageId: string, isPinned: boolean) {
+        return apiFetch(`/api/channel/${channelId}/message/${messageId}/pin`, {
+            method: 'PATCH',
+            body: JSON.stringify({ isPinned }),
+        });
     },
     async editMessage(channelId: string, messageId: string, content: string) {
         return apiFetch(`/api/channel/${channelId}/message/${messageId}`, {
