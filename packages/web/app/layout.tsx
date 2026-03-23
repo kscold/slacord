@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
+import { siteConfig } from '@/src/shared/config/site';
 import './globals.css';
 
 const geist = Geist({
@@ -9,8 +10,8 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-    title: 'Slacord - Slack to Discord Archive',
-    description: 'Backup Slack messages to Discord for free permanent storage',
+    title: `${siteConfig.name} | Team Collaboration Cloud`,
+    description: siteConfig.description,
 };
 
 export default function RootLayout({
