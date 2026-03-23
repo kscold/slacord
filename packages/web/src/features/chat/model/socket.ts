@@ -4,14 +4,15 @@ import { socketUrl } from '@/lib/runtime-config';
 /** 채팅 Socket.IO 싱글톤 */
 let chatSocket: Socket | null = null;
 
-export function getChatSocket(token: string): Socket {
+export function getChatSocket(): Socket {
     if (!chatSocket || !chatSocket.connected) {
         const options = {
             path: '/socket.io',
-            auth: { token },
             transports: ['websocket'],
+            withCredentials: true,
         };
-        chatSocket = socketUrl() ? io(socketUrl(), options) : io(options);
+        const endpoint = socketUrl();
+        chatSocket = endpoint ? io(`${endpoint}/chat`, options) : io('/chat', options);
     }
     return chatSocket;
 }

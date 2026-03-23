@@ -4,11 +4,7 @@ interface Props {
 
 export function TypingIndicator({ users }: Props) {
     if (users.length === 0) return null;
-
-    const label =
-        users.length === 1
-            ? `${users[0]}이(가) 입력 중...`
-            : `${users.length}명이 입력 중...`;
+    const label = users.length === 1 ? `${users[0]}님이 입력 중...` : `${users.length}명이 입력 중...`;
 
     return (
         <div className="px-4 py-1 flex items-center gap-2 text-xs text-text-tertiary">

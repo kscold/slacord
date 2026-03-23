@@ -9,9 +9,11 @@ interface Props {
     currentUserId: string;
     onReact: (messageId: string, emoji: string) => void;
     onDelete: (messageId: string) => void;
+    onOpenThread: (message: import('@/src/entities/message/types').Message) => void;
+    onTogglePin: (message: import('@/src/entities/message/types').Message) => Promise<unknown>;
 }
 
-export function MessageList({ currentUserId, onReact, onDelete }: Props) {
+export function MessageList({ currentUserId, onReact, onDelete, onOpenThread, onTogglePin }: Props) {
     const { messages, typingUsers, isLoading } = useChatStore();
     const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +43,8 @@ export function MessageList({ currentUserId, onReact, onDelete }: Props) {
                     currentUserId={currentUserId}
                     onReact={onReact}
                     onDelete={onDelete}
+                    onOpenThread={onOpenThread}
+                    onTogglePin={onTogglePin}
                 />
             ))}
             <TypingIndicator users={typingUsers} />
