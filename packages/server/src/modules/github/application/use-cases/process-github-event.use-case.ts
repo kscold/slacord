@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { GitHubEventEntity, GitHubEventType } from '../../domain/github-event.entity';
-import { MESSAGE_REPOSITORY } from '../../../message/domain/message.port';
-import type { IMessageRepository } from '../../../message/domain/message.port';
+import { GitHubEventEntity } from '../../domain/github-event.entity';
+import { MESSAGE_REPOSITORY } from '../../../message';
+import type { IMessageRepository } from '../../../message';
 
 /** GitHub Webhook 이벤트 처리 유스케이스 */
 @Injectable()
@@ -25,6 +25,7 @@ export class ProcessGitHubEventUseCase {
             teamId,
             channelId,
             authorId: 'github-bot',
+            authorName: 'GitHub',
             content: `${content}\n<!--github:${metadata}-->`,
             type: 'system',
             attachments: [],
