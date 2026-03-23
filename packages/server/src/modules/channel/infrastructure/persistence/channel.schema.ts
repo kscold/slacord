@@ -15,7 +15,7 @@ export class Channel {
     @Prop({ type: String, default: null })
     description: string | null;
 
-    @Prop({ required: true, enum: ['public', 'private'], default: 'public' })
+    @Prop({ required: true, enum: ['public', 'private', 'dm', 'group'], default: 'public' })
     type: string;
 
     @Prop({ required: true })
@@ -29,4 +29,7 @@ export class Channel {
 }
 
 export const ChannelSchema = SchemaFactory.createForClass(Channel);
-ChannelSchema.index({ teamId: 1, name: 1 }, { unique: true });
+ChannelSchema.index(
+    { teamId: 1, name: 1 },
+    { unique: true, partialFilterExpression: { type: { $in: ['public', 'private'] } } },
+);

@@ -20,6 +20,15 @@ export class ChannelRepository implements IChannelRepository {
         return docs.map((doc) => this.toEntity(doc));
     }
 
+    async findDirectChannel(teamId: string, memberIds: string[]): Promise<ChannelEntity | null> {
+        const doc = await this.channelModel.findOne({
+            teamId,
+            type: 'dm',
+            memberIds: { $all: memberIds, $size: memberIds.length },
+        }).lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
     async save(data: {
         teamId: string;
         name: string;

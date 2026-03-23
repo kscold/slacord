@@ -19,8 +19,8 @@ export class ChannelController {
 
     @Get()
     @ApiOperation({ summary: '팀의 채널 목록 조회' })
-    async getChannels(@Param('teamId') teamId: string) {
-        const channels = await this.getChannelsUseCase.execute(teamId);
+    async getChannels(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
+        const channels = await this.getChannelsUseCase.execute(teamId, user.userId);
         return { success: true, data: channels.map((c) => c.toPublic()) };
     }
 

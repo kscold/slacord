@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import type { ChannelType } from '../../../domain/channel.entity';
 
 export class CreateChannelDto {
@@ -13,8 +13,13 @@ export class CreateChannelDto {
     @IsString()
     description?: string;
 
-    @ApiPropertyOptional({ enum: ['public', 'private'], default: 'public' })
+    @ApiPropertyOptional({ enum: ['public', 'private', 'dm', 'group'], default: 'public' })
     @IsOptional()
-    @IsEnum(['public', 'private'])
+    @IsEnum(['public', 'private', 'dm', 'group'])
     type?: ChannelType;
+
+    @ApiPropertyOptional({ type: [String], example: ['67f9e7d4d1498b3ce286b77a'] })
+    @IsOptional()
+    @IsArray()
+    memberIds?: string[];
 }

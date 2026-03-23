@@ -1,4 +1,4 @@
-export type ChannelType = 'public' | 'private';
+export type ChannelType = 'public' | 'private' | 'dm' | 'group';
 
 /** 채팅 채널 도메인 엔티티 */
 export class ChannelEntity {
@@ -24,6 +24,7 @@ export class ChannelEntity {
             name: this.name,
             description: this.description,
             type: this.type,
+            memberIds: this.memberIds,
             memberCount: this.memberIds.length,
             createdAt: this.createdAt,
         };

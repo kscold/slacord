@@ -3,6 +3,7 @@ import { ChannelEntity, ChannelType } from './channel.entity';
 export interface IChannelRepository {
     findById(id: string): Promise<ChannelEntity | null>;
     findByTeam(teamId: string): Promise<ChannelEntity[]>;
+    findDirectChannel(teamId: string, memberIds: string[]): Promise<ChannelEntity | null>;
     save(data: {
         teamId: string;
         name: string;

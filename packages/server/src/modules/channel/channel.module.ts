@@ -6,9 +6,10 @@ import { CHANNEL_REPOSITORY } from './domain/channel.port';
 import { CreateChannelUseCase } from './application/use-cases/create-channel.use-case';
 import { GetChannelsUseCase } from './application/use-cases/get-channels.use-case';
 import { ChannelController } from './infrastructure/http/channel.controller';
+import { TeamModule } from '../team/team.module';
 
 @Module({
-    imports: [MongooseModule.forFeature([{ name: Channel.name, schema: ChannelSchema }])],
+    imports: [TeamModule, MongooseModule.forFeature([{ name: Channel.name, schema: ChannelSchema }])],
     controllers: [ChannelController],
     providers: [{ provide: CHANNEL_REPOSITORY, useClass: ChannelRepository }, CreateChannelUseCase, GetChannelsUseCase],
     exports: [CHANNEL_REPOSITORY],

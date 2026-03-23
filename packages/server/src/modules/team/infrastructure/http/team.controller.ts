@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { CreateTeamUseCase } from '../../application/use-cases/create-team.use-case';
 import { GetTeamsUseCase } from '../../application/use-cases/get-teams.use-case';
+import { GetTeamMembersUseCase } from '../../application/use-cases/get-team-members.use-case';
 import { JoinTeamUseCase } from '../../application/use-cases/join-team.use-case';
 import { UpdateGithubConfigUseCase } from '../../application/use-cases/update-github-config.use-case';
 import { CreateTeamDto } from './dto/create-team.dto';
@@ -18,6 +19,7 @@ export class TeamController {
     constructor(
         private readonly createTeamUseCase: CreateTeamUseCase,
         private readonly getTeamsUseCase: GetTeamsUseCase,
+        private readonly getTeamMembersUseCase: GetTeamMembersUseCase,
         private readonly joinTeamUseCase: JoinTeamUseCase,
         private readonly updateGithubConfigUseCase: UpdateGithubConfigUseCase,
     ) {}
@@ -28,6 +30,13 @@ export class TeamController {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const teams = await this.getTeamsUseCase.execute(user.userId);
         return { success: true, data: teams.map((t) => t.toPublic()) };
+    }
+
+    @Get(':teamId/member')
+    @ApiOperation({ summary: '팀 멤버 목록 조회' })
+    async getMembers(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
+        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
+        return { success: true, data: await this.getTeamMembersUseCase.execute(teamId, user.userId) };
     }
 
     @Post()
