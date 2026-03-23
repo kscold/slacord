@@ -42,11 +42,12 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
 
+    const host = process.env.HOST ?? '0.0.0.0';
     const port = process.env.PORT ?? 8082;
-    await app.listen(port);
+    await app.listen(port, host);
 
-    logger.log(`Server running on http://localhost:${port}`);
-    logger.log(`Swagger docs: http://localhost:${port}/api/docs`);
+    logger.log(`Server running on http://${host}:${port}`);
+    logger.log(`Swagger docs: http://${host}:${port}/api/docs`);
 }
 
 bootstrap().catch((err) => {

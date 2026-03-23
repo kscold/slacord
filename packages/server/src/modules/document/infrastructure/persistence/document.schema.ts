@@ -16,7 +16,7 @@ export class Doc {
     @Prop({ default: '' })
     content: string;
 
-    @Prop({ default: null })
+    @Prop({ type: String, default: null })
     parentId: string | null;
 
     @Prop({ required: true })
