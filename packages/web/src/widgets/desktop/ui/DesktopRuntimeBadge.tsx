@@ -17,6 +17,10 @@ export function DesktopRuntimeBadge() {
 
     useEffect(() => {
         if (!window.slacordDesktop?.isDesktop) return;
+        void window.slacordDesktop.getUpdateStatus().then((payload) => {
+            setStage(payload.stage);
+            setDetail(payload.detail);
+        });
         return window.slacordDesktop.onUpdateStatus((payload) => {
             setStage(payload.stage);
             setDetail(payload.detail);

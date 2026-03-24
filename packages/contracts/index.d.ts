@@ -11,10 +11,16 @@ export interface DesktopUpdateStatus {
     detail: string;
 }
 
+export interface DesktopUpdateCheckResult {
+    ok: boolean;
+    status: DesktopUpdateStatus;
+}
+
 export interface SlacordDesktopBridge {
     isDesktop: boolean;
     platform: string;
     notify: (title: string, body: string) => Promise<boolean>;
-    checkForUpdates: () => Promise<void>;
+    getUpdateStatus: () => Promise<DesktopUpdateStatus>;
+    checkForUpdates: () => Promise<DesktopUpdateCheckResult>;
     onUpdateStatus: (listener: (payload: DesktopUpdateStatus) => void) => () => void;
 }
