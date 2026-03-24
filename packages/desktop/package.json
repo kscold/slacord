@@ -1,6 +1,6 @@
 {
   "name": "@slacord/desktop",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Slacord 데스크톱 앱 (Electron + DMG)",
   "author": "kscold",
   "private": true,
