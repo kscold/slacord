@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { TEAM_REPOSITORY, type ITeamRepository } from '../../../team/domain/team.port';
 
 export interface GitHubRepoConfig {
     teamId: string;
@@ -7,24 +8,18 @@ export interface GitHubRepoConfig {
     webhookSecret: string;
 }
 
-/**
- * GitHub Webhook 설정 관리 서비스
- * - 팀 설정 API로 등록된 레포 설정을 인메모리로 캐시
- * - 실제 운영에서는 team.schema의 githubConfig와 동기화
- */
 @Injectable()
 export class GithubConfigService {
-    private readonly configs = new Map<string, GitHubRepoConfig>();
+    constructor(@Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository) {}
 
-    register(config: GitHubRepoConfig): void {
-        this.configs.set(config.repoFullName, config);
-    }
-
-    findByRepo(repoFullName: string): GitHubRepoConfig | null {
-        return this.configs.get(repoFullName) ?? null;
-    }
-
-    unregister(repoFullName: string): void {
-        this.configs.delete(repoFullName);
+    async findByRepo(repoFullName: string): Promise<GitHubRepoConfig | null> {
+        const team = await this.teamRepo.findByGithubRepo(repoFullName);
+        if (!team?.githubConfig) return null;
+        return {
+            teamId: team.id,
+            channelId: team.githubConfig.notifyChannelId,
+            repoFullName,
+            webhookSecret: team.githubConfig.webhookSecret,
+        };
     }
 }

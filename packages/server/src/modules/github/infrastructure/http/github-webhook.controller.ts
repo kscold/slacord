@@ -5,6 +5,7 @@ import { Request } from 'express';
 import { ProcessGitHubEventUseCase } from '../../application/use-cases/process-github-event.use-case';
 import { GitHubEventEntity } from '../../domain/github-event.entity';
 import { GithubConfigService } from '../service/github-config.service';
+import { MessageGateway } from '../../../message/infrastructure/websocket/message.gateway';
 
 /** GitHub Webhook 수신 컨트롤러 */
 @ApiTags('github')
@@ -13,6 +14,7 @@ export class GithubWebhookController {
     constructor(
         private readonly processEventUseCase: ProcessGitHubEventUseCase,
         private readonly githubConfigService: GithubConfigService,
+        private readonly messageGateway: MessageGateway,
     ) {}
 
     @Post()
@@ -41,7 +43,8 @@ export class GithubWebhookController {
         const parsed = GitHubEventEntity.fromWebhook(eventType, body);
         if (!parsed) return { success: true, message: 'Event ignored.' };
 
-        await this.processEventUseCase.execute(parsed, config.channelId, config.teamId);
+        const message = await this.processEventUseCase.execute(parsed, config.channelId, config.teamId);
+        this.messageGateway.emitNewMessage(config.channelId, message.toPublic());
         return { success: true };
     }
 }

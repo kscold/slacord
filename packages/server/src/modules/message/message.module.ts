@@ -34,6 +34,6 @@ import { StorageModule } from '../../shared/storage/storage.module';
         UploadMessageAttachmentUseCase,
         MessageGateway,
     ],
-    exports: [MESSAGE_REPOSITORY, SendMessageUseCase],
+    exports: [MESSAGE_REPOSITORY, SendMessageUseCase, MessageGateway],
 })
 export class MessageModule {}

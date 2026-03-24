@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { CreateTeamUseCase } from '../../application/use-cases/create-team.use-case';
+import { GetTeamUseCase } from '../../application/use-cases/get-team.use-case';
 import { GetTeamsUseCase } from '../../application/use-cases/get-teams.use-case';
 import { GetTeamMembersUseCase } from '../../application/use-cases/get-team-members.use-case';
 import { JoinTeamUseCase } from '../../application/use-cases/join-team.use-case';
@@ -18,6 +19,7 @@ import { UpdateGithubConfigDto } from './dto/update-github-config.dto';
 export class TeamController {
     constructor(
         private readonly createTeamUseCase: CreateTeamUseCase,
+        private readonly getTeamUseCase: GetTeamUseCase,
         private readonly getTeamsUseCase: GetTeamsUseCase,
         private readonly getTeamMembersUseCase: GetTeamMembersUseCase,
         private readonly joinTeamUseCase: JoinTeamUseCase,
@@ -30,6 +32,14 @@ export class TeamController {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const teams = await this.getTeamsUseCase.execute(user.userId);
         return { success: true, data: teams.map((t) => t.toPublic()) };
+    }
+
+    @Get(':teamId')
+    @ApiOperation({ summary: '팀 상세 조회' })
+    async getTeam(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
+        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
+        const team = await this.getTeamUseCase.execute(teamId, user.userId);
+        return { success: true, data: team.toPublic() };
     }
 
     @Get(':teamId/member')

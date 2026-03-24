@@ -10,7 +10,7 @@ export class ProcessGitHubEventUseCase {
 
     constructor(@Inject(MESSAGE_REPOSITORY) private readonly messageRepo: IMessageRepository) {}
 
-    async execute(event: GitHubEventEntity, channelId: string, teamId: string): Promise<void> {
+    async execute(event: GitHubEventEntity, channelId: string, teamId: string) {
         const content = event.toCardContent();
         const metadata = JSON.stringify({
             github: true,
@@ -21,7 +21,7 @@ export class ProcessGitHubEventUseCase {
         });
 
         /** system 메시지로 채널에 저장 (content에 JSON 메타데이터 포함) */
-        await this.messageRepo.save({
+        const message = await this.messageRepo.save({
             teamId,
             channelId,
             authorId: 'github-bot',
@@ -34,5 +34,6 @@ export class ProcessGitHubEventUseCase {
         });
 
         this.logger.log(`[processGitHubEvent] Saved GitHub event: ${event.eventType} in channel=${channelId}`);
+        return message;
     }
 }

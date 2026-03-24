@@ -3,6 +3,7 @@ import { TeamEntity, TeamMember, GitHubConfig } from './team.entity';
 export interface ITeamRepository {
     findById(id: string): Promise<TeamEntity | null>;
     findBySlug(slug: string): Promise<TeamEntity | null>;
+    findByGithubRepo(repoFullName: string): Promise<TeamEntity | null>;
     findByMember(userId: string): Promise<TeamEntity[]>;
     save(data: {
         name: string;

@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { ITeamRepository } from '../../domain/team.port';
 import { TeamEntity, TeamMember, type GitHubConfig } from '../../domain/team.entity';
 import { Team, TeamDocument } from './team.schema';
+import { normalizeGitHubRepo } from '../../../../shared/lib/normalize-github-repo';
 
 /** Team Repository Adapter - MongoDB 구현체 */
 @Injectable()
@@ -17,6 +18,12 @@ export class TeamRepository implements ITeamRepository {
 
     async findBySlug(slug: string): Promise<TeamEntity | null> {
         const doc = await this.teamModel.findOne({ slug }).lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
+    async findByGithubRepo(repoFullName: string): Promise<TeamEntity | null> {
+        const docs = await this.teamModel.find({ githubConfig: { $ne: null } }).lean();
+        const doc = docs.find((item) => normalizeGitHubRepo(item.githubConfig?.repoUrl ?? '') === repoFullName);
         return doc ? this.toEntity(doc) : null;
     }
 

@@ -4,6 +4,7 @@ import { Team, TeamSchema } from './infrastructure/persistence/team.schema';
 import { TeamRepository } from './infrastructure/persistence/team.repository';
 import { TEAM_REPOSITORY } from './domain/team.port';
 import { CreateTeamUseCase } from './application/use-cases/create-team.use-case';
+import { GetTeamUseCase } from './application/use-cases/get-team.use-case';
 import { GetTeamsUseCase } from './application/use-cases/get-teams.use-case';
 import { GetTeamMembersUseCase } from './application/use-cases/get-team-members.use-case';
 import { JoinTeamUseCase } from './application/use-cases/join-team.use-case';
@@ -17,6 +18,7 @@ import { AuthModule } from '../auth/auth.module';
     providers: [
         { provide: TEAM_REPOSITORY, useClass: TeamRepository },
         CreateTeamUseCase,
+        GetTeamUseCase,
         GetTeamsUseCase,
         GetTeamMembersUseCase,
         JoinTeamUseCase,
