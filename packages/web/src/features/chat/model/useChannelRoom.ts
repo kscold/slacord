@@ -9,6 +9,7 @@ import type { TeamMemberSummary } from '@/src/entities/team/types';
 import type { User } from '@/src/entities/user/types';
 import { useChatStore } from './chat.store';
 import { getChatSocket } from './socket';
+import { notifyIncomingMessage } from './notifyIncomingMessage';
 import { uploadChannelFiles } from './uploadChannelFiles';
 
 export function useChannelRoom(teamId: string, channelId: string) {
@@ -52,8 +53,12 @@ export function useChannelRoom(teamId: string, channelId: string) {
             if (typingTimer.current) clearTimeout(typingTimer.current);
             typingTimer.current = setTimeout(() => setTypingUsers([]), 2000);
         };
+        const handleNewMessage = (message: Message) => {
+            addMessage(message);
+            void notifyIncomingMessage(message, channelLabel, currentUserId.current);
+        };
         socket.emit('join_channel', { channelId });
-        socket.on('new_message', (message: Message) => addMessage(message));
+        socket.on('new_message', handleNewMessage);
         socket.on('reaction_updated', (message: Message) => updateMessage(message.id, message));
         socket.on('pinned_message_updated', (message: Message) => updateMessage(message.id, message));
         socket.on('message_deleted', ({ messageId }: { messageId: string }) => removeMessage(messageId));
@@ -61,13 +66,13 @@ export function useChannelRoom(teamId: string, channelId: string) {
         return () => {
             active = false;
             socket.emit('leave_channel', { channelId });
-            socket.off('new_message');
+            socket.off('new_message', handleNewMessage);
             socket.off('reaction_updated');
             socket.off('pinned_message_updated');
             socket.off('message_deleted');
             socket.off('user_typing', handleTyping);
         };
-    }, [addMessage, channelId, removeMessage, reset, setLoading, setMessages, setTypingUsers, teamId, updateMessage]);
+    }, [addMessage, channelId, channelLabel, removeMessage, reset, setLoading, setMessages, setTypingUsers, teamId, updateMessage]);
 
     return {
         channel,

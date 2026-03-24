@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
 import { siteConfig } from '@/src/shared/config/site';
+import { DesktopRuntimeBadge } from '@/src/widgets/desktop/ui/DesktopRuntimeBadge';
 import './globals.css';
 
 const geist = Geist({
@@ -21,7 +22,10 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="ko" className={geist.className}>
-            <body>{children}</body>
+            <body>
+                <DesktopRuntimeBadge />
+                {children}
+            </body>
         </html>
     );
 }
