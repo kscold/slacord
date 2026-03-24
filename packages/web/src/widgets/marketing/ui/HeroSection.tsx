@@ -22,12 +22,11 @@ export function HeroSection() {
             </video>
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#120f0b]/60 to-[#120f0b]" />
 
-            <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
-                {/* Hero content - centered */}
+            <div className="relative mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:py-28">
                 <div className="mx-auto max-w-3xl text-center">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-1.5">
                         <Image
-                            src="/assets/slacord-logo.svg"
+                            src="/logo.svg"
                             alt=""
                             width={20}
                             height={20}
@@ -35,7 +34,7 @@ export function HeroSection() {
                         />
                         <span className="text-xs font-medium text-[#e2c29a]">{siteConfig.badge}</span>
                     </div>
-                    <h1 className="mt-6 text-[clamp(2.4rem,7vw,4.5rem)] font-bold leading-[1.05] tracking-[-0.04em] text-white text-balance sm:mt-8">
+                    <h1 className="mt-6 text-[clamp(2.3rem,8vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.05em] text-white text-balance sm:mt-8">
                         {siteConfig.headline}
                     </h1>
                     <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#d7c5b3] sm:mt-6 sm:text-lg sm:leading-8">
@@ -57,8 +56,7 @@ export function HeroSection() {
                     </div>
                 </div>
 
-                {/* Metrics cards */}
-                <div className="mx-auto mt-14 grid max-w-3xl gap-3 sm:mt-20 sm:grid-cols-3 sm:gap-4">
+                <div className="mx-auto mt-12 grid max-w-3xl gap-3 sm:mt-16 sm:grid-cols-3 sm:gap-4">
                     {metrics.map((item) => (
                         <div
                             key={item.label}
