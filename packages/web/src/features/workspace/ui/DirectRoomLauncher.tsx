@@ -43,7 +43,7 @@ export function DirectRoomLauncher({ teamId, members }: Props) {
                 + DM / 소그룹 열기
             </button>
             {open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-md rounded-2xl border border-border-primary bg-bg-secondary p-5">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-white">새 DM / 소그룹</h3>

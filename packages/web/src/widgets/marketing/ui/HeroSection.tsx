@@ -3,9 +3,9 @@ import Image from 'next/image';
 import { siteConfig } from '@/src/shared/config/site';
 
 const metrics = [
-    { icon: '💬', label: 'Chat', value: '채팅, 이슈, 문서 한 곳에' },
-    { icon: '📋', label: 'Flow', value: '할 일부터 완료까지 한눈에' },
-    { icon: '⚡', label: 'Realtime', value: '실시간으로 함께 작업해요' },
+    { icon: '💬', label: 'Chat', value: '대화부터 문서까지 한 곳에' },
+    { icon: '📋', label: 'Flow', value: '할 일 흐름이 한눈에' },
+    { icon: '⚡', label: 'Realtime', value: '실시간으로 같이 작업' },
 ];
 
 export function HeroSection() {
@@ -34,10 +34,10 @@ export function HeroSection() {
                         />
                         <span className="text-xs font-medium text-[#e2c29a]">{siteConfig.badge}</span>
                     </div>
-                    <h1 className="mt-6 text-[clamp(2.3rem,8vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.05em] text-white text-balance sm:mt-8">
+                    <h1 className="mt-6 whitespace-pre-line text-[clamp(2.3rem,8vw,4.5rem)] font-bold leading-[1.1] tracking-[-0.04em] text-white sm:mt-8">
                         {siteConfig.headline}
                     </h1>
-                    <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#d7c5b3] sm:mt-6 sm:text-lg sm:leading-8">
+                    <p className="mx-auto mt-5 max-w-lg whitespace-pre-line text-base leading-7 text-[#d7c5b3] sm:mt-6 sm:text-lg sm:leading-8">
                         {siteConfig.description}
                     </p>
                     <div className="mt-8 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
@@ -73,8 +73,8 @@ export function HeroSection() {
                     ))}
                 </div>
 
-                <p className="mx-auto mt-8 max-w-lg text-center text-sm leading-6 text-[#9a8d7f]">
-                    대화하다 생긴 할 일은 이슈로, 결정된 내용은 문서로. 자연스럽게 이어져요.
+                <p className="mx-auto mt-8 max-w-md text-center text-sm leading-6 text-[#9a8d7f]">
+                    대화 중 생긴 할 일은 바로 이슈로, 결정은 문서로 남겨요.
                 </p>
             </div>
         </section>

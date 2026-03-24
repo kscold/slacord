@@ -28,7 +28,7 @@ export function AuthShell({ title, description, alternateHref, alternateLabel, a
                                     <p className="text-xs tracking-[0.16em] text-[#cbb79f] sm:text-sm">{siteConfig.footerLabel}</p>
                                 </div>
                             </Link>
-                            <h1 className="max-w-2xl text-[clamp(2.1rem,7vw,4.6rem)] font-bold leading-[0.96] tracking-[-0.05em] text-white text-balance">
+                            <h1 className="max-w-2xl whitespace-pre-line text-[clamp(2.1rem,7vw,4.6rem)] font-bold leading-[1.1] tracking-[-0.04em] text-white">
                                 {siteConfig.headline}
                             </h1>
                             <p className="max-w-xl text-sm leading-7 text-[#d8c8b7] sm:text-base">{siteConfig.authDescription}</p>
