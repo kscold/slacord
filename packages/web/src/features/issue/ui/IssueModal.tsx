@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Issue, IssuePriority, IssueStatus } from '@/src/entities/issue/types';
+import { PRIORITIES, PRIORITY_LABELS, STATUSES, STATUS_LABELS } from '../lib/issue.constants';
 
 interface CreateProps {
     mode: 'create';
@@ -18,11 +19,6 @@ interface EditProps {
 }
 
 type Props = CreateProps | EditProps;
-
-const PRIORITIES: IssuePriority[] = ['low', 'medium', 'high', 'urgent'];
-const PRIORITY_LABELS: Record<IssuePriority, string> = { low: '낮음', medium: '보통', high: '높음', urgent: '긴급' };
-const STATUSES: IssueStatus[] = ['todo', 'in_progress', 'in_review', 'done'];
-const STATUS_LABELS: Record<IssueStatus, string> = { todo: '할 일', in_progress: '진행 중', in_review: '리뷰 중', done: '완료' };
 
 export function IssueModal(props: Props) {
     const isEdit = props.mode === 'edit';
