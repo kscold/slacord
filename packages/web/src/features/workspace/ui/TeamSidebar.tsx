@@ -1,15 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { authApi, teamApi } from '@/lib/api-client';
 import { resolveChannelLabel } from '@/src/entities/channel/lib/resolveChannelLabel';
 import type { Channel } from '@/src/entities/channel/types';
 import type { TeamMemberSummary } from '@/src/entities/team/types';
+import { useDesktopMac } from '../model/useDesktopMac';
 import { DirectRoomLauncher } from './DirectRoomLauncher';
 import { SidebarNavLink } from './SidebarNavLink';
 import { SidebarSection } from './SidebarSection';
+import { SidebarUserBar } from './SidebarUserBar';
+import { SidebarWorkspaceHeader } from './SidebarWorkspaceHeader';
 
 interface Props {
     teamId: string;
@@ -20,6 +22,7 @@ interface Props {
 export function TeamSidebar({ teamId, teamName, channels }: Props) {
     const pathname = usePathname();
     const router = useRouter();
+    const isDesktopMac = useDesktopMac();
     const [currentUserId, setCurrentUserId] = useState('');
     const [currentUsername, setCurrentUsername] = useState('');
     const [members, setMembers] = useState<TeamMemberSummary[]>([]);
@@ -40,12 +43,7 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
 
     return (
         <aside className="w-60 bg-bg-secondary border-r border-border-primary flex flex-col h-screen sticky top-0">
-            {/* 팀 이름 */}
-            <div className="px-4 py-4 border-b border-border-primary">
-                <Link href={`/${teamId}`} className="font-bold text-white text-lg truncate block">
-                    {teamName}
-                </Link>
-            </div>
+            <SidebarWorkspaceHeader teamId={teamId} teamName={teamName} isDesktopMac={isDesktopMac} />
 
             <nav className="flex-1 overflow-y-auto p-3 space-y-4">
                 <SidebarSection title="채널">
@@ -87,22 +85,13 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
                     <SidebarNavLink href={`/${teamId}/settings`} label="워크스페이스 설정" active={isActive(`/${teamId}/settings`)} icon={<svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>} />
                 </SidebarSection>
             </nav>
-
-            {/* 유저 정보 + 로그아웃 */}
-            <div className="border-t border-border-primary px-4 py-3">
-                <div className="flex items-center justify-between">
-                    <span className="truncate text-sm font-medium text-white">{currentUsername || '...'}</span>
-                    <button
-                        onClick={async () => {
-                            await authApi.logout();
-                            router.push('/auth/login');
-                        }}
-                        className="rounded-lg px-2 py-1 text-xs text-text-tertiary transition-colors hover:bg-white/8 hover:text-white"
-                    >
-                        로그아웃
-                    </button>
-                </div>
-            </div>
+            <SidebarUserBar
+                username={currentUsername}
+                onLogout={async () => {
+                    await authApi.logout();
+                    router.push('/auth/login');
+                }}
+            />
         </aside>
     );
 }

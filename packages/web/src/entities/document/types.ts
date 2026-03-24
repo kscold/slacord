@@ -7,6 +7,8 @@ export interface DocumentNode {
     externalSource?: string | null;
     externalId?: string | null;
     externalUrl?: string | null;
+    visibility?: 'team' | 'restricted';
+    editPolicy?: 'owner_admin' | 'all' | 'restricted';
     createdBy: string;
     updatedBy: string;
     createdAt: string;
@@ -15,4 +17,8 @@ export interface DocumentNode {
 
 export interface DocumentFull extends DocumentNode {
     content: string;
+    allowedViewerIds?: string[];
+    allowedEditorIds?: string[];
+    canEdit?: boolean;
+    canDelete?: boolean;
 }

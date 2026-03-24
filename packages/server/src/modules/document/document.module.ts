@@ -10,9 +10,10 @@ import { DeleteDocumentUseCase } from './application/use-cases/delete-document.u
 import { ImportConfluenceSpaceUseCase } from './application/use-cases/import-confluence-space.use-case';
 import { ConfluenceApiClient } from './infrastructure/external/confluence-api.client';
 import { DocumentController } from './infrastructure/http/document.controller';
+import { TeamModule } from '../team/team.module';
 
 @Module({
-    imports: [MongooseModule.forFeature([{ name: Doc.name, schema: DocumentSchema }])],
+    imports: [MongooseModule.forFeature([{ name: Doc.name, schema: DocumentSchema }]), TeamModule],
     controllers: [DocumentController],
     providers: [
         { provide: DOCUMENT_REPOSITORY, useClass: DocumentRepository },

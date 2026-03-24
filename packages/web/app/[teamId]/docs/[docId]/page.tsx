@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
 import { documentApi } from '@/lib/api-client';
+import { useDocumentDetail } from '@/src/features/document/model/useDocumentDetail';
+import { DocumentChildrenPanel } from '@/src/features/document/ui/DocumentChildrenPanel';
+import { DocumentContent } from '@/src/features/document/ui/DocumentContent';
 import type { DocumentFull } from '@/src/entities/document/types';
 
 interface Props {
@@ -11,29 +13,29 @@ interface Props {
 
 export default function DocDetailPage({ params }: Props) {
     const { teamId, docId } = use(params);
-    const [doc, setDoc] = useState<DocumentFull | null>(null);
+    const { doc, setDoc, children, loading } = useDocumentDetail(teamId, docId);
     const [editing, setEditing] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
 
     useEffect(() => {
-        documentApi.getDocument(teamId, docId).then((res) => {
-            if (res.success && res.data) {
-                const d = res.data as DocumentFull;
-                setDoc(d); setTitle(d.title); setContent(d.content);
-            }
-        });
-    }, [teamId, docId]);
+        if (!doc) return;
+        setTitle(doc.title);
+        setContent(doc.content);
+    }, [doc]);
 
     const handleSave = async () => {
         const res = await documentApi.updateDocument(teamId, docId, { title, content });
         if (res.success && res.data) {
-            setDoc(res.data as DocumentFull);
+            const nextDoc = res.data as DocumentFull;
+            setDoc(nextDoc);
+            setTitle(nextDoc.title);
+            setContent(nextDoc.content);
             setEditing(false);
         }
     };
 
-    if (!doc) {
+    if (loading || !doc) {
         return <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-2 border-slack-green border-t-transparent" /></div>;
     }
 
@@ -55,12 +57,20 @@ export default function DocDetailPage({ params }: Props) {
                             <button onClick={handleSave} className="px-3 py-1.5 rounded-lg bg-slack-green text-white text-sm font-medium hover:bg-slack-green/90 transition-colors">저장</button>
                         </>
                     ) : (
-                        <button onClick={() => setEditing(true)} className="px-3 py-1.5 rounded-lg border border-border-primary text-text-secondary text-sm hover:text-white hover:bg-bg-hover transition-colors">편집</button>
+                        <>
+                            {doc.canEdit !== false && (
+                                <button onClick={() => setEditing(true)} className="px-3 py-1.5 rounded-lg border border-border-primary text-text-secondary text-sm hover:text-white hover:bg-bg-hover transition-colors">편집</button>
+                            )}
+                            {doc.visibility === 'restricted' && (
+                                <span className="px-2 py-1 rounded-full bg-warning/20 text-warning text-xs">제한 문서</span>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
 
             <p className="text-xs text-text-tertiary mb-6">마지막 수정: {new Date(doc.updatedAt).toLocaleString('ko-KR')}</p>
+            <DocumentChildrenPanel teamId={teamId} children={children} />
 
             {editing ? (
                 <textarea
@@ -71,15 +81,7 @@ export default function DocDetailPage({ params }: Props) {
                 />
             ) : (
                 <div className="bg-bg-secondary rounded-xl border border-border-primary p-6 min-h-48">
-                    {doc.content ? (
-                        doc.contentFormat === 'html' ? (
-                            <div className="confluence-render text-sm text-text-secondary" dangerouslySetInnerHTML={{ __html: doc.content }} />
-                        ) : (
-                            <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans">{doc.content}</pre>
-                        )
-                    ) : (
-                        <p className="text-text-tertiary text-sm">내용이 없습니다. 편집 버튼을 눌러 내용을 추가하세요.</p>
-                    )}
+                    <DocumentContent doc={doc} />
                 </div>
             )}
         </div>

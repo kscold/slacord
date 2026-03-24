@@ -24,7 +24,7 @@ export interface IDocumentRepository {
         externalId: string;
         externalUrl: string | null;
     }): Promise<DocumentEntity>;
-    update(id: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html'; updatedBy: string }): Promise<DocumentEntity | null>;
+    update(id: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html'; updatedBy: string; visibility?: 'team' | 'restricted'; editPolicy?: 'owner_admin' | 'all' | 'restricted'; allowedViewerIds?: string[]; allowedEditorIds?: string[] }): Promise<DocumentEntity | null>;
     deleteById(id: string): Promise<boolean>;
 }
 

@@ -1,3 +1,6 @@
+export type DocVisibility = 'team' | 'restricted';
+export type DocEditPolicy = 'owner_admin' | 'all' | 'restricted';
+
 /** 문서/위키 도메인 엔티티 (Markdown, 트리 구조 지원) */
 export class DocumentEntity {
     constructor(
@@ -12,9 +15,31 @@ export class DocumentEntity {
         public readonly externalSource: string | null,
         public readonly externalId: string | null,
         public readonly externalUrl: string | null,
+        public readonly visibility: DocVisibility,
+        public readonly editPolicy: DocEditPolicy,
+        public readonly allowedViewerIds: string[],
+        public readonly allowedEditorIds: string[],
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
     ) {}
+
+    canView(userId: string, role: string): boolean {
+        if (role === 'owner' || role === 'admin') return true;
+        if (this.visibility === 'team') return true;
+        return this.allowedViewerIds.includes(userId) || this.createdBy === userId;
+    }
+
+    canEdit(userId: string, role: string): boolean {
+        if (role === 'owner') return true;
+        if (this.editPolicy === 'all') return true;
+        if (this.editPolicy === 'owner_admin' && (role === 'admin' || this.createdBy === userId)) return true;
+        if (this.editPolicy === 'restricted') return this.allowedEditorIds.includes(userId) || this.createdBy === userId;
+        return false;
+    }
+
+    canDelete(userId: string, role: string): boolean {
+        return role === 'owner' || role === 'admin' || this.createdBy === userId;
+    }
 
     toPublic() {
         return {
@@ -29,6 +54,10 @@ export class DocumentEntity {
             externalSource: this.externalSource,
             externalId: this.externalId,
             externalUrl: this.externalUrl,
+            visibility: this.visibility,
+            editPolicy: this.editPolicy,
+            allowedViewerIds: this.allowedViewerIds,
+            allowedEditorIds: this.allowedEditorIds,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
@@ -44,9 +73,8 @@ export class DocumentEntity {
             parentId: this.parentId,
             createdBy: this.createdBy,
             updatedBy: this.updatedBy,
-            externalSource: this.externalSource,
-            externalId: this.externalId,
-            externalUrl: this.externalUrl,
+            visibility: this.visibility,
+            editPolicy: this.editPolicy,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };

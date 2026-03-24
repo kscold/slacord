@@ -23,6 +23,10 @@ export class DocumentRepository implements IDocumentRepository {
             doc.externalSource ?? null,
             doc.externalId ?? null,
             doc.externalUrl ?? null,
+            (doc as any).visibility ?? 'team',
+            (doc as any).editPolicy ?? 'all',
+            (doc as any).allowedViewerIds ?? [],
+            (doc as any).allowedEditorIds ?? [],
             (doc as any).createdAt,
             (doc as any).updatedAt,
         );
@@ -85,7 +89,7 @@ export class DocumentRepository implements IDocumentRepository {
         return this.toEntity(doc as DocumentDocument);
     }
 
-    async update(id: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html'; updatedBy: string }): Promise<DocumentEntity | null> {
+    async update(id: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html'; updatedBy: string; visibility?: 'team' | 'restricted'; editPolicy?: 'owner_admin' | 'all' | 'restricted'; allowedViewerIds?: string[]; allowedEditorIds?: string[] }): Promise<DocumentEntity | null> {
         const doc = await this.model.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
         return doc ? this.toEntity(doc as DocumentDocument) : null;
     }

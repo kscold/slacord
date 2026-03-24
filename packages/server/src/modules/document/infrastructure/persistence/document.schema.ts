@@ -36,6 +36,22 @@ export class Doc {
 
     @Prop({ type: String, default: null })
     externalUrl: string | null;
+
+    /** 열람 권한: team(팀 전원) | restricted(지정된 멤버만) */
+    @Prop({ type: String, enum: ['team', 'restricted'], default: 'team' })
+    visibility: 'team' | 'restricted';
+
+    /** 편집 권한: owner_admin(소유자+관리자) | all(팀 전원) | restricted(지정된 멤버만) */
+    @Prop({ type: String, enum: ['owner_admin', 'all', 'restricted'], default: 'all' })
+    editPolicy: 'owner_admin' | 'all' | 'restricted';
+
+    /** visibility가 restricted일 때 열람 가능한 멤버 ID */
+    @Prop({ type: [String], default: [] })
+    allowedViewerIds: string[];
+
+    /** editPolicy가 restricted일 때 편집 가능한 멤버 ID */
+    @Prop({ type: [String], default: [] })
+    allowedEditorIds: string[];
 }
 
 export const DocumentSchema = SchemaFactory.createForClass(Doc);

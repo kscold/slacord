@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsArray, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class UpdateDocumentDto {
     @ApiPropertyOptional({ example: '온보딩 가이드 v2' })
@@ -17,4 +17,24 @@ export class UpdateDocumentDto {
     @IsOptional()
     @IsString()
     contentFormat?: 'plain' | 'html';
+
+    @ApiPropertyOptional({ enum: ['team', 'restricted'] })
+    @IsOptional()
+    @IsIn(['team', 'restricted'])
+    visibility?: 'team' | 'restricted';
+
+    @ApiPropertyOptional({ enum: ['owner_admin', 'all', 'restricted'] })
+    @IsOptional()
+    @IsIn(['owner_admin', 'all', 'restricted'])
+    editPolicy?: 'owner_admin' | 'all' | 'restricted';
+
+    @ApiPropertyOptional({ type: [String] })
+    @IsOptional()
+    @IsArray()
+    allowedViewerIds?: string[];
+
+    @ApiPropertyOptional({ type: [String] })
+    @IsOptional()
+    @IsArray()
+    allowedEditorIds?: string[];
 }
