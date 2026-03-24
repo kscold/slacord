@@ -1,0 +1,100 @@
+{
+  "name": "@slacord/desktop",
+  "version": "1.0.0",
+  "description": "Slacord 데스크톱 앱 (Electron + DMG)",
+  "author": "kscold",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "yarn shell",
+    "shell": "concurrently -k \"yarn watch\" \"wait-on tcp:3002 file:dist/main.js && cross-env SLACORD_DESKTOP_START_URL=http://localhost:3002/auth/login electron .\"",
+    "watch": "tsup --config tsup.config.ts --watch",
+    "build": "tsup --config tsup.config.ts",
+    "dist:dir": "yarn build && electron-builder --dir --publish never",
+    "dist:dmg": "yarn build && electron-builder --mac dmg zip --publish never",
+    "dist:win": "yarn build && electron-builder --win nsis --publish never",
+    "release:mac": "yarn build && electron-builder --mac dmg zip --publish always",
+    "release:win": "yarn build && electron-builder --win nsis --publish always",
+    "clean": "rm -rf dist release"
+  },
+  "dependencies": {
+    "@slacord/contracts": "1.0.0",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "cross-env": "^10.1.0",
+    "electron": "39.2.3",
+    "electron-builder": "^26.0.12",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.kscold.slacord",
+    "productName": "Slacord",
+    "asar": true,
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "extraResources": [
+      {
+        "from": "build/icon.png",
+        "to": "assets/icon.png"
+      }
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "electronVersion": "39.2.3",
+    "electronUpdaterCompatibility": ">=2.16",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "kscold",
+        "repo": "slacord"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "icon": "build/icon.icns",
+      "writeUpdateInfo": true
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always"
+    }
+  }
+}

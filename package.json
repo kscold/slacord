@@ -9,14 +9,22 @@
   "scripts": {
     "dev:server": "yarn workspace @slacord/server start:dev",
     "dev:web": "yarn workspace @slacord/web dev",
+    "dev:desktop": "concurrently -k \"yarn workspace @slacord/web dev\" \"yarn workspace @slacord/desktop dev\"",
+    "version:all": "node scripts/set-monorepo-version.mjs",
     "build:server": "yarn workspace @slacord/server build",
     "build:web": "yarn workspace @slacord/web build",
+    "build:desktop": "yarn workspace @slacord/desktop build",
+    "dist:desktop": "yarn workspace @slacord/desktop dist:dmg",
+    "dist:desktop:win": "yarn workspace @slacord/desktop dist:win",
+    "release:desktop:mac": "yarn workspace @slacord/desktop release:mac",
+    "release:desktop:win": "yarn workspace @slacord/desktop release:win",
     "start:server": "yarn workspace @slacord/server start:prod",
     "start:web": "yarn workspace @slacord/web start",
     "lint": "yarn workspaces run lint",
     "clean": "yarn workspaces run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "prettier": "^3.4.2"
   },
   "engines": {
