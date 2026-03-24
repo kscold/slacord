@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { use } from 'react';
-import { teamApi } from '@/lib/api-client';
 import { publicAppUrl } from '@/lib/runtime-config';
+import { useGitHubSettings } from '@/src/features/team/model/useGitHubSettings';
+import { GitHubSettingsForm } from '@/src/features/team/ui/GitHubSettingsForm';
+import { GitHubWebhookGuide } from '@/src/features/team/ui/GitHubWebhookGuide';
 
 interface Props {
     params: Promise<{ teamId: string }>;
@@ -11,70 +12,33 @@ interface Props {
 
 export default function SettingsPage({ params }: Props) {
     const { teamId } = use(params);
-    const [repoUrl, setRepoUrl] = useState('');
-    const [webhookSecret, setWebhookSecret] = useState('');
-    const [notifyChannelId, setNotifyChannelId] = useState('');
-    const [saved, setSaved] = useState(false);
-    const [error, setError] = useState('');
-
-    const generateSecret = () => {
-        const arr = new Uint8Array(24);
-        crypto.getRandomValues(arr);
-        setWebhookSecret(Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join(''));
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        try {
-            const res = await teamApi.updateGithubConfig(teamId, { repoUrl, webhookSecret, notifyChannelId });
-            if (res.success) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
-            else setError('저장 실패');
-        } catch (err: any) {
-            setError(err.message ?? '저장 실패');
-        }
-    };
-
+    const settings = useGitHubSettings(teamId);
     const webhookUrl = `${publicAppUrl()}/api/github/webhook`;
+    const channelName = settings.selectedChannel?.name ?? null;
 
     return (
-        <div className="max-w-2xl mx-auto p-6">
-            <h2 className="text-xl font-bold text-white mb-6">팀 설정</h2>
-
-            <div className="bg-bg-secondary rounded-xl border border-border-primary p-6">
-                <h3 className="text-base font-semibold text-white mb-1">GitHub Webhook 연동</h3>
-                <p className="text-sm text-text-secondary mb-5">PR, CI 상태를 채팅 채널에 자동으로 알려드립니다.</p>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs text-text-tertiary mb-1">레포지토리 URL</label>
-                        <input value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} placeholder="https://github.com/org/repo" required className="w-full bg-bg-primary border border-border-primary rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-slack-green/50" />
-                    </div>
-
-                    <div>
-                        <label className="block text-xs text-text-tertiary mb-1">Webhook Secret</label>
-                        <div className="flex gap-2">
-                            <input value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} placeholder="최소 8자" required className="flex-1 bg-bg-primary border border-border-primary rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-slack-green/50 font-mono" />
-                            <button type="button" onClick={generateSecret} className="px-3 py-2 rounded-lg border border-border-primary text-text-secondary text-sm hover:text-white hover:bg-bg-hover transition-colors shrink-0">자동 생성</button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs text-text-tertiary mb-1">알림받을 채널 ID</label>
-                        <input value={notifyChannelId} onChange={(e) => setNotifyChannelId(e.target.value)} placeholder="채널 ID (MongoDB ObjectId)" required className="w-full bg-bg-primary border border-border-primary rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-slack-green/50" />
-                    </div>
-
-                    {error && <p className="text-sm text-red-400">{error}</p>}
-                    {saved && <p className="text-sm text-slack-green">저장되었습니다!</p>}
-
-                    <button type="submit" className="w-full py-2.5 rounded-lg bg-slack-green text-white font-medium hover:bg-slack-green/90 transition-colors">저장</button>
-                </form>
-
-                <div className="mt-6 p-4 bg-bg-primary rounded-lg border border-border-primary">
-                    <p className="text-xs text-text-tertiary mb-1">GitHub에 등록할 Webhook URL</p>
-                    <code className="text-sm text-slack-green break-all">{webhookUrl}</code>
-                </div>
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+            <div className="max-w-2xl">
+                <p className="text-xs uppercase tracking-[0.24em] text-brand-200">Team Settings</p>
+                <h1 className="mt-3 text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">GitHub 연동을 바로 운영 가능한 상태로 맞춤</h1>
+                <p className="mt-3 text-sm leading-7 text-text-secondary sm:text-base">설정 저장 후 GitHub webhook만 등록하면 PR, 리뷰, CI 이벤트가 채널 카드로 바로 흘러옴.</p>
             </div>
+            {settings.loading ? <div className="mt-8 rounded-[28px] border border-border-primary bg-bg-secondary p-6 text-sm text-text-secondary">설정과 채널 목록 불러오는 중...</div> : null}
+            {!settings.loading ? (
+                <div className="mt-8 grid gap-5 lg:grid-cols-[0.92fr,1.08fr]">
+                    <GitHubWebhookGuide channelName={channelName} repoUrl={settings.form.repoUrl} webhookUrl={webhookUrl} />
+                    <GitHubSettingsForm
+                        channels={settings.channels}
+                        error={settings.error}
+                        form={settings.form}
+                        onGenerateSecret={settings.generateSecret}
+                        onSave={settings.save}
+                        onUpdateField={settings.updateField}
+                        saved={settings.saved}
+                        saving={settings.saving}
+                    />
+                </div>
+            ) : null}
         </div>
     );
 }
