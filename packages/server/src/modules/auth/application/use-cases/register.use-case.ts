@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import type { IUserRepository } from '../../domain/auth.port';
 import { USER_REPOSITORY } from '../../domain/auth.port';
 import { UserEntity } from '../../domain/user.entity';
+import { DiscordNotifyService } from '../../../discord/discord-notify.service';
 
 export interface RegisterInput {
     email: string;
@@ -13,7 +14,10 @@ export interface RegisterInput {
 /** 회원가입 유스케이스 */
 @Injectable()
 export class RegisterUseCase {
-    constructor(@Inject(USER_REPOSITORY) private readonly userRepo: IUserRepository) {}
+    constructor(
+        @Inject(USER_REPOSITORY) private readonly userRepo: IUserRepository,
+        private readonly discord: DiscordNotifyService,
+    ) {}
 
     async execute(input: RegisterInput): Promise<UserEntity> {
         const exists = await this.userRepo.existsByEmail(input.email);
@@ -23,11 +27,15 @@ export class RegisterUseCase {
 
         const passwordHash = await bcrypt.hash(input.password, 10);
 
-        return this.userRepo.save({
+        const user = await this.userRepo.save({
             email: input.email,
             username: input.username,
             passwordHash,
             avatarUrl: null,
         });
+
+        this.discord.notifySignup(input.email, input.username).catch(() => {});
+
+        return user;
     }
 }

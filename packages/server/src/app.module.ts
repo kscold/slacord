@@ -10,6 +10,7 @@ import { GithubModule } from './modules/github/github.module';
 import { IssueModule } from './modules/issue/issue.module';
 import { AnnouncementModule } from './modules/announcement/announcement.module';
 import { DocumentModule } from './modules/document/document.module';
+import { DiscordModule } from './modules/discord/discord.module';
 import { HealthController } from './shared/http/health.controller';
 
 /**
@@ -29,6 +30,7 @@ import { HealthController } from './shared/http/health.controller';
             }),
             inject: [ConfigService],
         }),
+        DiscordModule,
         AuthModule,
         TeamModule,
         ChannelModule,

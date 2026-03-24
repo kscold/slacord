@@ -4,6 +4,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { HttpLoggingInterceptor } from './shared/interceptors/http-logging.interceptor';
+import { DiscordErrorFilter } from './shared/filters/discord-error.filter';
+import { DiscordNotifyService } from './modules/discord/discord-notify.service';
 
 /**
  * Slacord 서버
@@ -17,6 +19,7 @@ async function bootstrap() {
 
     app.use(cookieParser());
     app.useGlobalInterceptors(new HttpLoggingInterceptor());
+    app.useGlobalFilters(new DiscordErrorFilter(app.get(DiscordNotifyService)));
 
     app.enableCors({
         origin: true,
