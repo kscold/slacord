@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
@@ -11,27 +11,32 @@ const NAV_ITEMS = [
     { href: '/dashboard/stats', label: '통계', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
 ];
 
-export function DashboardSidebar() {
+interface Props {
+    currentUserName?: string;
+}
+
+export function DashboardSidebar({ currentUserName }: Props) {
     const pathname = usePathname();
 
     return (
-        <aside className="w-64 bg-bg-secondary border-r border-border-primary flex flex-col">
-            <div className="p-6 border-b border-border-primary">
+        <aside className="w-full shrink-0 border-b border-border-primary bg-bg-secondary lg:flex lg:min-h-screen lg:w-64 lg:flex-col lg:border-b-0 lg:border-r">
+            <div className="border-b border-border-primary p-4 sm:p-6">
                 <Link href="/" className="flex items-center gap-3">
                     <Image src="/logo.svg" alt="Slacord" width={40} height={40} className="rounded-xl" />
                     <div>
                         <h1 className="text-xl font-bold text-white">Slacord</h1>
-                        <p className="text-xs text-text-tertiary mt-0.5">Team Collaboration</p>
+                        <p className="mt-0.5 text-xs text-text-tertiary">Team Collaboration</p>
                     </div>
                 </Link>
+                {currentUserName ? <p className="mt-3 text-sm text-text-secondary">Signed in as {currentUserName}</p> : null}
             </div>
-            <nav className="flex-1 p-4 space-y-1">
+            <nav className="flex gap-2 overflow-x-auto px-4 py-4 lg:flex-1 lg:flex-col lg:gap-1 lg:overflow-visible">
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.href;
+                    const stateClass = isActive ? 'bg-bg-hover text-white' : 'text-text-secondary hover:bg-bg-hover hover:text-white';
                     return (
-                        <Link key={item.href} href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-bg-hover text-white' : 'hover:bg-bg-hover text-text-secondary hover:text-white'}`}>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <Link key={item.href} href={item.href} className={`flex min-h-11 items-center gap-3 whitespace-nowrap rounded-lg px-4 py-3 transition-colors ${stateClass}`}>
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                             </svg>
                             <span className="font-medium">{item.label}</span>
@@ -39,7 +44,7 @@ export function DashboardSidebar() {
                     );
                 })}
             </nav>
-            <div className="p-4 border-t border-border-primary text-xs text-text-tertiary">
+            <div className="hidden border-t border-border-primary p-4 text-xs text-text-tertiary lg:block">
                 <p className="font-semibold text-[#d6b08a]">v1.0.0</p>
                 <p className="mt-1">Internal Collaboration Cloud</p>
             </div>
