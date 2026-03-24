@@ -5,26 +5,32 @@ import { siteConfig } from '@/src/shared/config/site';
 export function MarketingHeader() {
     return (
         <header className="relative z-10 border-b border-white/8 bg-black/10 backdrop-blur-md">
-            <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex items-center gap-3">
-                    <Image src="/logo.svg" alt="Slacord" width={36} height={36} />
-                    <div className="space-y-1">
-                        <p className="text-[11px] uppercase tracking-[0.24em] text-[#d6b08a] sm:text-xs">
-                            {siteConfig.badge}
+            <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+                <Link href="/" className="flex items-center gap-3">
+                    <Image
+                        src="/assets/slacord-logo.svg"
+                        alt="Slacord"
+                        width={40}
+                        height={40}
+                        className="rounded-xl"
+                    />
+                    <div>
+                        <p className="text-lg font-bold leading-tight text-white sm:text-xl">{siteConfig.name}</p>
+                        <p className="text-[10px] tracking-[0.15em] text-[#c9ab84] sm:text-[11px]">
+                            {siteConfig.footerLabel}
                         </p>
-                        <p className="text-xl font-bold text-white">{siteConfig.name}</p>
                     </div>
-                </div>
-                <nav className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-none sm:auto-cols-max sm:grid-flow-col sm:gap-3">
+                </Link>
+                <nav className="flex items-center gap-2 sm:gap-3">
                     <Link
                         href="/auth/login"
-                        className="flex min-h-11 items-center justify-center rounded-full border border-white/8 px-4 py-2 text-sm text-text-secondary transition hover:border-white/16 hover:text-white"
+                        className="flex min-h-10 items-center justify-center rounded-full border border-white/8 px-4 py-2 text-sm text-text-secondary transition hover:border-white/16 hover:text-white sm:min-h-11 sm:px-5"
                     >
                         로그인
                     </Link>
                     <Link
                         href="/auth/register"
-                        className="flex min-h-11 items-center justify-center rounded-full bg-[#b97532] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#cf8640]"
+                        className="flex min-h-10 items-center justify-center rounded-full bg-[#b97532] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#cf8640] sm:min-h-11 sm:px-6"
                     >
                         시작하기
                     </Link>

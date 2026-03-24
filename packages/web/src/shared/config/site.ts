@@ -1,10 +1,10 @@
 export const siteConfig = {
     name: 'Slacord',
-    badge: 'Internal Collaboration Cloud',
-    headline: '팀 대화, 이슈, 문서를 한 흐름으로 정리하는 협업 허브',
-    description: '작은 팀과 운영 조직이 채팅, 실행, 기록을 같은 화면에서 관리할 수 있게 돕는 협업 플랫폼입니다.',
-    authDescription: '로그인하면 워크스페이스, 실시간 채팅, 이슈, 문서를 바로 이어서 사용할 수 있습니다.',
-    dashboardDescription: '대화와 실행 관리가 끊기지 않도록 워크스페이스 단위로 정리합니다.',
+    badge: '팀을 위한 올인원 워크스페이스',
+    headline: '흩어진 대화, 할 일, 문서를 한 곳에서',
+    description: '슬랙처럼 대화하고, 노션처럼 기록하고, 지라처럼 실행해요. 더 이상 툴 사이를 오가지 않아도 돼요.',
+    authDescription: '로그인하면 바로 시작할 수 있어요. 채팅, 이슈, 문서가 준비되어 있어요.',
+    dashboardDescription: '우리 팀의 대화와 할 일, 한눈에 확인하세요.',
     footerLabel: 'KSCOLD LABS',
-    footerDescription: 'Internal tools for focused teams and shipping workflows.',
+    footerDescription: '작은 팀이 빠르게 움직일 수 있도록 만듭니다.',
 };

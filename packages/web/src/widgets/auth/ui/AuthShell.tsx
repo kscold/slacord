@@ -20,7 +20,7 @@ export function AuthShell({ title, description, alternateHref, alternateLabel, a
                 <section className="rounded-[28px] border border-border-primary bg-[linear-gradient(160deg,#1c1711_0%,#120f0b_100%)] p-5 sm:p-8">
                     <p className="mb-6 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs text-[#e5c9aa]">{siteConfig.badge}</p>
                     <Link href="/" className="mb-8 inline-flex items-center gap-3">
-                        <Image src="/assets/slacord-logo.jpeg" alt="Slacord Logo" width={56} height={56} className="rounded-2xl" />
+                        <Image src="/assets/slacord-logo.svg" alt="Slacord Logo" width={56} height={56} className="rounded-2xl" />
                         <div>
                             <p className="text-2xl font-bold text-white">{siteConfig.name}</p>
                             <p className="text-sm text-[#cbb79f]">{siteConfig.footerLabel}</p>
@@ -32,12 +32,12 @@ export function AuthShell({ title, description, alternateHref, alternateLabel, a
                     <p className="mt-5 max-w-lg text-sm leading-7 text-[#d8c8b7] sm:text-base">{siteConfig.authDescription}</p>
                     <div className="mt-10 grid gap-4 sm:grid-cols-2">
                         <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                            <p className="text-sm font-semibold text-white">실시간 대화</p>
-                            <p className="mt-2 text-sm leading-6 text-[#cbb79f]">워크스페이스 안에서 바로 채팅, 반응, 타이핑 상태를 이어갑니다.</p>
+                            <p className="text-sm font-semibold text-white">💬 실시간 대화</p>
+                            <p className="mt-2 text-sm leading-6 text-[#cbb79f]">채널에서 바로 대화하고, 반응과 타이핑 표시까지. 팀원이 옆에 있는 것처럼요.</p>
                         </div>
                         <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                            <p className="text-sm font-semibold text-white">실행 관리</p>
-                            <p className="mt-2 text-sm leading-6 text-[#cbb79f]">이슈, 문서, 공지를 같은 맥락에서 관리해 기록이 흩어지지 않습니다.</p>
+                            <p className="text-sm font-semibold text-white">📋 이슈 · 문서 · 공지</p>
+                            <p className="mt-2 text-sm leading-6 text-[#cbb79f]">할 일은 칸반으로, 결정은 문서로, 전달은 공지로. 흩어질 일이 없어요.</p>
                         </div>
                     </div>
                 </section>

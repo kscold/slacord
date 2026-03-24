@@ -1,15 +1,15 @@
 const features = [
     {
         title: '실시간 채팅',
-        description: '워크스페이스와 채널 구조 안에서 바로 대화하고, 반응과 타이핑 상태까지 이어집니다.',
+        description: '채널에서 바로 대화하고, 이모지 반응과 타이핑 표시까지. 팀원이 옆에 있는 것처럼요.',
     },
     {
-        title: '이슈와 실행 관리',
-        description: '칸반 흐름으로 할 일, 진행 중, 리뷰, 완료를 분리해 팀 실행을 끊기지 않게 관리합니다.',
+        title: '이슈 관리',
+        description: '할 일, 진행 중, 리뷰, 완료. 칸반 보드에서 누가 뭘 하고 있는지 바로 보여요.',
     },
     {
         title: '문서와 공지',
-        description: '결정 사항과 운영 문서를 워크스페이스 안에서 함께 보관해 컨텍스트가 흩어지지 않습니다.',
+        description: '회의에서 정한 건 문서로, 팀 전체에 알릴 건 공지로. 흩어질 일이 없어요.',
     },
 ];
 
@@ -19,7 +19,7 @@ export function FeatureGrid() {
             <div className="mb-6 max-w-2xl">
                 <p className="text-xs uppercase tracking-[0.24em] text-[#c9ab84]">Core Flow</p>
                 <h2 className="mt-3 text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">
-                    채팅, 실행, 기록이 한 리듬으로 이어지게 구성했음
+                    대화부터 실행, 기록까지 끊기지 않아요
                 </h2>
             </div>
             <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
