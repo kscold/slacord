@@ -53,11 +53,20 @@ jobs:
       - name: Publish desktop artifacts
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: ${{ matrix.command }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK && 'true' || 'false' }}
+        run: |
+          # 코드 서명 시크릿이 있을 때만 env에 주입 (빈 문자열은 electron-builder 오류 유발)
+          if [[ -n "${{ secrets.CSC_LINK }}" ]]; then
+            export CSC_LINK="${{ secrets.CSC_LINK }}"
+            export CSC_KEY_PASSWORD="${{ secrets.CSC_KEY_PASSWORD }}"
+          fi
+          if [[ -n "${{ secrets.APPLE_ID }}" ]]; then
+            export APPLE_ID="${{ secrets.APPLE_ID }}"
+            export APPLE_APP_SPECIFIC_PASSWORD="${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}"
+            export APPLE_TEAM_ID="${{ secrets.APPLE_TEAM_ID }}"
+          fi
+          if [[ -n "${{ secrets.WIN_CSC_LINK }}" ]]; then
+            export WIN_CSC_LINK="${{ secrets.WIN_CSC_LINK }}"
+            export WIN_CSC_KEY_PASSWORD="${{ secrets.WIN_CSC_KEY_PASSWORD }}"
+          fi
+          ${{ matrix.command }}
