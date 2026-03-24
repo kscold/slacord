@@ -13,6 +13,9 @@ class TeamMemberSchema {
 
     @Prop({ default: () => new Date() })
     joinedAt: Date;
+
+    @Prop({ required: true, default: false })
+    canManageInvites: boolean;
 }
 
 const TeamMemberSchemaFactory = SchemaFactory.createForClass(TeamMemberSchema);
@@ -32,6 +35,38 @@ class GitHubConfigSchema {
 
 const GitHubConfigSchemaFactory = SchemaFactory.createForClass(GitHubConfigSchema);
 
+@Schema({ _id: false })
+class TeamInviteLinkSchema {
+    @Prop({ required: true })
+    code: string;
+
+    @Prop({ type: String, default: null })
+    label: string | null;
+
+    @Prop({ required: true })
+    createdBy: string;
+
+    @Prop({ required: true, enum: ['admin', 'member'], default: 'member' })
+    defaultRole: string;
+
+    @Prop({ type: Date, default: null })
+    expiresAt: Date | null;
+
+    @Prop({ type: Number, default: null })
+    maxUses: number | null;
+
+    @Prop({ required: true, default: 0 })
+    useCount: number;
+
+    @Prop({ type: Date, default: null })
+    revokedAt: Date | null;
+
+    @Prop({ default: () => new Date() })
+    createdAt: Date;
+}
+
+const TeamInviteLinkSchemaFactory = SchemaFactory.createForClass(TeamInviteLinkSchema);
+
 /** 팀(워크스페이스) MongoDB 스키마 */
 @Schema({ timestamps: true, collection: 'teams' })
 export class Team {
@@ -49,6 +84,9 @@ export class Team {
 
     @Prop({ type: [TeamMemberSchemaFactory], default: [] })
     members: TeamMemberSchema[];
+
+    @Prop({ type: [TeamInviteLinkSchemaFactory], default: [] })
+    inviteLinks: TeamInviteLinkSchema[];
 
     @Prop({ type: GitHubConfigSchemaFactory, default: null })
     githubConfig: GitHubConfigSchema | null;

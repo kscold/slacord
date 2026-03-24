@@ -43,7 +43,10 @@ export default function DocDetailPage({ params }: Props) {
                 {editing ? (
                     <input value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1 text-2xl font-bold text-white bg-transparent border-b border-slack-green/50 focus:outline-none mr-4" />
                 ) : (
-                    <h2 className="text-2xl font-bold text-white">{doc.title}</h2>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white">{doc.title}</h2>
+                        {doc.externalUrl ? <a href={doc.externalUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-brand-100 underline underline-offset-4">Confluence 원본 열기</a> : null}
+                    </div>
                 )}
                 <div className="flex gap-2 shrink-0">
                     {editing ? (
@@ -64,12 +67,16 @@ export default function DocDetailPage({ params }: Props) {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     className="w-full bg-bg-secondary border border-border-primary rounded-xl p-4 text-sm text-white focus:outline-none focus:border-slack-green/50 resize-none font-mono min-h-96"
-                    placeholder="Markdown으로 작성하세요..."
+                    placeholder={doc.contentFormat === 'html' ? '가져온 HTML 원문을 수정합니다...' : 'Markdown으로 작성하세요...'}
                 />
             ) : (
                 <div className="bg-bg-secondary rounded-xl border border-border-primary p-6 min-h-48">
                     {doc.content ? (
-                        <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans">{doc.content}</pre>
+                        doc.contentFormat === 'html' ? (
+                            <div className="confluence-render text-sm text-text-secondary" dangerouslySetInnerHTML={{ __html: doc.content }} />
+                        ) : (
+                            <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans">{doc.content}</pre>
+                        )
                     ) : (
                         <p className="text-text-tertiary text-sm">내용이 없습니다. 편집 버튼을 눌러 내용을 추가하세요.</p>
                     )}

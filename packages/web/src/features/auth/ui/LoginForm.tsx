@@ -3,8 +3,12 @@
 import { useState } from 'react';
 import { useLogin } from '../model/useAuth';
 
-export function LoginForm() {
-    const { login, error, loading } = useLogin();
+interface Props {
+    nextPath?: string;
+}
+
+export function LoginForm({ nextPath }: Props) {
+    const { login, error, loading } = useLogin(nextPath);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 

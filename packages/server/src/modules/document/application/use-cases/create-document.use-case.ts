@@ -11,6 +11,7 @@ export class CreateDocumentUseCase {
         teamId: string;
         title: string;
         content: string;
+        contentFormat?: 'plain' | 'html';
         parentId: string | null;
         createdBy: string;
     }): Promise<DocumentEntity> {

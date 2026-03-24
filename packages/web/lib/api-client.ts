@@ -6,6 +6,7 @@
 
 import { toApiUrl } from './runtime-config';
 import type { ChannelType } from '@/src/entities/channel/types';
+import type { TeamInvitePreview } from '@/src/entities/team/types';
 
 interface ApiResponse<T = any> {
     success: boolean;
@@ -94,6 +95,24 @@ export const teamApi = {
     },
     async updateGithubConfig(teamId: string, data: { repoUrl: string; webhookSecret: string; notifyChannelId: string }) {
         return apiFetch(`/api/team/${teamId}/github`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    async getInviteLinks(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/invite-links`);
+    },
+    async createInviteLink(teamId: string, data: { label?: string; defaultRole?: 'admin' | 'member'; maxUses?: number; expiresInDays?: number }) {
+        return apiFetch(`/api/team/${teamId}/invite-links`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async revokeInviteLink(teamId: string, code: string) {
+        return apiFetch(`/api/team/${teamId}/invite-links/${code}/revoke`, { method: 'PATCH' });
+    },
+    async updateMemberAccess(teamId: string, memberId: string, data: { role?: 'admin' | 'member'; canManageInvites?: boolean }) {
+        return apiFetch(`/api/team/${teamId}/member/${memberId}/access`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    async getInvitePreview(code: string) {
+        return apiFetch<TeamInvitePreview>(`/api/team/invite/${code}`);
+    },
+    async joinByInvite(code: string) {
+        return apiFetch(`/api/team/invite/${code}/join`, { method: 'POST' });
     },
     /** @deprecated 이전 코드 호환성 */
     async getTeams() {
@@ -207,6 +226,9 @@ export const documentApi = {
     },
     async createDocument(teamId: string, data: { title: string; content?: string; parentId?: string | null }) {
         return apiFetch(`/api/team/${teamId}/document`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async importConfluence(teamId: string, data: { siteUrl: string; email: string; apiToken: string; spaceKey: string; rootPageId?: string }) {
+        return apiFetch(`/api/team/${teamId}/document/import/confluence`, { method: 'POST', body: JSON.stringify(data) });
     },
     async updateDocument(teamId: string, documentId: string, data: { title?: string; content?: string }) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`, { method: 'PATCH', body: JSON.stringify(data) });

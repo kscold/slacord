@@ -6,7 +6,9 @@ import { CreateDocumentUseCase } from '../../application/use-cases/create-docume
 import { UpdateDocumentUseCase } from '../../application/use-cases/update-document.use-case';
 import { GetDocumentsUseCase } from '../../application/use-cases/get-documents.use-case';
 import { DeleteDocumentUseCase } from '../../application/use-cases/delete-document.use-case';
+import { ImportConfluenceSpaceUseCase } from '../../application/use-cases/import-confluence-space.use-case';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { ImportConfluenceSpaceDto } from './dto/import-confluence-space.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
 /** 문서/위키 API */
@@ -20,6 +22,7 @@ export class DocumentController {
         private readonly updateUseCase: UpdateDocumentUseCase,
         private readonly getUseCase: GetDocumentsUseCase,
         private readonly deleteUseCase: DeleteDocumentUseCase,
+        private readonly importConfluenceUseCase: ImportConfluenceSpaceUseCase,
     ) {}
 
     @Get()
@@ -47,10 +50,24 @@ export class DocumentController {
             teamId,
             title: dto.title,
             content: dto.content ?? '',
+            contentFormat: dto.contentFormat ?? 'plain',
             parentId: dto.parentId ?? null,
             createdBy: user.userId,
         });
         return { success: true, data: doc.toPublic() };
+    }
+
+    @Post('import/confluence')
+    @ApiOperation({ summary: 'Confluence space 전체 문서 가져오기' })
+    async importConfluence(
+        @Param('teamId') teamId: string,
+        @CurrentUser() user: { userId: string },
+        @Body() dto: ImportConfluenceSpaceDto,
+    ) {
+        return {
+            success: true,
+            data: await this.importConfluenceUseCase.execute({ ...dto, teamId, requestedBy: user.userId }),
+        };
     }
 
     @Patch(':documentId')

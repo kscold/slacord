@@ -3,8 +3,12 @@
 import { useState } from 'react';
 import { useRegister } from '../model/useAuth';
 
-export function RegisterForm() {
-    const { register, error, loading } = useRegister();
+interface Props {
+    nextPath?: string;
+}
+
+export function RegisterForm({ nextPath }: Props) {
+    const { register, error, loading } = useRegister(nextPath);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');

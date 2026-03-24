@@ -16,9 +16,13 @@ export class DocumentRepository implements IDocumentRepository {
             doc.teamId,
             doc.title,
             doc.content,
+            doc.contentFormat ?? 'plain',
             doc.parentId,
             doc.createdBy,
             doc.updatedBy,
+            doc.externalSource ?? null,
+            doc.externalId ?? null,
+            doc.externalUrl ?? null,
             (doc as any).createdAt,
             (doc as any).updatedAt,
         );
@@ -38,14 +42,50 @@ export class DocumentRepository implements IDocumentRepository {
         teamId: string;
         title: string;
         content: string;
+        contentFormat?: 'plain' | 'html';
         parentId: string | null;
         createdBy: string;
     }): Promise<DocumentEntity> {
-        const doc = await this.model.create({ ...data, updatedBy: data.createdBy });
+        const doc = await this.model.create({ ...data, contentFormat: data.contentFormat ?? 'plain', updatedBy: data.createdBy });
         return this.toEntity(doc);
     }
 
-    async update(id: string, data: { title?: string; content?: string; updatedBy: string }): Promise<DocumentEntity | null> {
+    async upsertExternal(data: {
+        teamId: string;
+        title: string;
+        content: string;
+        contentFormat: 'plain' | 'html';
+        parentId: string | null;
+        createdBy: string;
+        updatedBy: string;
+        externalSource: string;
+        externalId: string;
+        externalUrl: string | null;
+    }): Promise<DocumentEntity> {
+        const doc = await this.model.findOneAndUpdate(
+            { teamId: data.teamId, externalSource: data.externalSource, externalId: data.externalId },
+            {
+                $set: {
+                    title: data.title,
+                    content: data.content,
+                    contentFormat: data.contentFormat,
+                    parentId: data.parentId,
+                    updatedBy: data.updatedBy,
+                    externalUrl: data.externalUrl,
+                },
+                $setOnInsert: {
+                    teamId: data.teamId,
+                    createdBy: data.createdBy,
+                    externalSource: data.externalSource,
+                    externalId: data.externalId,
+                },
+            },
+            { new: true, upsert: true },
+        ).lean();
+        return this.toEntity(doc as DocumentDocument);
+    }
+
+    async update(id: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html'; updatedBy: string }): Promise<DocumentEntity | null> {
         const doc = await this.model.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
         return doc ? this.toEntity(doc as DocumentDocument) : null;
     }

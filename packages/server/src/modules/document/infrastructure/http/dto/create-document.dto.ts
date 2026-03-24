@@ -16,4 +16,9 @@ export class CreateDocumentDto {
     @IsOptional()
     @IsString()
     parentId?: string | null;
+
+    @ApiPropertyOptional({ example: 'plain', enum: ['plain', 'html'] })
+    @IsOptional()
+    @IsString()
+    contentFormat?: 'plain' | 'html';
 }

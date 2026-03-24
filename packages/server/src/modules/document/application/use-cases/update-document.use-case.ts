@@ -7,7 +7,7 @@ import type { DocumentEntity } from '../../domain/document.entity';
 export class UpdateDocumentUseCase {
     constructor(@Inject(DOCUMENT_REPOSITORY) private readonly repo: IDocumentRepository) {}
 
-    async execute(data: { id: string; title?: string; content?: string; updatedBy: string }): Promise<DocumentEntity> {
+    async execute(data: { id: string; title?: string; content?: string; contentFormat?: 'plain' | 'html'; updatedBy: string }): Promise<DocumentEntity> {
         const { id, ...updateData } = data;
         const result = await this.repo.update(id, updateData);
         if (!result) throw new BadRequestException('존재하지 않는 문서입니다.');

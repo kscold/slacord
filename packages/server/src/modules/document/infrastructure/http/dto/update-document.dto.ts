@@ -12,4 +12,9 @@ export class UpdateDocumentDto {
     @IsOptional()
     @IsString()
     content?: string;
+
+    @ApiPropertyOptional({ example: 'plain', enum: ['plain', 'html'] })
+    @IsOptional()
+    @IsString()
+    contentFormat?: 'plain' | 'html';
 }

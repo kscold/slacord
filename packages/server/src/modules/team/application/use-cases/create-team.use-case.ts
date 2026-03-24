@@ -26,7 +26,7 @@ export class CreateTeamUseCase {
             slug: input.slug,
             description: input.description ?? null,
             iconUrl: null,
-            members: [{ userId: input.ownerId, role: 'owner', joinedAt: new Date() }],
+            members: [{ userId: input.ownerId, role: 'owner', joinedAt: new Date(), canManageInvites: true }],
         });
     }
 }

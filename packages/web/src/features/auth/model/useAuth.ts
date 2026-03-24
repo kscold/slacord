@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api-client';
 
-export function useLogin() {
+function resolveNextPath(nextPath?: string) {
+    return nextPath?.startsWith('/') ? nextPath : '/dashboard';
+}
+
+export function useLogin(nextPath?: string) {
     const router = useRouter();
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -14,7 +18,7 @@ export function useLogin() {
         setLoading(true);
         try {
             await authApi.login(email, password);
-            router.push('/dashboard');
+            router.push(resolveNextPath(nextPath));
         } catch (caught) {
             setError(caught instanceof Error ? caught.message : '로그인에 실패했습니다.');
         } finally {
@@ -25,7 +29,7 @@ export function useLogin() {
     return { login, error, loading };
 }
 
-export function useRegister() {
+export function useRegister(nextPath?: string) {
     const router = useRouter();
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -36,7 +40,7 @@ export function useRegister() {
         try {
             await authApi.register(email, password, username);
             await authApi.login(email, password);
-            router.push('/dashboard');
+            router.push(resolveNextPath(nextPath));
         } catch (caught) {
             setError(caught instanceof Error ? caught.message : '회원가입에 실패했습니다.');
         } finally {

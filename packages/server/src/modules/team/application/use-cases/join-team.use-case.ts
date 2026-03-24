@@ -26,6 +26,7 @@ export class JoinTeamUseCase {
             userId: input.userId,
             role: 'member',
             joinedAt: new Date(),
+            canManageInvites: false,
         });
     }
 }

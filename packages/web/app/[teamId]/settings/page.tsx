@@ -5,6 +5,7 @@ import { publicAppUrl } from '@/lib/runtime-config';
 import { useGitHubSettings } from '@/src/features/team/model/useGitHubSettings';
 import { GitHubSettingsForm } from '@/src/features/team/ui/GitHubSettingsForm';
 import { GitHubWebhookGuide } from '@/src/features/team/ui/GitHubWebhookGuide';
+import { TeamInviteSettingsPanel } from '@/src/features/team/ui/TeamInviteSettingsPanel';
 
 interface Props {
     params: Promise<{ teamId: string }>;
@@ -25,18 +26,21 @@ export default function SettingsPage({ params }: Props) {
             </div>
             {settings.loading ? <div className="mt-8 rounded-[28px] border border-border-primary bg-bg-secondary p-6 text-sm text-text-secondary">설정과 채널 목록 불러오는 중...</div> : null}
             {!settings.loading ? (
-                <div className="mt-8 grid gap-5 lg:grid-cols-[0.92fr,1.08fr]">
-                    <GitHubWebhookGuide channelName={channelName} repoUrl={settings.form.repoUrl} webhookUrl={webhookUrl} />
-                    <GitHubSettingsForm
-                        channels={settings.channels}
-                        error={settings.error}
-                        form={settings.form}
-                        onGenerateSecret={settings.generateSecret}
-                        onSave={settings.save}
-                        onUpdateField={settings.updateField}
-                        saved={settings.saved}
-                        saving={settings.saving}
-                    />
+                <div className="mt-8 space-y-6">
+                    <TeamInviteSettingsPanel teamId={teamId} />
+                    <div className="grid gap-5 lg:grid-cols-[0.92fr,1.08fr]">
+                        <GitHubWebhookGuide channelName={channelName} repoUrl={settings.form.repoUrl} webhookUrl={webhookUrl} />
+                        <GitHubSettingsForm
+                            channels={settings.channels}
+                            error={settings.error}
+                            form={settings.form}
+                            onGenerateSecret={settings.generateSecret}
+                            onSave={settings.save}
+                            onUpdateField={settings.updateField}
+                            saved={settings.saved}
+                            saving={settings.saving}
+                        />
+                    </div>
                 </div>
             ) : null}
         </div>

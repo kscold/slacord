@@ -7,6 +7,8 @@ import { CreateDocumentUseCase } from './application/use-cases/create-document.u
 import { UpdateDocumentUseCase } from './application/use-cases/update-document.use-case';
 import { GetDocumentsUseCase } from './application/use-cases/get-documents.use-case';
 import { DeleteDocumentUseCase } from './application/use-cases/delete-document.use-case';
+import { ImportConfluenceSpaceUseCase } from './application/use-cases/import-confluence-space.use-case';
+import { ConfluenceApiClient } from './infrastructure/external/confluence-api.client';
 import { DocumentController } from './infrastructure/http/document.controller';
 
 @Module({
@@ -18,6 +20,8 @@ import { DocumentController } from './infrastructure/http/document.controller';
         UpdateDocumentUseCase,
         GetDocumentsUseCase,
         DeleteDocumentUseCase,
+        ImportConfluenceSpaceUseCase,
+        ConfluenceApiClient,
     ],
 })
 export class DocumentModule {}
