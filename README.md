@@ -1,113 +1,72 @@
 # Slacord
 
-팀 올인원 협업 툴. 채팅, 이슈 트래커, 문서를 하나의 플랫폼에서.
+대화, 할 일, 문서를 한 곳에서 관리하는 올인원 팀 워크스페이스.
 
-## 개요
+> https://slacord.cloud
 
-포퐁팀 내부 도구로 시작해 외부 SaaS로 확장 예정.
-Slack/Discord relay 방식이 아닌 MongoDB 직접 저장 방식으로 동작하며,
-Socket.IO를 통한 실시간 채팅을 지원한다.
+## 기능
 
-## 패키지 구성
+### 실시간 채팅
+- 채널 기반 팀 대화 (public / private / DM / 소그룹)
+- 이모지 반응, 메시지 편집/삭제, 핀 고정
+- 타이핑 표시, 스레드 답글
+- 파일 첨부 (MinIO 오브젝트 스토리지)
 
-| 패키지 | 경로 | 설명 |
-|--------|------|------|
-| @slacord/server | packages/server | NestJS 백엔드 (포트 8082) |
-| @slacord/web | packages/web | Next.js 프론트엔드 (포트 3002) |
+### 허들 (음성/영상통화)
+- WebRTC Mesh P2P 기반 (4명 이하 소규모 팀)
+- 음성 채널 + 텍스트 채널 내 허들 시작
+- 마이크/카메라 토글, 화면 공유
+
+### 이슈 트래커
+- 칸반 보드 (할 일 → 진행 중 → 리뷰 → 완료)
+- 담당자 배정, 우선순위, 라벨
+
+### 문서/위키
+- BlockNote 리치 에디터 (노션 스타일 블록 편집)
+- 문서 트리 구조 (상위/하위 문서)
+- RBAC 권한 (문서별 열람/편집 제한)
+- 아카이빙 (소프트 삭제 + 복원)
+- 버전 히스토리 (수정 시 자동 스냅샷)
+- Confluence 문서 일괄 가져오기
+
+### 공지사항
+- 팀 전체 공지, 핀 고정
+
+### 데스크톱 앱
+- Electron 기반 (macOS / Windows)
+- 자동 업데이트 (GitHub Releases)
+- 네이티브 알림
+
+### 기타
+- 팀원 온라인 프레즌스
+- GitHub Webhook 알림 연동
+- 디스코드 봇 연동 (회원가입/에러 모니터링)
+- 모바일 반응형 레이아웃
 
 ## 기술 스택
 
-**백엔드**
-- NestJS 11 + TypeScript 5
-- MongoDB (Mongoose 9)
-- Socket.IO (실시간 채팅)
-- JWT + Passport.js (인증)
-- 헥사고날 아키텍처 (Ports & Adapters)
+| 영역 | 기술 |
+|------|------|
+| **백엔드** | NestJS 11, TypeScript, MongoDB (Mongoose), Socket.IO, JWT |
+| **프론트엔드** | Next.js 16, TypeScript, Tailwind CSS v4, Zustand |
+| **데스크톱** | Electron 39, electron-updater |
+| **스토리지** | MinIO (S3 호환 오브젝트 스토리지) |
+| **인프라** | Docker, Colima, Nginx, PM2 |
+| **아키텍처** | 헥사고날 (Ports & Adapters), FSD (Feature-Sliced Design) |
 
-**프론트엔드**
-- Next.js 16 + TypeScript
-- Tailwind CSS v4 + shadcn/ui
-- Zustand (상태 관리)
-- FSD (Feature-Sliced Design)
-
-## 시작하기
-
-### 필요 조건
-
-- Node.js 18 이상
-- Yarn 1.22 이상
-- MongoDB (로컬 또는 Atlas)
-
-### 환경 변수 설정
-
-```bash
-# packages/server/.env
-PORT=8082
-MONGODB_URI=mongodb://localhost:27017/slacord
-JWT_SECRET=your-secret-key
-```
-
-### 개발 서버 실행
-
-```bash
-# 의존성 설치
-yarn install
-
-# 백엔드 개발 서버
-yarn dev:server
-
-# 프론트엔드 개발 서버
-yarn dev:web
-```
-
-### 빌드
-
-```bash
-yarn build:server
-yarn build:web
-```
-
-## API
-
-서버 실행 후 Swagger 문서 확인: `http://localhost:8082/api/docs`
-
-### 주요 엔드포인트
+## 패키지 구성
 
 ```
-POST /api/auth/register       회원가입
-POST /api/auth/login          로그인
-GET  /api/auth/me             내 정보
-
-GET  /api/team                내 팀 목록
-POST /api/team                팀 생성
-POST /api/team/:slug/join     팀 참여
-
-GET  /api/team/:teamId/channel        채널 목록
-POST /api/team/:teamId/channel        채널 생성
-
-GET  /api/channel/:channelId/message  메시지 조회
+packages/
+├── server/      NestJS 백엔드
+├── web/         Next.js 프론트엔드
+├── desktop/     Electron 데스크톱 앱
+└── contracts/   공유 타입 정의
 ```
-
-### WebSocket (Socket.IO)
-
-namespace: `/chat`
-
-| 이벤트 | 방향 | 설명 |
-|--------|------|------|
-| join_channel | 클라이언트 → 서버 | 채널 입장 |
-| leave_channel | 클라이언트 → 서버 | 채널 퇴장 |
-| send_message | 클라이언트 → 서버 | 메시지 전송 |
-| typing | 클라이언트 → 서버 | 타이핑 표시 |
-| new_message | 서버 → 클라이언트 | 새 메시지 수신 |
-| user_typing | 서버 → 클라이언트 | 타이핑 중 사용자 |
-
-## 개발 로드맵
-
-- Phase 1 (진행중): 채팅 MVP - 팀/채널/실시간 메시지
-- Phase 2: 이슈 트래커
-- Phase 3: 문서/위키
-- Phase Future: Electron 앱
 
 ## 라이선스
 
-MIT
+Copyright (c) 2026 kscold (김승찬) / Colding. All rights reserved.
+
+이 소프트웨어는 저작권자의 서면 허가 없이 사용, 복제, 배포할 수 없습니다.
+자세한 내용은 [LICENSE](./LICENSE) 파일을 참고하세요.
