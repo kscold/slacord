@@ -45,7 +45,7 @@ export default function ArchivedDocsPage({ params }: Props) {
             </div>
 
             {docs.length === 0 ? (
-                <p className="text-sm text-text-tertiary">아카이브된 문서가 없어요.</p>
+                <p className="text-sm text-text-tertiary">삭제된 문서가 없어요.</p>
             ) : (
                 <div className="space-y-3">
                     {docs.map((doc) => (
@@ -53,7 +53,7 @@ export default function ArchivedDocsPage({ params }: Props) {
                             <div>
                                 <p className="font-medium text-white">{doc.title}</p>
                                 <p className="text-xs text-text-tertiary mt-1">
-                                    아카이브: {doc.archivedAt ? new Date(doc.archivedAt).toLocaleString('ko-KR') : ''}
+                                    삭제일: {doc.archivedAt ? new Date(doc.archivedAt).toLocaleString('ko-KR') : ''}
                                 </p>
                             </div>
                             <div className="flex gap-2">

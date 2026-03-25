@@ -122,6 +122,9 @@ export const teamApi = {
     async getTeam(teamId: string) {
         return apiFetch(`/api/team/${teamId}`);
     },
+    async importDiscordGuild(teamId: string, data: { botToken: string; guildId: string; channelIds: string[] }) {
+        return apiFetch(`/api/team/${teamId}/import/discord`, { method: 'POST', body: JSON.stringify(data) });
+    },
 };
 
 /**

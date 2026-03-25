@@ -33,7 +33,7 @@ export function DocumentDetailHeader({ doc, editing, onArchive, onCancel, onEdit
                 ) : (
                     <>
                         {doc.canEdit !== false ? <button onClick={onEdit} className="rounded-lg border border-border-primary px-3 py-1.5 text-sm text-text-secondary transition hover:bg-bg-hover hover:text-white">편집</button> : null}
-                        {doc.canDelete !== false ? <button onClick={() => void onArchive()} className="rounded-lg border border-error/30 px-3 py-1.5 text-sm text-error transition hover:bg-error/10">아카이브</button> : null}
+                        {doc.canDelete !== false ? <button onClick={() => void onArchive()} className="rounded-lg border border-error/30 px-3 py-1.5 text-sm text-error transition hover:bg-error/10">삭제</button> : null}
                         {doc.visibility === 'restricted' ? <span className="rounded-full bg-warning/20 px-2 py-1 text-xs text-warning">제한 문서</span> : null}
                     </>
                 )}

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { ITeamRepository } from '../../domain/team.port';
 import { TeamEntity, TeamInviteLink, TeamMember, type GitHubConfig } from '../../domain/team.entity';
 import { Team, TeamDocument } from './team.schema';
@@ -12,6 +12,7 @@ export class TeamRepository implements ITeamRepository {
     constructor(@InjectModel(Team.name) private readonly teamModel: Model<TeamDocument>) {}
 
     async findById(id: string): Promise<TeamEntity | null> {
+        if (!isValidObjectId(id)) return null;
         const doc = await this.teamModel.findById(id).lean();
         return doc ? this.toEntity(doc) : null;
     }

@@ -95,6 +95,21 @@ export class MessageRepository implements IMessageRepository {
         return this.toEntity(doc.toObject());
     }
 
+    async findByExternalRef(channelId: string, source: string, externalId: string): Promise<MessageEntity | null> {
+        const doc = await this.messageModel.findOne({ channelId, externalSource: source, externalId }).lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
+    async saveImported(data: {
+        teamId: string; channelId: string; authorId: string; authorName: string | null;
+        content: string; type: MessageType; attachments: Attachment[]; replyToId: string | null;
+        mentions: string[]; externalSource: string; externalId: string;
+        createdAt: Date; updatedAt: Date; isPinned: boolean; pinnedAt: Date | null;
+    }): Promise<MessageEntity> {
+        const created = await this.messageModel.create(data);
+        return this.toEntity(created.toObject());
+    }
+
     private toEntity(doc: any): MessageEntity {
         return new MessageEntity(
             doc._id.toString(),
@@ -108,6 +123,8 @@ export class MessageRepository implements IMessageRepository {
             doc.replyToId?.toString() ?? null,
             (doc.reactions ?? []) as Reaction[],
             doc.mentions ?? [],
+            doc.externalSource ?? null,
+            doc.externalId ?? null,
             doc.isEdited ?? false,
             doc.isPinned ?? false,
             doc.pinnedAt ?? null,

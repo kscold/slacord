@@ -52,6 +52,19 @@ export class ChannelRepository implements IChannelRepository {
         return !!(await this.channelModel.exists({ teamId, name }));
     }
 
+    async findByExternalRef(teamId: string, source: string, externalId: string): Promise<ChannelEntity | null> {
+        const doc = await this.channelModel.findOne({ teamId, externalSource: source, externalId }).lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
+    async saveImported(data: {
+        teamId: string; name: string; description: string | null; type: ChannelType;
+        createdBy: string; memberIds: string[]; externalSource: string; externalId: string;
+    }): Promise<ChannelEntity> {
+        const doc = await this.channelModel.create(data);
+        return this.toEntity(doc.toObject());
+    }
+
     private toEntity(doc: any): ChannelEntity {
         return new ChannelEntity(
             doc._id.toString(),
@@ -61,6 +74,8 @@ export class ChannelRepository implements IChannelRepository {
             doc.type as ChannelType,
             doc.createdBy,
             doc.memberIds ?? [],
+            doc.externalSource ?? null,
+            doc.externalId ?? null,
             doc.createdAt,
         );
     }

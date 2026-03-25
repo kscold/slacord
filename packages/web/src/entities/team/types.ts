@@ -41,6 +41,13 @@ export interface TeamInviteLink {
     active: boolean;
 }
 
+export interface DiscordImportSummary {
+    guildName: string;
+    importedChannels: number;
+    importedMessages: number;
+    updatedMessages: number;
+}
+
 export interface TeamInvitePreview {
     code: string;
     teamId: string;

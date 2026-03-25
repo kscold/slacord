@@ -1,4 +1,4 @@
-export type ChannelType = 'public' | 'private' | 'dm' | 'group';
+export type ChannelType = 'public' | 'private' | 'dm' | 'group' | 'voice';
 
 /** 채팅 채널 도메인 엔티티 */
 export class ChannelEntity {
@@ -10,6 +10,8 @@ export class ChannelEntity {
         public readonly type: ChannelType,
         public readonly createdBy: string,
         public readonly memberIds: string[],
+        public readonly externalSource: string | null,
+        public readonly externalId: string | null,
         public readonly createdAt: Date,
     ) {}
 
@@ -26,6 +28,8 @@ export class ChannelEntity {
             type: this.type,
             memberIds: this.memberIds,
             memberCount: this.memberIds.length,
+            externalSource: this.externalSource,
+            externalId: this.externalId,
             createdAt: this.createdAt,
         };
     }

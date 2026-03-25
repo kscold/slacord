@@ -8,5 +8,5 @@ export const siteConfig = {
     desktopVersion: '1.0.6',
     releasePage: 'https://github.com/kscold/slacord/releases/latest',
     footerLabel: 'KSCOLD LABS',
-    footerDescription: '작은 팀이 빠르게 움직일 수 있도록.',
+    footerDescription: '작은 팀이 더욱 빠르게 움직일 수 있도록.',
 };

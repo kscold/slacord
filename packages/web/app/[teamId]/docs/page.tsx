@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { use } from 'react';
 import { documentApi } from '@/lib/api-client';
 import type { DocumentNode } from '@/src/entities/document/types';
-import { ConfluenceImportPanel } from '@/src/features/document/ui/ConfluenceImportPanel';
 import { DocumentTree } from '@/src/widgets/document/ui/DocumentTree';
 
 interface Props {
@@ -44,8 +43,6 @@ export default function DocsPage({ params }: Props) {
                     문서 생성
                 </button>
             </div>
-
-            <ConfluenceImportPanel teamId={teamId} onImported={loadDocuments} />
 
             {showCreate && (
                 <form onSubmit={handleCreate} className="flex gap-3 mb-6">

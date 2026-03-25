@@ -1,4 +1,4 @@
-export type ChannelType = 'public' | 'private' | 'dm' | 'group';
+export type ChannelType = 'public' | 'private' | 'dm' | 'group' | 'voice';
 
 export interface Channel {
     id: string;

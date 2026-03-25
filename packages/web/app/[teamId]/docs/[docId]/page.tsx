@@ -8,7 +8,8 @@ import { useDocumentVersions } from '@/src/features/document/model/useDocumentVe
 import { DocumentChildrenPanel } from '@/src/features/document/ui/DocumentChildrenPanel';
 import { DocumentContent } from '@/src/features/document/ui/DocumentContent';
 import { DocumentDetailHeader } from '@/src/features/document/ui/DocumentDetailHeader';
-import { DocumentEditorPanel } from '@/src/features/document/ui/DocumentEditorPanel';
+import dynamic from 'next/dynamic';
+const DocumentEditorPanel = dynamic(() => import('@/src/features/document/ui/DocumentEditorPanel').then((m) => m.DocumentEditorPanel), { ssr: false, loading: () => <div className="h-48 animate-pulse rounded-xl bg-bg-secondary" /> });
 import { DocumentVersionPanel } from '@/src/features/document/ui/DocumentVersionPanel';
 import type { DocumentFull } from '@/src/entities/document/types';
 
@@ -42,7 +43,7 @@ export default function DocDetailPage({ params }: Props) {
     };
 
     const handleArchive = async () => {
-        if (!confirm('이 문서를 아카이브할까요? 휴지통에서 복원할 수 있어요.')) return;
+        if (!confirm('이 문서를 삭제할까요? 휴지통에서 복원할 수 있습니다.')) return;
         const response = await documentApi.archiveDocument(teamId, docId);
         if (response.success) router.push(`/${teamId}/docs`);
     };

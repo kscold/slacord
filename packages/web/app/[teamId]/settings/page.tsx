@@ -6,6 +6,8 @@ import { useGitHubSettings } from '@/src/features/team/model/useGitHubSettings';
 import { GitHubSettingsForm } from '@/src/features/team/ui/GitHubSettingsForm';
 import { GitHubWebhookGuide } from '@/src/features/team/ui/GitHubWebhookGuide';
 import { TeamInviteSettingsPanel } from '@/src/features/team/ui/TeamInviteSettingsPanel';
+import { ConfluenceImportPanel } from '@/src/features/document/ui/ConfluenceImportPanel';
+import { DiscordImportPanel } from '@/src/features/team/ui/DiscordImportPanel';
 
 interface Props {
     params: Promise<{ teamId: string }>;
@@ -40,6 +42,11 @@ export default function SettingsPage({ params }: Props) {
                             saved={settings.saved}
                             saving={settings.saving}
                         />
+                    </div>
+                    <div className="space-y-5">
+                        <p className="text-xs uppercase tracking-[0.24em] text-brand-200">외부 서비스 연동</p>
+                        <ConfluenceImportPanel teamId={teamId} onImported={async () => {}} />
+                        <DiscordImportPanel teamId={teamId} />
                     </div>
                 </div>
             ) : null}

@@ -1,8 +1,8 @@
 const features = [
     {
-        label: 'Chat',
-        title: '실시간 채팅',
-        description: '채널에서 대화하고, 이모지로 반응하고, 타이핑 상태도 보여요.',
+        label: 'Chat & Call',
+        title: '실시간 채팅 및 통화',
+        description: '채널에서 대화하고, 이모지로 반응하고, 허들로 바로 음성 통화까지 이어져요.',
     },
     {
         label: 'Issue',
@@ -21,11 +21,11 @@ export function FeatureGrid() {
         <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
             <div className="mb-7 max-w-3xl">
                 <p className="marketing-kicker">Core Flow</p>
-                <h2 className="marketing-display mt-4 text-[clamp(2.4rem,5vw,4.2rem)] text-white">
+                <h2 className="marketing-display mt-4 text-[clamp(2.4rem,5vw,4.2rem)] text-white text-balance">
                     대화에서 실행, 기록까지 하나로
                 </h2>
                 <p className="marketing-lead mt-4 max-w-2xl text-[1.02rem]">
-                    채팅에서 나온 맥락을 그대로 이슈와 문서로 이어 붙여서, 팀의 흐름이 끊기지 않게 설계했음.
+                    채팅에서 나온 맥락을 이슈와 문서로 바로 연결해서 팀의 흐름이 끊기지 않습니다.
                 </p>
             </div>
             <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
