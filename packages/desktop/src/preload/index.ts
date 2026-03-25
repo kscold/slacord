@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { DesktopUpdateCheckResult, DesktopUpdateInstallResult, DesktopUpdateStatus, SlacordDesktopBridge } from '@slacord/contracts';
+import type { DesktopUpdateCheckResult, DesktopUpdateDownloadResult, DesktopUpdateInstallResult, DesktopUpdateStatus, SlacordDesktopBridge } from '@slacord/contracts';
 
 const desktopBridge: SlacordDesktopBridge = {
     isDesktop: true,
@@ -7,6 +7,7 @@ const desktopBridge: SlacordDesktopBridge = {
     notify: (title: string, body: string) => ipcRenderer.invoke('desktop:notify', { title, body }),
     getUpdateStatus: () => ipcRenderer.invoke('desktop:get-update-status') as Promise<DesktopUpdateStatus>,
     checkForUpdates: () => ipcRenderer.invoke('desktop:check-for-updates') as Promise<DesktopUpdateCheckResult>,
+    downloadUpdate: () => ipcRenderer.invoke('desktop:download-update') as Promise<DesktopUpdateDownloadResult>,
     restartToUpdate: () => ipcRenderer.invoke('desktop:restart-to-update') as Promise<DesktopUpdateInstallResult>,
     onUpdateStatus: (listener) => {
         const handler = (_event: Electron.IpcRendererEvent, payload: DesktopUpdateStatus) => listener(payload);

@@ -1,6 +1,6 @@
 {
   "name": "slacord",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "팀 올인원 협업 툴 모노레포",
   "private": true,
   "workspaces": [

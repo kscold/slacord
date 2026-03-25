@@ -17,6 +17,11 @@ export interface DesktopUpdateCheckResult {
     status: DesktopUpdateStatus;
 }
 
+export interface DesktopUpdateDownloadResult {
+    ok: boolean;
+    status: DesktopUpdateStatus;
+}
+
 export interface DesktopUpdateInstallResult {
     ok: boolean;
     status: DesktopUpdateStatus;
@@ -28,6 +33,7 @@ export interface SlacordDesktopBridge {
     notify: (title: string, body: string) => Promise<boolean>;
     getUpdateStatus: () => Promise<DesktopUpdateStatus>;
     checkForUpdates: () => Promise<DesktopUpdateCheckResult>;
+    downloadUpdate: () => Promise<DesktopUpdateDownloadResult>;
     restartToUpdate: () => Promise<DesktopUpdateInstallResult>;
     onUpdateStatus: (listener: (payload: DesktopUpdateStatus) => void) => () => void;
 }

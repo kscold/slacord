@@ -1,6 +1,6 @@
 {
   "name": "@slacord/contracts",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Slacord 런타임 간 공유 계약 타입",
   "private": true,
   "types": "index.d.ts",

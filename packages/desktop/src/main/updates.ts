@@ -1,11 +1,14 @@
-import { app, BrowserWindow, dialog, ipcMain, type BrowserWindow as BrowserWindowType } from 'electron';
-import type { DesktopUpdateCheckResult, DesktopUpdateInstallResult, DesktopUpdateStage } from '@slacord/contracts';
+import { spawnSync } from 'node:child_process';
+import { app, BrowserWindow, dialog, ipcMain, shell, type BrowserWindow as BrowserWindowType } from 'electron';
+import type { DesktopUpdateCheckResult, DesktopUpdateDownloadResult, DesktopUpdateInstallResult, DesktopUpdateStage } from '@slacord/contracts';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { attachUpdateWindow, getUpdateStatus, setUpdateProgress, setUpdateStatus } from './update-status';
 
 const CHECK_INTERVAL_MS = 1000 * 60 * 60 * 6;
 const INITIAL_CHECK_DELAY_MS = 5000;
+const MANUAL_DOWNLOAD_URL = 'https://slacord.cloud/download';
+const MANUAL_DOWNLOAD_MESSAGE = '현재 macOS 빌드는 수동 다운로드로 업데이트해야 합니다.';
 
 let configured = false;
 let handlersRegistered = false;
@@ -13,6 +16,7 @@ let scheduled = false;
 let downloadedVersion = '';
 let installRequested = false;
 let runningCheck: Promise<DesktopUpdateCheckResult> | null = null;
+let runningDownload: Promise<DesktopUpdateDownloadResult> | null = null;
 
 export function setupAutoUpdates(window: BrowserWindowType) {
     attachUpdateWindow(window);
@@ -20,11 +24,20 @@ export function setupAutoUpdates(window: BrowserWindowType) {
     if (!app.isPackaged || configured) return;
     configured = true;
     autoUpdater.logger = log;
-    autoUpdater.autoDownload = true;
+    autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.autoRunAppAfterInstall = true;
+    if (process.platform === 'darwin') {
+        autoUpdater.forceCodeSigning = false;
+    }
     autoUpdater.on('checking-for-update', () => send('checking'));
-    autoUpdater.on('update-available', (info) => send('available', `v${info.version}`));
+    autoUpdater.on('update-available', (info) => {
+        downloadedVersion = '';
+        installRequested = false;
+        setUpdateProgress(null);
+        const detail = shouldUseManualUpdate() ? `v${info.version} · ${MANUAL_DOWNLOAD_MESSAGE}` : `v${info.version}`;
+        send('available', detail);
+    });
     autoUpdater.on('update-not-available', () => {
         downloadedVersion = '';
         send('idle');
@@ -38,6 +51,7 @@ export function setupAutoUpdates(window: BrowserWindowType) {
         downloadedVersion = info.version;
         setUpdateProgress(null);
         send('downloaded', `v${info.version}`);
+        if (installRequested) return;
         const choice = await dialog.showMessageBox({
             type: 'info',
             buttons: ['지금 재시작', '나중에'],
@@ -50,7 +64,8 @@ export function setupAutoUpdates(window: BrowserWindowType) {
     autoUpdater.on('error', (error) => {
         setUpdateProgress(null);
         installRequested = false;
-        send('error', error.message);
+        downloadedVersion = '';
+        send('error', normalizeUpdateError(error));
     });
     scheduleChecks();
 }
@@ -60,6 +75,7 @@ function registerHandlers() {
     handlersRegistered = true;
     ipcMain.handle('desktop:get-update-status', async () => getUpdateStatus());
     ipcMain.handle('desktop:check-for-updates', async () => checkForUpdates());
+    ipcMain.handle('desktop:download-update', async () => downloadUpdate());
     ipcMain.handle('desktop:restart-to-update', async () => restartToInstall());
 }
 
@@ -79,6 +95,33 @@ async function checkForUpdates(): Promise<DesktopUpdateCheckResult> {
             runningCheck = null;
         });
     return runningCheck;
+}
+
+async function downloadUpdate(): Promise<DesktopUpdateDownloadResult> {
+    if (!app.isPackaged) {
+        return { ok: false, status: { stage: 'idle', detail: '패키징된 앱에서만 다운로드할 수 있습니다.' } };
+    }
+    if (getUpdateStatus().stage === 'downloaded') {
+        return { ok: true, status: getUpdateStatus() };
+    }
+    if (shouldUseManualUpdate()) {
+        await shell.openExternal(MANUAL_DOWNLOAD_URL);
+        send('error', `${MANUAL_DOWNLOAD_MESSAGE} 다운로드 페이지를 열었어요.`);
+        return { ok: false, status: getUpdateStatus() };
+    }
+    if (runningDownload) return runningDownload;
+    send('downloading', '준비 중');
+    runningDownload = autoUpdater
+        .downloadUpdate()
+        .then(() => ({ ok: true, status: getUpdateStatus() }))
+        .catch((error: Error) => {
+            send('error', normalizeUpdateError(error));
+            return { ok: false, status: getUpdateStatus() };
+        })
+        .finally(() => {
+            runningDownload = null;
+        });
+    return runningDownload;
 }
 
 async function restartToInstall(): Promise<DesktopUpdateInstallResult> {
@@ -122,4 +165,28 @@ function scheduleChecks() {
 
 function send(stage: DesktopUpdateStage, detail = '') {
     setUpdateStatus({ stage, detail });
+}
+
+function shouldUseManualUpdate() {
+    return process.platform === 'darwin' && !hasTrustedMacSignature();
+}
+
+function hasTrustedMacSignature() {
+    if (process.platform !== 'darwin') return true;
+    try {
+        const result = spawnSync('codesign', ['-dv', '--verbose=2', app.getPath('exe')], { encoding: 'utf8' });
+        const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+        if (result.status !== 0) return false;
+        return !/Signature=adhoc/i.test(output);
+    } catch {
+        return false;
+    }
+}
+
+function normalizeUpdateError(error: Error) {
+    const message = error.message ?? '업데이트를 처리하지 못했습니다.';
+    if (process.platform === 'darwin' && /code signature/i.test(message)) {
+        return `${MANUAL_DOWNLOAD_MESSAGE} 다운로드 페이지에서 새 버전을 설치해 주세요.`;
+    }
+    return message;
 }

@@ -1,6 +1,6 @@
 {
     "name": "@slacord/web",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "Slacord 웹 프론트엔드 (Next.js)",
     "private": true,
     "scripts": {
@@ -18,7 +18,7 @@
         "@blocknote/core": "^0.47.2",
         "@blocknote/react": "^0.47.2",
         "@radix-ui/react-slot": "^1.2.4",
-        "@slacord/contracts": "1.0.5",
+        "@slacord/contracts": "1.0.6",
         "@tailwindcss/postcss": "^4.1.18",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",

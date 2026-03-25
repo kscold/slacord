@@ -1,6 +1,6 @@
 {
   "name": "@slacord/server",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Slacord 백엔드 서버 (NestJS + 헥사고날 아키텍처)",
   "private": true,
   "scripts": {
