@@ -18,7 +18,7 @@ export function DocumentTree({ documents, teamId }: Props) {
 
 function TreeBranch({ node, teamId, depth }: { node: DocumentTreeNode; teamId: string; depth: number }) {
     const hasChildren = node.children.length > 0;
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(true);
 
     return (
         <div>

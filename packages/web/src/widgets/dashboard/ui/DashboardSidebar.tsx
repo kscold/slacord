@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { siteConfig } from '@/src/shared/config/site';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: '대시보드', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -45,8 +46,8 @@ export function DashboardSidebar({ currentUserName }: Props) {
                 })}
             </nav>
             <div className="hidden border-t border-border-primary p-4 text-xs text-text-tertiary lg:block">
-                <p className="font-semibold text-[#d6b08a]">v1.0.0</p>
-                <p className="mt-1">Internal Collaboration Cloud</p>
+                <p className="font-semibold text-[#d6b08a]">v{siteConfig.desktopVersion}</p>
+                <p className="mt-1">{siteConfig.badge}</p>
             </div>
         </aside>
     );
