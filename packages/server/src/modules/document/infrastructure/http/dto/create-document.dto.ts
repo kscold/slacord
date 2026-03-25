@@ -17,8 +17,8 @@ export class CreateDocumentDto {
     @IsString()
     parentId?: string | null;
 
-    @ApiPropertyOptional({ example: 'plain', enum: ['plain', 'html'] })
+    @ApiPropertyOptional({ example: 'plain', enum: ['plain', 'html', 'json'] })
     @IsOptional()
     @IsString()
-    contentFormat?: 'plain' | 'html';
+    contentFormat?: 'plain' | 'html' | 'json';
 }

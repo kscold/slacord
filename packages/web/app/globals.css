@@ -1,3 +1,6 @@
+@import '@blocknote/core/fonts/inter.css';
+@import '@blocknote/core/style.css';
+@import '@blocknote/react/style.css';
 @import 'tailwindcss' layer(base);
 
 @layer theme {
@@ -59,11 +62,13 @@
     }
 
     body {
+        font-family: 'Geist', 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
         background-color: var(--color-bg-primary);
         color: var(--color-text-primary);
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
     }
 
     img,
@@ -225,5 +230,72 @@
     .confluence-render .slacord-callout-note,
     .confluence-render .slacord-callout-info {
         border-left-color: var(--color-info);
+    }
+
+    .slacord-blocknote {
+        background: transparent;
+        color: var(--color-text-primary);
+    }
+
+    .slacord-blocknote .bn-container,
+    .slacord-blocknote .bn-editor {
+        background: transparent;
+        color: var(--color-text-primary);
+    }
+
+    .slacord-blocknote .bn-editor {
+        min-height: 22rem;
+        padding: 1.25rem 1.35rem;
+    }
+
+    .slacord-blocknote [data-color-scheme='dark'] {
+        --bn-colors-editor-background: transparent;
+        --bn-colors-editor-text: var(--color-text-primary);
+        --bn-colors-menu-background: #17120d;
+        --bn-colors-menu-text: var(--color-text-primary);
+        --bn-colors-tooltip-background: #17120d;
+        --bn-colors-tooltip-text: var(--color-text-primary);
+        --bn-colors-hovered-background: rgba(255, 255, 255, 0.06);
+        --bn-colors-selected-background: rgba(185, 117, 50, 0.18);
+        --bn-colors-side-menu: var(--color-brand-300);
+        --bn-colors-border: var(--color-border-primary);
+    }
+}
+
+@layer utilities {
+    .marketing-kicker {
+        color: var(--color-brand-200);
+        font-size: 0.76rem;
+        font-weight: 600;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+    }
+
+    .marketing-display {
+        text-wrap: balance;
+        letter-spacing: -0.042em;
+        line-height: 1.01;
+        font-weight: 780;
+    }
+
+    .marketing-lead {
+        text-wrap: pretty;
+        letter-spacing: -0.008em;
+        line-height: 1.85;
+        color: #d6c6b5;
+    }
+
+    .marketing-caption {
+        letter-spacing: -0.004em;
+        line-height: 1.7;
+        color: #a99681;
+    }
+
+    .marketing-card {
+        border: 1px solid rgba(201, 162, 114, 0.14);
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+            rgba(17, 13, 9, 0.8);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
     }
 }

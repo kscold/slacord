@@ -16,8 +16,8 @@ export class Doc {
     @Prop({ default: '' })
     content: string;
 
-    @Prop({ type: String, enum: ['plain', 'html'], default: 'plain' })
-    contentFormat: 'plain' | 'html';
+    @Prop({ type: String, enum: ['plain', 'html', 'json'], default: 'plain' })
+    contentFormat: 'plain' | 'html' | 'json';
 
     @Prop({ type: String, default: null })
     parentId: string | null;
@@ -52,6 +52,12 @@ export class Doc {
     /** editPolicy가 restricted일 때 편집 가능한 멤버 ID */
     @Prop({ type: [String], default: [] })
     allowedEditorIds: string[];
+
+    @Prop({ type: Date, default: null })
+    archivedAt: Date | null;
+
+    @Prop({ type: String, default: null })
+    archivedBy: string | null;
 }
 
 export const DocumentSchema = SchemaFactory.createForClass(Doc);
@@ -59,3 +65,4 @@ export const DocumentSchema = SchemaFactory.createForClass(Doc);
 // 팀별 문서 조회를 위한 인덱스
 DocumentSchema.index({ teamId: 1, parentId: 1 });
 DocumentSchema.index({ teamId: 1, externalSource: 1, externalId: 1 });
+DocumentSchema.index({ teamId: 1, archivedAt: 1 });

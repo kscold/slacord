@@ -8,7 +8,7 @@ export class DocumentEntity {
         public readonly teamId: string,
         public readonly title: string,
         public readonly content: string,
-        public readonly contentFormat: 'plain' | 'html',
+        public readonly contentFormat: 'plain' | 'html' | 'json',
         public readonly parentId: string | null,
         public readonly createdBy: string,
         public readonly updatedBy: string,
@@ -19,9 +19,15 @@ export class DocumentEntity {
         public readonly editPolicy: DocEditPolicy,
         public readonly allowedViewerIds: string[],
         public readonly allowedEditorIds: string[],
+        public readonly archivedAt: Date | null,
+        public readonly archivedBy: string | null,
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
     ) {}
+
+    get isArchived(): boolean {
+        return this.archivedAt !== null;
+    }
 
     canView(userId: string, role: string): boolean {
         if (role === 'owner' || role === 'admin') return true;
@@ -58,6 +64,8 @@ export class DocumentEntity {
             editPolicy: this.editPolicy,
             allowedViewerIds: this.allowedViewerIds,
             allowedEditorIds: this.allowedEditorIds,
+            archivedAt: this.archivedAt,
+            archivedBy: this.archivedBy,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
@@ -75,6 +83,7 @@ export class DocumentEntity {
             updatedBy: this.updatedBy,
             visibility: this.visibility,
             editPolicy: this.editPolicy,
+            archivedAt: this.archivedAt,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };

@@ -27,13 +27,17 @@ export class DocumentRepository implements IDocumentRepository {
             (doc as any).editPolicy ?? 'all',
             (doc as any).allowedViewerIds ?? [],
             (doc as any).allowedEditorIds ?? [],
+            (doc as any).archivedAt ?? null,
+            (doc as any).archivedBy ?? null,
             (doc as any).createdAt,
             (doc as any).updatedAt,
         );
     }
 
-    async findByTeam(teamId: string): Promise<DocumentEntity[]> {
-        const docs = await this.model.find({ teamId }).sort({ parentId: 1, createdAt: 1 }).lean();
+    async findByTeam(teamId: string, includeArchived = false): Promise<DocumentEntity[]> {
+        const filter: Record<string, unknown> = { teamId };
+        if (!includeArchived) filter.archivedAt = null;
+        const docs = await this.model.find(filter).sort({ parentId: 1, createdAt: 1 }).lean();
         return docs.map((d) => this.toEntity(d as DocumentDocument));
     }
 
@@ -46,7 +50,7 @@ export class DocumentRepository implements IDocumentRepository {
         teamId: string;
         title: string;
         content: string;
-        contentFormat?: 'plain' | 'html';
+        contentFormat?: 'plain' | 'html' | 'json';
         parentId: string | null;
         createdBy: string;
     }): Promise<DocumentEntity> {
@@ -58,7 +62,7 @@ export class DocumentRepository implements IDocumentRepository {
         teamId: string;
         title: string;
         content: string;
-        contentFormat: 'plain' | 'html';
+        contentFormat: 'plain' | 'html' | 'json';
         parentId: string | null;
         createdBy: string;
         updatedBy: string;
@@ -89,9 +93,24 @@ export class DocumentRepository implements IDocumentRepository {
         return this.toEntity(doc as DocumentDocument);
     }
 
-    async update(id: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html'; updatedBy: string; visibility?: 'team' | 'restricted'; editPolicy?: 'owner_admin' | 'all' | 'restricted'; allowedViewerIds?: string[]; allowedEditorIds?: string[] }): Promise<DocumentEntity | null> {
+    async update(id: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html' | 'json'; updatedBy: string; visibility?: 'team' | 'restricted'; editPolicy?: 'owner_admin' | 'all' | 'restricted'; allowedViewerIds?: string[]; allowedEditorIds?: string[] }): Promise<DocumentEntity | null> {
         const doc = await this.model.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
         return doc ? this.toEntity(doc as DocumentDocument) : null;
+    }
+
+    async archiveById(id: string, archivedBy: string): Promise<DocumentEntity | null> {
+        const doc = await this.model.findByIdAndUpdate(id, { $set: { archivedAt: new Date(), archivedBy } }, { new: true }).lean();
+        return doc ? this.toEntity(doc as DocumentDocument) : null;
+    }
+
+    async restoreById(id: string): Promise<DocumentEntity | null> {
+        const doc = await this.model.findByIdAndUpdate(id, { $set: { archivedAt: null, archivedBy: null } }, { new: true }).lean();
+        return doc ? this.toEntity(doc as DocumentDocument) : null;
+    }
+
+    async archiveByParentId(parentId: string, archivedBy: string): Promise<number> {
+        const result = await this.model.updateMany({ parentId, archivedAt: null }, { $set: { archivedAt: new Date(), archivedBy } });
+        return result.modifiedCount;
     }
 
     async deleteById(id: string): Promise<boolean> {

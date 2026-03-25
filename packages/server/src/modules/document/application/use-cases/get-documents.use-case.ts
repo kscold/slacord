@@ -8,8 +8,8 @@ export class GetDocumentsUseCase {
     constructor(@Inject(DOCUMENT_REPOSITORY) private readonly repo: IDocumentRepository) {}
 
     /** 팀 문서 트리 목록 조회 */
-    async executeList(teamId: string): Promise<DocumentEntity[]> {
-        return this.repo.findByTeam(teamId);
+    async executeList(teamId: string, includeArchived = false): Promise<DocumentEntity[]> {
+        return this.repo.findByTeam(teamId, includeArchived);
     }
 
     /** 단일 문서 조회 */

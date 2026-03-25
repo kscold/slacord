@@ -230,11 +230,36 @@ export const documentApi = {
     async importConfluence(teamId: string, data: { siteUrl: string; email: string; apiToken: string; spaceKey: string; rootPageId?: string }) {
         return apiFetch(`/api/team/${teamId}/document/import/confluence`, { method: 'POST', body: JSON.stringify(data) });
     },
-    async updateDocument(teamId: string, documentId: string, data: { title?: string; content?: string }) {
+    async updateDocument(teamId: string, documentId: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html' | 'json' }) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    async getDocumentVersions(teamId: string, documentId: string) {
+        return apiFetch(`/api/team/${teamId}/document/${documentId}/version`);
+    },
+    async restoreDocumentVersion(teamId: string, documentId: string, versionId: string) {
+        return apiFetch(`/api/team/${teamId}/document/${documentId}/version/${versionId}/restore`, { method: 'POST' });
     },
     async deleteDocument(teamId: string, documentId: string) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`, { method: 'DELETE' });
+    },
+    async archiveDocument(teamId: string, documentId: string) {
+        return apiFetch(`/api/team/${teamId}/document/${documentId}/archive`, { method: 'POST' });
+    },
+    async restoreDocument(teamId: string, documentId: string) {
+        return apiFetch(`/api/team/${teamId}/document/${documentId}/restore`, { method: 'POST' });
+    },
+    async getArchivedDocuments(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/document/archived/list`);
+    },
+    async uploadDocumentImage(teamId: string, file: File) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return apiFetch(`/api/team/${teamId}/document/upload/image`, { method: 'POST', body: formData });
+    },
+    async uploadDocumentFile(teamId: string, documentId: string, file: File) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return apiFetch(`/api/team/${teamId}/document/${documentId}/file`, { method: 'POST', body: formData });
     },
 };
 
