@@ -38,7 +38,7 @@ export function useDashboardMessages() {
     }, []);
 
     useEffect(() => {
-        if (deferredQuery.length < 2 || index.length || !teams.length) return;
+        if (index.length || !teams.length) return;
         let active = true;
         setIndexing(true);
         buildSearchIndex(teams)
@@ -48,7 +48,7 @@ export function useDashboardMessages() {
         return () => {
             active = false;
         };
-    }, [deferredQuery, index.length, teams]);
+    }, [index.length, teams]);
 
     const results = useMemo(() => {
         if (deferredQuery.length < 2) return [];
@@ -58,7 +58,10 @@ export function useDashboardMessages() {
             .slice(0, 30);
     }, [deferredQuery, index]);
 
-    return { booting, currentUserName, error, indexing, query, results, setQuery, teamCount: teams.length };
+    const recentResults = useMemo(() => [...index].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 8), [index]);
+    const pinnedResults = useMemo(() => index.filter((item) => item.isPinned).slice(0, 6), [index]);
+
+    return { booting, currentUserName, error, indexing, pinnedResults, query, recentResults, results, setQuery, teamCount: teams.length };
 }
 
 async function buildSearchIndex(teams: TeamSummary[]) {

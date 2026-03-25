@@ -21,7 +21,13 @@ export function MarketingHeader() {
                         </p>
                     </div>
                 </Link>
-                <nav className="grid grid-cols-2 gap-2 sm:w-auto sm:auto-cols-max sm:grid-flow-col sm:gap-3">
+                <nav className="grid grid-cols-3 gap-2 sm:w-auto sm:auto-cols-max sm:grid-flow-col sm:gap-3">
+                    <Link
+                        href="/download"
+                        className="flex min-h-10 items-center justify-center rounded-full border border-white/8 px-4 py-2 text-sm text-text-secondary transition hover:border-white/16 hover:text-white sm:min-h-11 sm:px-5"
+                    >
+                        다운로드
+                    </Link>
                     <Link
                         href="/auth/login"
                         className="flex min-h-10 items-center justify-center rounded-full border border-white/8 px-4 py-2 text-sm text-text-secondary transition hover:border-white/16 hover:text-white sm:min-h-11 sm:px-5"

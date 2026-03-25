@@ -23,7 +23,7 @@ export function PinnedMessagesPanel({ channelId, onClose, onOpenThread, onToggle
     }, [channelId]);
 
     return (
-        <aside className="w-80 border-l border-border-primary bg-bg-secondary">
+        <aside className="fixed inset-0 z-50 flex flex-col bg-bg-secondary lg:static lg:z-auto lg:w-80 lg:border-l lg:border-border-primary">
             <div className="flex items-center justify-between border-b border-border-primary px-4 py-3">
                 <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-[#d6b08a]">Pinned</p>

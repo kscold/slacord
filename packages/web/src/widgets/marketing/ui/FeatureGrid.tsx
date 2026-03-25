@@ -18,19 +18,22 @@ const features = [
 
 export function FeatureGrid() {
     return (
-        <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-            <div className="mb-6 max-w-2xl">
-                <p className="text-xs uppercase tracking-[0.24em] text-[#c9ab84]">Core Flow</p>
-                <h2 className="mt-3 text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">
+        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+            <div className="mb-7 max-w-3xl">
+                <p className="marketing-kicker">Core Flow</p>
+                <h2 className="marketing-display mt-4 text-[clamp(2.4rem,5vw,4.2rem)] text-white">
                     대화에서 실행, 기록까지 하나로
                 </h2>
+                <p className="marketing-lead mt-4 max-w-2xl text-[1.02rem]">
+                    채팅에서 나온 맥락을 그대로 이슈와 문서로 이어 붙여서, 팀의 흐름이 끊기지 않게 설계했음.
+                </p>
             </div>
             <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
                 {features.map((feature) => (
-                    <article key={feature.title} className="rounded-[24px] border border-white/10 bg-bg-secondary p-5 sm:p-6">
-                        <p className="text-xs uppercase tracking-[0.18em] text-[#c9ab84]">{feature.label}</p>
-                        <h2 className="mt-4 text-2xl font-bold tracking-[-0.03em] text-white">{feature.title}</h2>
-                        <p className="mt-3 text-sm leading-7 text-text-secondary">{feature.description}</p>
+                    <article key={feature.title} className="marketing-card rounded-[28px] p-6 sm:p-7">
+                        <p className="marketing-kicker text-[11px]">{feature.label}</p>
+                        <h2 className="mt-5 text-[2rem] font-bold tracking-[-0.05em] text-white">{feature.title}</h2>
+                        <p className="marketing-caption mt-4 text-[1.02rem] leading-8">{feature.description}</p>
                     </article>
                 ))}
             </div>

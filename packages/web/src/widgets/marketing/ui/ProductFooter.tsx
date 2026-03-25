@@ -5,21 +5,22 @@ export function ProductFooter() {
 
     return (
         <footer className="border-t border-white/8">
-            <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-                <div className="flex flex-col gap-6 md:flex-row md:justify-between">
-                    <div>
-                        <p className="font-semibold text-white">{siteConfig.footerLabel}</p>
-                        <p className="mt-2 text-sm text-[#bfae9c]">{siteConfig.footerDescription}</p>
+            <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
+                <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+                    <div className="max-w-sm">
+                        <p className="marketing-kicker">KSCOLD LABS</p>
+                        <p className="mt-4 text-[1.7rem] font-bold tracking-[-0.05em] text-white">{siteConfig.name}</p>
+                        <p className="marketing-caption mt-3 text-[1.02rem]">{siteConfig.footerDescription}</p>
                     </div>
-                    <div className="grid grid-cols-1 gap-1 text-xs leading-relaxed text-[#9a8d7f] sm:grid-cols-2 sm:gap-x-10">
-                        <p><span className="text-[#bfae9c]">상호</span> 콜딩(Colding)</p>
-                        <p><span className="text-[#bfae9c]">대표</span> 김승찬</p>
-                        <p><span className="text-[#bfae9c]">사업자등록번호</span> 457-49-00942</p>
-                        <p><span className="text-[#bfae9c]">주소</span> 경기도 김포시 김포한강9로75번길 66, 5층</p>
-                        <p><span className="text-[#bfae9c]">이메일</span> <a href="mailto:coldingcontact@gmail.com" className="hover:text-white transition-colors">coldingcontact@gmail.com</a></p>
+                    <div className="grid grid-cols-1 gap-3 text-sm leading-7 text-[#9a8d7f] sm:grid-cols-2 sm:gap-x-12">
+                        <p><span className="mr-2 text-[#d2bd9c]">상호</span>콜딩(Colding)</p>
+                        <p><span className="mr-2 text-[#d2bd9c]">대표</span>김승찬</p>
+                        <p><span className="mr-2 text-[#d2bd9c]">사업자등록번호</span>457-49-00942</p>
+                        <p><span className="mr-2 text-[#d2bd9c]">주소</span>경기도 김포시 김포한강9로75번길 66, 5층</p>
+                        <p><span className="mr-2 text-[#d2bd9c]">이메일</span><a href="mailto:coldingcontact@gmail.com" className="transition-colors hover:text-white">coldingcontact@gmail.com</a></p>
                     </div>
                 </div>
-                <div className="mt-8 border-t border-white/5 pt-6 text-xs text-[#6b6054]">
+                <div className="mt-10 border-t border-white/5 pt-6 text-xs tracking-[0.08em] text-[#6b6054]">
                     &copy; {currentYear} Colding. All rights reserved.
                 </div>
             </div>

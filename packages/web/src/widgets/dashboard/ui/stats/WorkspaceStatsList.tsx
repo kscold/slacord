@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 interface Props {
     stats: Array<{
         id: string;
@@ -16,7 +18,7 @@ export function WorkspaceStatsList({ stats }: Props) {
             <div className="flex items-center justify-between gap-3">
                 <div>
                     <h2 className="text-lg font-semibold text-white">워크스페이스 활동</h2>
-                    <p className="mt-1 text-sm text-text-secondary">채널별 최근 메시지 집계를 워크스페이스 단위로 묶어서 보여줌.</p>
+                    <p className="mt-1 text-sm text-text-secondary">채널별 최근 메시지 집계를 워크스페이스 단위로 묶어서 보여줍니다.</p>
                 </div>
             </div>
             <div className="mt-6 space-y-3">
@@ -33,6 +35,11 @@ export function WorkspaceStatsList({ stats }: Props) {
                                 <span>메시지 {item.messages}</span>
                                 <span>오늘 {item.todayMessages}</span>
                             </div>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <Link href={`/${item.id}`} className="rounded-lg bg-[#b97532] px-3 py-2 text-xs font-semibold text-white">워크스페이스</Link>
+                            <Link href={`/${item.id}/docs`} className="rounded-lg border border-border-primary px-3 py-2 text-xs font-medium text-white">문서</Link>
+                            <Link href={`/${item.id}/issues`} className="rounded-lg border border-border-primary px-3 py-2 text-xs font-medium text-white">이슈</Link>
                         </div>
                     </div>
                 ))}

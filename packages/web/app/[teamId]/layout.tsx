@@ -22,9 +22,9 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     }
 
     return (
-        <div className="flex h-screen bg-bg-primary overflow-hidden">
+        <div className="flex min-h-screen flex-col bg-bg-primary lg:h-screen lg:flex-row lg:overflow-hidden">
             <TeamSidebar teamId={teamId} teamName={teamName} channels={channels} />
-            <main className="flex-1 overflow-auto">{children}</main>
+            <main className="min-w-0 flex-1 overflow-auto">{children}</main>
         </div>
     );
 }

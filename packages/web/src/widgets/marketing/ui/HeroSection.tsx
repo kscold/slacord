@@ -22,9 +22,9 @@ export function HeroSection() {
             </video>
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#120f0b]/60 to-[#120f0b]" />
 
-            <div className="relative mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:py-28">
-                <div className="mx-auto max-w-3xl text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-1.5">
+            <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+                <div className="mx-auto max-w-4xl text-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2 backdrop-blur-md">
                         <Image
                             src="/logo.svg"
                             alt=""
@@ -32,15 +32,21 @@ export function HeroSection() {
                             height={20}
                             className="rounded-md"
                         />
-                        <span className="text-xs font-medium text-[#e2c29a]">{siteConfig.badge}</span>
+                        <span className="text-xs font-medium tracking-[0.08em] text-[#e2c29a]">{siteConfig.badge}</span>
                     </div>
-                    <h1 className="mt-6 whitespace-pre-line text-[clamp(2.3rem,8vw,4.5rem)] font-bold leading-[1.1] tracking-[-0.04em] text-white sm:mt-8">
+                    <h1 className="marketing-display mt-7 whitespace-pre-line text-[clamp(3.25rem,8vw,6.2rem)] text-white sm:mt-9">
                         {siteConfig.headline}
                     </h1>
-                    <p className="mx-auto mt-5 max-w-lg whitespace-pre-line text-base leading-7 text-[#d7c5b3] sm:mt-6 sm:text-lg sm:leading-8">
+                    <p className="marketing-lead mx-auto mt-6 max-w-2xl whitespace-pre-line text-[clamp(1.05rem,2vw,1.35rem)] sm:mt-7">
                         {siteConfig.description}
                     </p>
                     <div className="mt-8 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
+                        <Link
+                            href="/download"
+                            className="flex min-h-12 w-full items-center justify-center rounded-full border border-white/10 px-8 py-3 font-semibold text-white transition hover:bg-white/5 sm:w-auto"
+                        >
+                            앱 다운로드
+                        </Link>
                         <Link
                             href="/auth/register"
                             className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#b97532] px-8 py-3 font-semibold text-white transition hover:bg-[#cf8640] sm:w-auto"
@@ -56,24 +62,24 @@ export function HeroSection() {
                     </div>
                 </div>
 
-                <div className="mx-auto mt-12 grid max-w-3xl gap-3 sm:mt-16 sm:grid-cols-3 sm:gap-4">
+                <div className="mx-auto mt-14 grid max-w-4xl gap-4 sm:mt-18 sm:grid-cols-3 sm:gap-5">
                     {metrics.map((item) => (
                         <div
                             key={item.label}
-                            className="rounded-2xl border border-white/8 bg-white/[0.04] p-5 backdrop-blur-sm transition hover:border-white/15 hover:bg-white/[0.06]"
+                            className="marketing-card rounded-[26px] p-6 backdrop-blur-md transition hover:border-white/18 hover:bg-white/[0.06]"
                         >
                             <div className="flex items-center gap-2">
-                                <span className="text-lg">{item.icon}</span>
-                                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-[#c9ab84]">
+                                <span className="text-xl">{item.icon}</span>
+                                <p className="marketing-kicker text-[11px]">
                                     {item.label}
                                 </p>
                             </div>
-                            <p className="mt-3 text-base font-semibold text-white">{item.value}</p>
+                            <p className="mt-4 text-[1.15rem] font-semibold tracking-[-0.03em] text-white">{item.value}</p>
                         </div>
                     ))}
                 </div>
 
-                <p className="mx-auto mt-8 max-w-md text-center text-sm leading-6 text-[#9a8d7f]">
+                <p className="marketing-caption mx-auto mt-9 max-w-xl text-center text-sm sm:text-[0.95rem]">
                     대화 중 생긴 할 일은 바로 이슈로, 결정은 문서로 남겨요.
                 </p>
             </div>
