@@ -13,6 +13,7 @@ import { GetTeamMembersUseCase } from './application/use-cases/get-team-members.
 import { JoinTeamByInviteUseCase } from './application/use-cases/join-team-by-invite.use-case';
 import { JoinTeamUseCase } from './application/use-cases/join-team.use-case';
 import { RevokeInviteLinkUseCase } from './application/use-cases/revoke-invite-link.use-case';
+import { DeleteInviteLinkUseCase } from './application/use-cases/delete-invite-link.use-case';
 import { UpdateGithubConfigUseCase } from './application/use-cases/update-github-config.use-case';
 import { UpdateMemberAccessUseCase } from './application/use-cases/update-member-access.use-case';
 import { TeamInviteController } from './infrastructure/http/team-invite.controller';
@@ -33,6 +34,7 @@ import { AuthModule } from '../auth/auth.module';
         GetInviteLinksUseCase,
         CreateInviteLinkUseCase,
         RevokeInviteLinkUseCase,
+        DeleteInviteLinkUseCase,
         GetInvitePreviewUseCase,
         JoinTeamByInviteUseCase,
         UpdateMemberAccessUseCase,

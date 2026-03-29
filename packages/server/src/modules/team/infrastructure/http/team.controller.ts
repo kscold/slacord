@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
@@ -10,6 +10,7 @@ import { GetTeamsUseCase } from '../../application/use-cases/get-teams.use-case'
 import { GetTeamMembersUseCase } from '../../application/use-cases/get-team-members.use-case';
 import { JoinTeamUseCase } from '../../application/use-cases/join-team.use-case';
 import { RevokeInviteLinkUseCase } from '../../application/use-cases/revoke-invite-link.use-case';
+import { DeleteInviteLinkUseCase } from '../../application/use-cases/delete-invite-link.use-case';
 import { UpdateGithubConfigUseCase } from '../../application/use-cases/update-github-config.use-case';
 import { UpdateMemberAccessUseCase } from '../../application/use-cases/update-member-access.use-case';
 import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
@@ -33,6 +34,7 @@ export class TeamController {
         private readonly getInviteLinksUseCase: GetInviteLinksUseCase,
         private readonly createInviteLinkUseCase: CreateInviteLinkUseCase,
         private readonly revokeInviteLinkUseCase: RevokeInviteLinkUseCase,
+        private readonly deleteInviteLinkUseCase: DeleteInviteLinkUseCase,
         private readonly updateMemberAccessUseCase: UpdateMemberAccessUseCase,
     ) {}
 
@@ -104,6 +106,14 @@ export class TeamController {
     async revokeInviteLink(@Param('teamId') teamId: string, @Param('code') code: string, @CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         return { success: true, data: await this.revokeInviteLinkUseCase.execute(teamId, code, user.userId) };
+    }
+
+    @Delete(':teamId/invite-links/:code')
+    @ApiOperation({ summary: '초대 링크 삭제' })
+    async deleteInviteLink(@Param('teamId') teamId: string, @Param('code') code: string, @CurrentUser() user: { userId: string }) {
+        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
+        await this.deleteInviteLinkUseCase.execute(teamId, code, user.userId);
+        return { success: true };
     }
 
     @Patch(':teamId/member/:memberId/access')
