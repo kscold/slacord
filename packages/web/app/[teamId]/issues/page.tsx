@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { use } from 'react';
+import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import { KanbanColumn } from '@/src/features/issue/ui/KanbanColumn';
 import { IssueModal } from '@/src/features/issue/ui/IssueModal';
 import { useIssueStore } from '@/src/features/issue/model/issue.store';
-import { issueApi } from '@/lib/api-client';
+import { issueApi, teamApi } from '@/lib/api-client';
 import type { Issue, IssueStatus, IssuePriority } from '@/src/entities/issue/types';
 import { ISSUE_STATUS_LABELS } from '@/src/entities/issue/types';
+import type { TeamMemberSummary } from '@/src/entities/team/types';
 
 const COLUMNS: IssueStatus[] = ['todo', 'in_progress', 'in_review', 'done'];
 
@@ -18,18 +20,23 @@ interface Props {
 export default function IssuesPage({ params }: Props) {
     const { teamId } = use(params);
     const { issues, setIssues, addIssue, updateIssue, removeIssue, byStatus } = useIssueStore();
+    const [members, setMembers] = useState<TeamMemberSummary[]>([]);
     const [showCreate, setShowCreate] = useState(false);
     const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
     const [createStatus, setCreateStatus] = useState<IssueStatus>('todo');
 
     useEffect(() => {
-        issueApi.getIssues(teamId).then((res) => {
-            if (res.success && Array.isArray(res.data)) setIssues(res.data as Issue[]);
+        Promise.all([
+            issueApi.getIssues(teamId),
+            teamApi.getMembers(teamId),
+        ]).then(([issueRes, memberRes]) => {
+            if (issueRes.success && Array.isArray(issueRes.data)) setIssues(issueRes.data as Issue[]);
+            if (memberRes.success && Array.isArray(memberRes.data)) setMembers(memberRes.data as TeamMemberSummary[]);
         });
     }, [teamId]);
 
-    const handleCreate = async (data: { title: string; description?: string; priority: IssuePriority }) => {
-        const res = await issueApi.createIssue(teamId, data);
+    const handleCreate = async (data: { title: string; description?: string; priority: IssuePriority; assigneeIds?: string[] }) => {
+        const res = await issueApi.createIssue(teamId, { ...data, status: createStatus } as any);
         if (res.success && res.data) addIssue(res.data as Issue);
     };
 
@@ -42,6 +49,18 @@ export default function IssuesPage({ params }: Props) {
     const handleDelete = async (issueId: string) => {
         await issueApi.deleteIssue(teamId, issueId);
         removeIssue(issueId);
+    };
+
+    const handleDragEnd = async (result: DropResult) => {
+        const { draggableId, destination, source } = result;
+        if (!destination || destination.droppableId === source.droppableId) return;
+
+        const newStatus = destination.droppableId as IssueStatus;
+        // optimistic update
+        const issue = issues.find((i) => i.id === draggableId);
+        if (issue) updateIssue(draggableId, { ...issue, status: newStatus } as Issue);
+        // persist
+        await issueApi.updateIssue(teamId, draggableId, { status: newStatus });
     };
 
     return (
@@ -60,24 +79,28 @@ export default function IssuesPage({ params }: Props) {
             </div>
 
             <div className="flex-1 overflow-x-auto p-6">
-                <div className="flex gap-4 h-full">
-                    {COLUMNS.map((status) => (
-                        <KanbanColumn
-                            key={status}
-                            status={status}
-                            label={ISSUE_STATUS_LABELS[status]}
-                            issues={byStatus(status)}
-                            onCardClick={(issue) => setSelectedIssue(issue)}
-                            onAddClick={() => { setCreateStatus(status); setShowCreate(true); }}
-                        />
-                    ))}
-                </div>
+                <DragDropContext onDragEnd={handleDragEnd}>
+                    <div className="flex gap-4 h-full">
+                        {COLUMNS.map((status) => (
+                            <KanbanColumn
+                                key={status}
+                                status={status}
+                                label={ISSUE_STATUS_LABELS[status]}
+                                issues={byStatus(status)}
+                                members={members}
+                                onCardClick={(issue) => setSelectedIssue(issue)}
+                                onAddClick={() => { setCreateStatus(status); setShowCreate(true); }}
+                            />
+                        ))}
+                    </div>
+                </DragDropContext>
             </div>
 
             {showCreate && (
                 <IssueModal
                     mode="create"
                     teamId={teamId}
+                    members={members}
                     onSubmit={handleCreate}
                     onClose={() => setShowCreate(false)}
                 />
@@ -86,6 +109,7 @@ export default function IssuesPage({ params }: Props) {
                 <IssueModal
                     mode="edit"
                     issue={selectedIssue}
+                    members={members}
                     onSubmit={handleUpdate}
                     onClose={() => setSelectedIssue(null)}
                 />

@@ -12,6 +12,7 @@ import { SidebarUserBar } from './SidebarUserBar';
 import { SidebarWorkspaceHeader } from './SidebarWorkspaceHeader';
 import { CreateChannelButton } from './CreateChannelButton';
 import { WorkspaceMobileNav } from './WorkspaceMobileNav';
+import { NotificationBell } from '@/src/features/notification/ui/NotificationBell';
 
 interface Props {
     teamId: string;
@@ -34,6 +35,7 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
             <aside className="hidden h-screen w-60 shrink-0 border-r border-border-primary bg-bg-secondary lg:flex lg:flex-col lg:sticky lg:top-0">
                 <SidebarWorkspaceHeader teamId={teamId} teamName={teamName} isDesktopMac={isDesktopMac} />
                 <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+                    <NotificationBell teamId={teamId} />
                     <SidebarSection title="채널" action={<CreateChannelButton teamId={teamId} />}>
                         {workspaceChannels.length === 0 && <p className="px-3 py-2 text-xs text-text-tertiary">아직 채널이 없습니다.</p>}
                         {workspaceChannels.map((channel) => <SidebarNavLink key={channel.id} href={`/${teamId}/channel/${channel.id}`} label={`# ${channel.name}`} active={isActive(`/${teamId}/channel/${channel.id}`)} />)}

@@ -56,10 +56,10 @@ export const authApi = {
     /**
      * 로그인
      */
-    async login(email: string, password: string) {
+    async login(email: string, password: string, rememberMe?: boolean) {
         return apiFetch('/api/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, rememberMe }),
         });
     },
 
@@ -275,5 +275,23 @@ export const documentApi = {
 export const presenceApi = {
     async getPresence(teamId: string) {
         return apiFetch(`/api/team/${teamId}/presence`);
+    },
+};
+
+/**
+ * 알림 API
+ */
+export const notificationApi = {
+    async getNotifications(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/notification`);
+    },
+    async getUnreadCount(teamId: string) {
+        return apiFetch<{ count: number }>(`/api/team/${teamId}/notification/unread-count`);
+    },
+    async markAsRead(teamId: string, notificationId: string) {
+        return apiFetch(`/api/team/${teamId}/notification/${notificationId}/read`, { method: 'PATCH' });
+    },
+    async markAllAsRead(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/notification/read-all`, { method: 'PATCH' });
     },
 };
