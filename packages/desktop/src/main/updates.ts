@@ -1,5 +1,4 @@
-import { spawnSync } from 'node:child_process';
-import { app, BrowserWindow, dialog, ipcMain, shell, type BrowserWindow as BrowserWindowType } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, type BrowserWindow as BrowserWindowType } from 'electron';
 import type { DesktopUpdateCheckResult, DesktopUpdateDownloadResult, DesktopUpdateInstallResult, DesktopUpdateStage } from '@slacord/contracts';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
@@ -7,8 +6,6 @@ import { attachUpdateWindow, getUpdateStatus, setUpdateProgress, setUpdateStatus
 
 const CHECK_INTERVAL_MS = 1000 * 60 * 60 * 6;
 const INITIAL_CHECK_DELAY_MS = 5000;
-const MANUAL_DOWNLOAD_URL = 'https://slacord.cloud/download';
-const MANUAL_DOWNLOAD_MESSAGE = '현재 macOS 빌드는 수동 다운로드로 업데이트해야 합니다.';
 
 let configured = false;
 let handlersRegistered = false;
@@ -35,8 +32,7 @@ export function setupAutoUpdates(window: BrowserWindowType) {
         downloadedVersion = '';
         installRequested = false;
         setUpdateProgress(null);
-        const detail = shouldUseManualUpdate() ? `v${info.version} · ${MANUAL_DOWNLOAD_MESSAGE}` : `v${info.version}`;
-        send('available', detail);
+        send('available', `v${info.version}`);
     });
     autoUpdater.on('update-not-available', () => {
         downloadedVersion = '';
@@ -104,11 +100,6 @@ async function downloadUpdate(): Promise<DesktopUpdateDownloadResult> {
     if (getUpdateStatus().stage === 'downloaded') {
         return { ok: true, status: getUpdateStatus() };
     }
-    if (shouldUseManualUpdate()) {
-        await shell.openExternal(MANUAL_DOWNLOAD_URL);
-        send('error', `${MANUAL_DOWNLOAD_MESSAGE} 다운로드 페이지를 열었어요.`);
-        return { ok: false, status: getUpdateStatus() };
-    }
     if (runningDownload) return runningDownload;
     send('downloading', '준비 중');
     runningDownload = autoUpdater
@@ -167,26 +158,7 @@ function send(stage: DesktopUpdateStage, detail = '') {
     setUpdateStatus({ stage, detail });
 }
 
-function shouldUseManualUpdate() {
-    return process.platform === 'darwin' && !hasTrustedMacSignature();
-}
-
-function hasTrustedMacSignature() {
-    if (process.platform !== 'darwin') return true;
-    try {
-        const result = spawnSync('codesign', ['-dv', '--verbose=2', app.getPath('exe')], { encoding: 'utf8' });
-        const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
-        if (result.status !== 0) return false;
-        return !/Signature=adhoc/i.test(output);
-    } catch {
-        return false;
-    }
-}
-
 function normalizeUpdateError(error: Error) {
     const message = error.message ?? '업데이트를 처리하지 못했습니다.';
-    if (process.platform === 'darwin' && /code signature/i.test(message)) {
-        return `${MANUAL_DOWNLOAD_MESSAGE} 다운로드 페이지에서 새 버전을 설치해 주세요.`;
-    }
     return message;
 }

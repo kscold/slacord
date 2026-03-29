@@ -5,6 +5,7 @@ const desktopBridge: SlacordDesktopBridge = {
     isDesktop: true,
     platform: process.platform,
     notify: (title: string, body: string) => ipcRenderer.invoke('desktop:notify', { title, body }),
+    requestMediaAccess: () => ipcRenderer.invoke('desktop:request-media-access') as Promise<{ microphone: boolean; camera: boolean }>,
     getUpdateStatus: () => ipcRenderer.invoke('desktop:get-update-status') as Promise<DesktopUpdateStatus>,
     checkForUpdates: () => ipcRenderer.invoke('desktop:check-for-updates') as Promise<DesktopUpdateCheckResult>,
     downloadUpdate: () => ipcRenderer.invoke('desktop:download-update') as Promise<DesktopUpdateDownloadResult>,

@@ -31,6 +31,7 @@ export interface SlacordDesktopBridge {
     isDesktop: boolean;
     platform: string;
     notify: (title: string, body: string) => Promise<boolean>;
+    requestMediaAccess: () => Promise<{ microphone: boolean; camera: boolean }>;
     getUpdateStatus: () => Promise<DesktopUpdateStatus>;
     checkForUpdates: () => Promise<DesktopUpdateCheckResult>;
     downloadUpdate: () => Promise<DesktopUpdateDownloadResult>;
