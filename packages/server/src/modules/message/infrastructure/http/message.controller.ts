@@ -86,11 +86,12 @@ export class MessageController {
     @Delete(':messageId')
     @ApiOperation({ summary: '메시지 삭제 (작성자 본인만)' })
     async deleteMessage(
-        @Param('channelId') _channelId: string,
+        @Param('channelId') channelId: string,
         @Param('messageId') messageId: string,
         @CurrentUser() user: { userId: string },
     ) {
         await this.deleteMessageUseCase.execute(messageId, user.userId);
+        this.messageGateway.emitMessageDeleted(channelId, messageId);
         return { success: true };
     }
 }

@@ -91,6 +91,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
             this.emitNewMessage(payload.channelId, data);
             return { success: true, data };
         } catch (error) {
+            this.logger.error('Failed to send message', error instanceof Error ? error.stack : error);
             client.emit('error', { message: 'Failed to send message.' });
         }
     }
@@ -104,6 +105,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
             this.server.to(`channel:${payload.channelId}`).emit('reaction_updated', message.toPublic());
             return { success: true };
         } catch (error) {
+            this.logger.error('Failed to add reaction', error instanceof Error ? error.stack : error);
             client.emit('error', { message: 'Failed to add reaction.' });
         }
     }
@@ -162,7 +164,108 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
         this.server.to(`channel:${channelId}`).emit('new_message', message);
     }
 
+    emitMessageDeleted(channelId: string, messageId: string) {
+        this.server.to(`channel:${channelId}`).emit('message_deleted', { messageId });
+    }
+
     emitPinnedUpdated(channelId: string, message: Record<string, unknown>) {
         this.server.to(`channel:${channelId}`).emit('pinned_message_updated', message);
+    }
+
+    // ─── 허들(음성/영상 통화) 시그널링 ───
+
+    /** 허들 참여자 목록 (channelId → Set<{userId, audio, video}>) */
+    private huddleRooms = new Map<string, Map<string, { audio: boolean; video: boolean }>>();
+
+    @SubscribeMessage('huddle:join')
+    handleHuddleJoin(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
+        const user = this.getUser(client);
+        const roomKey = `huddle:${data.channelId}`;
+        client.join(roomKey);
+
+        if (!this.huddleRooms.has(data.channelId)) {
+            this.huddleRooms.set(data.channelId, new Map());
+        }
+        this.huddleRooms.get(data.channelId)!.set(user.userId, { audio: true, video: false });
+
+        // 기존 참여자들에게 새 유저 알림
+        client.to(roomKey).emit('huddle:user-joined', { channelId: data.channelId, userId: user.userId });
+
+        // 참여자 목록 전체 브로드캐스트
+        this.broadcastHuddleParticipants(data.channelId);
+    }
+
+    @SubscribeMessage('huddle:leave')
+    handleHuddleLeave(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
+        const user = this.getUser(client);
+        const roomKey = `huddle:${data.channelId}`;
+        client.leave(roomKey);
+
+        this.huddleRooms.get(data.channelId)?.delete(user.userId);
+        if (this.huddleRooms.get(data.channelId)?.size === 0) {
+            this.huddleRooms.delete(data.channelId);
+        }
+
+        this.server.to(roomKey).emit('huddle:user-left', { userId: user.userId });
+        this.broadcastHuddleParticipants(data.channelId);
+    }
+
+    @SubscribeMessage('huddle:offer')
+    handleHuddleOffer(
+        @MessageBody() data: { channelId: string; targetUserId: string; offer: RTCSessionDescriptionInit },
+        @ConnectedSocket() client: Socket,
+    ) {
+        const user = this.getUser(client);
+        // targetUserId의 소켓을 찾아서 offer 전달
+        const roomKey = `huddle:${data.channelId}`;
+        client.to(roomKey).emit('huddle:offer', {
+            channelId: data.channelId,
+            fromUserId: user.userId,
+            offer: data.offer,
+        });
+    }
+
+    @SubscribeMessage('huddle:answer')
+    handleHuddleAnswer(
+        @MessageBody() data: { channelId: string; targetUserId: string; answer: RTCSessionDescriptionInit },
+        @ConnectedSocket() client: Socket,
+    ) {
+        const user = this.getUser(client);
+        const roomKey = `huddle:${data.channelId}`;
+        client.to(roomKey).emit('huddle:answer', {
+            fromUserId: user.userId,
+            answer: data.answer,
+        });
+    }
+
+    @SubscribeMessage('huddle:ice-candidate')
+    handleHuddleIceCandidate(
+        @MessageBody() data: { channelId: string; targetUserId: string; candidate: RTCIceCandidateInit },
+        @ConnectedSocket() client: Socket,
+    ) {
+        const user = this.getUser(client);
+        const roomKey = `huddle:${data.channelId}`;
+        client.to(roomKey).emit('huddle:ice-candidate', {
+            fromUserId: user.userId,
+            candidate: data.candidate,
+        });
+    }
+
+    @SubscribeMessage('huddle:toggle-media')
+    handleHuddleToggleMedia(
+        @MessageBody() data: { channelId: string; audio: boolean; video: boolean },
+        @ConnectedSocket() client: Socket,
+    ) {
+        const user = this.getUser(client);
+        this.huddleRooms.get(data.channelId)?.set(user.userId, { audio: data.audio, video: data.video });
+        this.broadcastHuddleParticipants(data.channelId);
+    }
+
+    private broadcastHuddleParticipants(channelId: string) {
+        const room = this.huddleRooms.get(channelId);
+        const participants = room
+            ? [...room.entries()].map(([userId, media]) => ({ userId, ...media }))
+            : [];
+        this.server.to(`huddle:${channelId}`).emit('huddle:participants', { channelId, participants });
     }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { ITeamRepository } from '../../domain/team.port';
@@ -28,8 +28,11 @@ export class TeamRepository implements ITeamRepository {
     }
 
     async findByGithubRepo(repoFullName: string): Promise<TeamEntity | null> {
-        const docs = await this.teamModel.find({ githubConfig: { $ne: null } }).lean();
-        const doc = docs.find((item) => normalizeGitHubRepo(item.githubConfig?.repoUrl ?? '') === repoFullName);
+        // repoFullName은 "owner/repo" 형태. repoUrl에 이 문자열이 포함된 팀을 MongoDB에서 직접 검색
+        const escapedName = repoFullName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const doc = await this.teamModel.findOne({
+            'githubConfig.repoUrl': { $regex: escapedName, $options: 'i' },
+        }).lean();
         return doc ? this.toEntity(doc) : null;
     }
 
@@ -54,7 +57,8 @@ export class TeamRepository implements ITeamRepository {
         const doc = await this.teamModel
             .findByIdAndUpdate(teamId, { $push: { members: member } }, { new: true })
             .lean();
-        return this.toEntity(doc!);
+        if (!doc) throw new NotFoundException(`팀을 찾을 수 없습니다: ${teamId}`);
+        return this.toEntity(doc);
     }
 
     async replaceAccess(teamId: string, members: TeamMember[], inviteLinks: TeamInviteLink[]): Promise<TeamEntity | null> {

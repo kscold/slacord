@@ -58,6 +58,16 @@ export class DocumentController {
         return { success: true, data: visible.map((d) => d.toTreeNode()) };
     }
 
+    @Get('archived/list')
+    @ApiOperation({ summary: '아카이브된 문서 목록 조회' })
+    async getArchivedDocuments(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
+        const role = await this.requireMemberRole(teamId, user.userId);
+        if (role !== 'owner' && role !== 'admin') throw new ForbiddenException('아카이브 목록은 관리자만 볼 수 있습니다.');
+        const docs = await this.getUseCase.executeList(teamId, true);
+        const archived = docs.filter((d) => d.isArchived);
+        return { success: true, data: archived.map((d) => d.toTreeNode()) };
+    }
+
     @Get(':documentId')
     @ApiOperation({ summary: '단일 문서 조회 (content 포함, 권한 체크)' })
     async getDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @CurrentUser() user: { userId: string }) {
@@ -171,16 +181,6 @@ export class DocumentController {
         if (existing.teamId !== teamId) throw new ForbiddenException('이 문서에 접근할 권한이 없습니다.');
         const doc = await this.restoreUseCase.execute(documentId);
         return { success: true, data: doc.toPublic() };
-    }
-
-    @Get('archived/list')
-    @ApiOperation({ summary: '아카이브된 문서 목록 조회' })
-    async getArchivedDocuments(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
-        const role = await this.requireMemberRole(teamId, user.userId);
-        if (role !== 'owner' && role !== 'admin') throw new ForbiddenException('아카이브 목록은 관리자만 볼 수 있습니다.');
-        const docs = await this.getUseCase.executeList(teamId, true);
-        const archived = docs.filter((d) => d.isArchived);
-        return { success: true, data: archived.map((d) => d.toTreeNode()) };
     }
 
     @Delete(':documentId')
