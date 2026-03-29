@@ -16,7 +16,8 @@ interface Props {
 }
 
 export function ThreadPanel({ channelId, parentMessage, onClose, onSendReply, onUploadReply, isUploading }: Props) {
-    const liveReplies = useChatStore((state) => state.messages.filter((message) => message.replyToId === parentMessage.id));
+    const allMessages = useChatStore((state) => state.messages);
+    const liveReplies = useMemo(() => allMessages.filter((m) => m.replyToId === parentMessage.id), [allMessages, parentMessage.id]);
     const [replies, setReplies] = useState<Message[]>([]);
     const mergedReplies = useMemo(() => {
         const map = new Map<string, Message>();
