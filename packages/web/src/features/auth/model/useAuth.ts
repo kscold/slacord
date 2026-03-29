@@ -13,11 +13,11 @@ export function useLogin(nextPath?: string) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string, rememberMe?: boolean) => {
         setError('');
         setLoading(true);
         try {
-            await authApi.login(email, password);
+            await authApi.login(email, password, rememberMe);
             router.push(resolveNextPath(nextPath));
         } catch (caught) {
             setError(caught instanceof Error ? caught.message : '로그인에 실패했습니다.');

@@ -1,10 +1,13 @@
+import { Droppable } from '@hello-pangea/dnd';
 import type { Issue, IssueStatus } from '@/src/entities/issue/types';
 import { IssueCard } from './IssueCard';
+import type { TeamMemberSummary } from '@/src/entities/team/types';
 
 interface Props {
     status: IssueStatus;
     label: string;
     issues: Issue[];
+    members: TeamMemberSummary[];
     onCardClick: (issue: Issue) => void;
     onAddClick: () => void;
 }
@@ -16,7 +19,7 @@ const COLUMN_HEADER_COLORS: Record<IssueStatus, string> = {
     done: 'text-slack-green',
 };
 
-export function KanbanColumn({ status, label, issues, onCardClick, onAddClick }: Props) {
+export function KanbanColumn({ status, label, issues, members, onCardClick, onAddClick }: Props) {
     return (
         <div className="flex flex-col bg-bg-secondary rounded-xl border border-border-primary min-w-64 w-64 shrink-0">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
@@ -33,14 +36,23 @@ export function KanbanColumn({ status, label, issues, onCardClick, onAddClick }:
                     </svg>
                 </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-32">
-                {issues.map((issue) => (
-                    <IssueCard key={issue.id} issue={issue} onClick={onCardClick} />
-                ))}
-                {issues.length === 0 && (
-                    <p className="text-xs text-text-tertiary text-center py-4">이슈 없음</p>
+            <Droppable droppableId={status}>
+                {(provided, snapshot) => (
+                    <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`flex-1 overflow-y-auto p-3 space-y-2 min-h-32 transition-colors ${snapshot.isDraggingOver ? 'bg-white/[0.04]' : ''}`}
+                    >
+                        {issues.map((issue, index) => (
+                            <IssueCard key={issue.id} issue={issue} index={index} members={members} onClick={onCardClick} />
+                        ))}
+                        {provided.placeholder}
+                        {issues.length === 0 && !snapshot.isDraggingOver && (
+                            <p className="text-xs text-text-tertiary text-center py-4">이슈 없음</p>
+                        )}
+                    </div>
                 )}
-            </div>
+            </Droppable>
         </div>
     );
 }
