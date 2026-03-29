@@ -1,4 +1,4 @@
-import { BrowserWindow, Notification, ipcMain } from 'electron';
+import { app, BrowserWindow, Notification, ipcMain } from 'electron';
 import { getNotificationIcon } from './config';
 
 export function registerNotificationIpc() {
@@ -13,7 +13,9 @@ export function registerNotificationIpc() {
                 body: body.slice(0, 500),
                 icon: getNotificationIcon(),
                 silent: false,
+                urgency: 'critical',
             });
+
             // 알림 클릭 시 앱 포커스
             notification.on('click', () => {
                 const win = BrowserWindow.getAllWindows()[0];
@@ -23,7 +25,15 @@ export function registerNotificationIpc() {
                     win.focus();
                 }
             });
+
             notification.show();
+
+            // macOS: 앱이 포커스가 아닐 때 Dock 바운스
+            const win = BrowserWindow.getAllWindows()[0];
+            if (process.platform === 'darwin' && (!win || !win.isFocused())) {
+                app.dock?.bounce('informational');
+            }
+
             return true;
         } catch {
             return false;
