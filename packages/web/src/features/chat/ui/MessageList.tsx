@@ -29,14 +29,17 @@ export function MessageList({ currentUserId, onReact, onDelete, onOpenThread, on
         );
     }
 
+    // 스레드 답글은 메인 목록에서 숨김 (스레드 패널에서만 표시)
+    const mainMessages = messages.filter((msg) => !msg.replyToId);
+
     return (
         <div className="flex-1 overflow-y-auto py-2">
-            {messages.length === 0 && (
+            {mainMessages.length === 0 && (
                 <div className="flex items-center justify-center h-full text-text-tertiary text-sm">
                     아직 메시지가 없습니다. 첫 번째 메시지를 보내보세요!
                 </div>
             )}
-            {messages.map((msg) => (
+            {mainMessages.map((msg) => (
                 <MessageItem
                     key={msg.id}
                     message={msg}

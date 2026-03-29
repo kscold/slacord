@@ -43,8 +43,21 @@ const renderBlock = (block: string) => {
     return `<p>${lines.map((line) => formatInline(line)).join('<br />')}</p>`;
 };
 
+/** 위험한 HTML 태그/속성을 제거하여 XSS 방지 */
+function sanitizeHtml(html: string): string {
+    return html
+        // script, iframe, object, embed, form 태그 제거
+        .replace(/<\s*\/?\s*(script|iframe|object|embed|form|base|meta|link|style)\b[^>]*>/gi, '')
+        // 이벤트 핸들러 속성 제거 (on*)
+        .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        // javascript: 프로토콜 제거
+        .replace(/\b(href|src|action)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, '$1=""')
+        // data: 프로토콜 제거 (이미지 제외)
+        .replace(/\b(href|action)\s*=\s*(?:"data:[^"]*"|'data:[^']*')/gi, '$1=""');
+}
+
 export function renderDocumentContent(doc: Pick<DocumentFull, 'content' | 'contentFormat'>) {
     if (!doc.content.trim()) return '';
-    if (doc.contentFormat === 'html') return doc.content;
+    if (doc.contentFormat === 'html') return sanitizeHtml(doc.content);
     return doc.content.replace(/\r\n/g, '\n').split(/\n{2,}/).map((block) => renderBlock(block)).join('');
 }

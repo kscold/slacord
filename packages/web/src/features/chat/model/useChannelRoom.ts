@@ -50,29 +50,38 @@ export function useChannelRoom(teamId: string, channelId: string) {
             })
             .finally(() => active && setLoading(false));
         const socket = getChatSocket();
+        const typingMap = new Map<string, { label: string; timer: ReturnType<typeof setTimeout> }>();
+        const syncTypingUsers = () => setTypingUsers([...typingMap.values()].map((v) => v.label));
         const handleTyping = ({ userId, username }: { userId: string; username?: string }) => {
             if (userId === currentUserId.current) return;
-            setTypingUsers([username || '동료']);
-            if (typingTimer.current) clearTimeout(typingTimer.current);
-            typingTimer.current = setTimeout(() => setTypingUsers([]), 2000);
+            const prev = typingMap.get(userId);
+            if (prev) clearTimeout(prev.timer);
+            typingMap.set(userId, {
+                label: username || '동료',
+                timer: setTimeout(() => { typingMap.delete(userId); syncTypingUsers(); }, 2500),
+            });
+            syncTypingUsers();
         };
         const handleNewMessage = (message: Message) => {
             addMessage(message);
             void notifyIncomingMessage(message, channelLabelRef.current, currentUserId.current);
         };
+        const handleReactionUpdated = (message: Message) => updateMessage(message.id, message);
+        const handlePinnedUpdated = (message: Message) => updateMessage(message.id, message);
+        const handleMessageDeleted = ({ messageId }: { messageId: string }) => removeMessage(messageId);
         socket.emit('join_channel', { channelId });
         socket.on('new_message', handleNewMessage);
-        socket.on('reaction_updated', (message: Message) => updateMessage(message.id, message));
-        socket.on('pinned_message_updated', (message: Message) => updateMessage(message.id, message));
-        socket.on('message_deleted', ({ messageId }: { messageId: string }) => removeMessage(messageId));
+        socket.on('reaction_updated', handleReactionUpdated);
+        socket.on('pinned_message_updated', handlePinnedUpdated);
+        socket.on('message_deleted', handleMessageDeleted);
         socket.on('user_typing', handleTyping);
         return () => {
             active = false;
             socket.emit('leave_channel', { channelId });
             socket.off('new_message', handleNewMessage);
-            socket.off('reaction_updated');
-            socket.off('pinned_message_updated');
-            socket.off('message_deleted');
+            socket.off('reaction_updated', handleReactionUpdated);
+            socket.off('pinned_message_updated', handlePinnedUpdated);
+            socket.off('message_deleted', handleMessageDeleted);
             socket.off('user_typing', handleTyping);
         };
     }, [addMessage, channelId, removeMessage, reset, setLoading, setMessages, setTypingUsers, teamId, updateMessage]);
@@ -95,7 +104,10 @@ export function useChannelRoom(teamId: string, channelId: string) {
         },
         sendTyping: () => getChatSocket().emit('typing', { channelId }),
         reactToMessage: (messageId: string, emoji: string) => getChatSocket().emit('add_reaction', { messageId, channelId, emoji }),
-        deleteMessage: (messageId: string) => messageApi.deleteMessage(channelId, messageId),
+        deleteMessage: (messageId: string) => {
+            removeMessage(messageId);
+            messageApi.deleteMessage(channelId, messageId);
+        },
         togglePinMessage: async (message: Message) => {
             const response = await messageApi.pinMessage(channelId, message.id, !message.isPinned);
             if (response.success && response.data) {

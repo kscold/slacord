@@ -10,23 +10,25 @@ interface Props {
 
 export function HuddleControls({ audio, video, onToggleAudio, onToggleVideo, onLeave }: Props) {
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
             <button
                 onClick={onToggleAudio}
-                className={`rounded-full p-2.5 transition ${audio ? 'bg-bg-hover text-white' : 'bg-red-500/20 text-red-400'}`}
+                className={`rounded-full p-2 transition ${audio ? 'text-white hover:bg-white/10' : 'bg-red-500/20 text-red-400'}`}
                 title={audio ? '음소거' : '음소거 해제'}
             >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {audio ? (
+                {audio ? (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    ) : (
+                    </svg>
+                ) : (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                    )}
-                </svg>
+                    </svg>
+                )}
             </button>
             <button
                 onClick={onToggleVideo}
-                className={`rounded-full p-2.5 transition ${video ? 'bg-bg-hover text-white' : 'bg-bg-hover text-text-tertiary'}`}
+                className={`rounded-full p-2 transition ${video ? 'text-white hover:bg-white/10' : 'text-text-tertiary hover:bg-white/10'}`}
                 title={video ? '카메라 끄기' : '카메라 켜기'}
             >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,7 +37,7 @@ export function HuddleControls({ audio, video, onToggleAudio, onToggleVideo, onL
             </button>
             <button
                 onClick={onLeave}
-                className="rounded-full bg-red-500 p-2.5 text-white transition hover:bg-red-600"
+                className="ml-1 rounded-full bg-red-600 p-2 text-white transition hover:bg-red-700"
                 title="나가기"
             >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
