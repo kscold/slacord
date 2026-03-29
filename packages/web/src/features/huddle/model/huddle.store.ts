@@ -13,6 +13,7 @@ interface HuddleState {
     localStream: MediaStream | null;
     localAudio: boolean;
     localVideo: boolean;
+    error: string | null;
     join: (channelId: string) => void;
     leave: () => void;
     setParticipants: (participants: HuddleParticipant[]) => void;
@@ -21,6 +22,7 @@ interface HuddleState {
     setLocalVideo: (on: boolean) => void;
     setParticipantStream: (userId: string, stream: MediaStream) => void;
     removeParticipant: (userId: string) => void;
+    setError: (error: string | null) => void;
 }
 
 export const useHuddleStore = create<HuddleState>((set) => ({
@@ -29,8 +31,9 @@ export const useHuddleStore = create<HuddleState>((set) => ({
     localStream: null,
     localAudio: true,
     localVideo: false,
-    join: (channelId) => set({ activeChannelId: channelId }),
-    leave: () => set({ activeChannelId: null, participants: [], localStream: null }),
+    error: null,
+    join: (channelId) => set({ activeChannelId: channelId, error: null }),
+    leave: () => set({ activeChannelId: null, participants: [], localStream: null, error: null }),
     setParticipants: (participants) => set((state) => ({
         participants: participants.map((p) => {
             const existing = state.participants.find((e) => e.userId === p.userId);
@@ -46,4 +49,5 @@ export const useHuddleStore = create<HuddleState>((set) => ({
     removeParticipant: (userId) => set((state) => ({
         participants: state.participants.filter((p) => p.userId !== userId),
     })),
+    setError: (error) => set({ error }),
 }));

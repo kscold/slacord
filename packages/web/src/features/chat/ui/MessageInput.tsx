@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface Props {
     channelName: string;
@@ -13,7 +13,17 @@ interface Props {
 export function MessageInput({ channelName, onSend, onUpload, onTyping, isUploading }: Props) {
     const [content, setContent] = useState('');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const autoResize = useCallback(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    }, []);
+
+    useEffect(() => { autoResize(); }, [content, autoResize]);
 
     const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setContent(e.target.value);
@@ -45,44 +55,44 @@ export function MessageInput({ channelName, onSend, onUpload, onTyping, isUpload
     };
 
     return (
-        <div className="px-4 py-3 border-t border-border-primary">
-            <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={handleFileChange}
-            />
-            <div className="flex items-end gap-3 bg-bg-secondary rounded-xl border border-border-primary px-4 py-2 focus-within:border-slack-green/50 transition-colors">
+        <div className="shrink-0 px-5 pb-4 pt-1">
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
+            <div className="flex items-end gap-2 rounded-lg border border-border-primary bg-bg-secondary transition-colors focus-within:border-text-tertiary">
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="shrink-0 rounded-lg border border-border-primary p-2 text-text-secondary transition-colors hover:border-slack-green/40 hover:text-white"
+                    className="shrink-0 self-end mb-2 ml-2 flex h-7 w-7 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-white/10 hover:text-white"
                 >
-                    +
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
                 </button>
                 <textarea
+                    ref={textareaRef}
                     value={content}
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
                     placeholder={`#${channelName}에 메시지 보내기`}
                     rows={1}
-                    className="flex-1 bg-transparent text-white text-sm resize-none outline-none placeholder:text-text-tertiary max-h-40 leading-relaxed"
-                    style={{ minHeight: '24px' }}
+                    className="flex-1 bg-transparent py-2.5 text-[14px] text-white resize-none outline-none placeholder:text-text-tertiary leading-[1.5]"
+                    style={{ minHeight: '22px', maxHeight: '160px' }}
                 />
-                <button
-                    onClick={submit}
-                    disabled={!content.trim() || isUploading}
-                    className="shrink-0 p-1.5 rounded-lg bg-slack-green text-white disabled:opacity-30 hover:bg-slack-green/90 transition-colors"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                </button>
+                {isUploading ? (
+                    <div className="shrink-0 self-end mb-2 mr-2">
+                        <div className="h-7 w-7 animate-spin rounded-full border-2 border-slack-green border-t-transparent" />
+                    </div>
+                ) : (
+                    <button
+                        onClick={submit}
+                        disabled={!content.trim()}
+                        className="shrink-0 self-end mb-2 mr-2 flex h-7 w-7 items-center justify-center rounded-md bg-slack-green text-white transition-all disabled:opacity-20 hover:bg-slack-green/80"
+                    >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                        </svg>
+                    </button>
+                )}
             </div>
-            <p className="text-xs text-text-tertiary mt-1 px-1">
-                {isUploading ? '파일 업로드 중...' : 'Enter로 전송 · Shift+Enter로 줄바꿈 · 파일 첨부 가능'}
-            </p>
         </div>
     );
 }

@@ -27,6 +27,7 @@ export interface Message {
     isEdited: boolean;
     isPinned: boolean;
     pinnedAt: string | null;
+    replyCount?: number;
     createdAt: string;
     updatedAt: string;
 }
