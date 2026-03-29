@@ -16,6 +16,7 @@ export function useChannelRoom(teamId: string, channelId: string) {
     const { setMessages, addMessage, updateMessage, removeMessage, setTypingUsers, setLoading, reset } = useChatStore();
     const [channel, setChannel] = useState<Channel | null>(null);
     const [channelLabel, setChannelLabel] = useState('general');
+    const channelLabelRef = useRef('general');
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [members, setMembers] = useState<TeamMemberSummary[]>([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -42,7 +43,9 @@ export function useChannelRoom(teamId: string, channelId: string) {
                 if (channelRes.success && Array.isArray(channelRes.data)) {
                     const activeChannel = (channelRes.data as Channel[]).find((item) => item.id === channelId) ?? null;
                     setChannel(activeChannel);
-                    setChannelLabel(activeChannel ? resolveChannelLabel(activeChannel, teamMembers, currentUserId.current) : 'general');
+                    const label = activeChannel ? resolveChannelLabel(activeChannel, teamMembers, currentUserId.current) : 'general';
+                    setChannelLabel(label);
+                    channelLabelRef.current = label;
                 }
             })
             .finally(() => active && setLoading(false));
@@ -55,7 +58,7 @@ export function useChannelRoom(teamId: string, channelId: string) {
         };
         const handleNewMessage = (message: Message) => {
             addMessage(message);
-            void notifyIncomingMessage(message, channelLabel, currentUserId.current);
+            void notifyIncomingMessage(message, channelLabelRef.current, currentUserId.current);
         };
         socket.emit('join_channel', { channelId });
         socket.on('new_message', handleNewMessage);
@@ -72,7 +75,7 @@ export function useChannelRoom(teamId: string, channelId: string) {
             socket.off('message_deleted');
             socket.off('user_typing', handleTyping);
         };
-    }, [addMessage, channelId, channelLabel, removeMessage, reset, setLoading, setMessages, setTypingUsers, teamId, updateMessage]);
+    }, [addMessage, channelId, removeMessage, reset, setLoading, setMessages, setTypingUsers, teamId, updateMessage]);
 
     return {
         channel,
