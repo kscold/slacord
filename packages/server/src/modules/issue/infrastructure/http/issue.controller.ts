@@ -11,6 +11,7 @@ import { TEAM_REPOSITORY } from '../../../team/domain/team.port';
 import { CreateIssueDto } from './dto/create-issue.dto';
 import { UpdateIssueDto } from './dto/update-issue.dto';
 import type { IssueStatus } from '../../domain/issue.entity';
+import { CreateNotificationUseCase } from '../../../notification/application/use-cases/create-notification.use-case';
 
 /** 이슈 트래커 API */
 @ApiTags('issue')
@@ -23,6 +24,7 @@ export class IssueController {
         private readonly updateIssueUseCase: UpdateIssueUseCase,
         private readonly getIssuesUseCase: GetIssuesUseCase,
         private readonly deleteIssueUseCase: DeleteIssueUseCase,
+        private readonly createNotification: CreateNotificationUseCase,
         @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
     ) {}
 
@@ -52,6 +54,16 @@ export class IssueController {
     ) {
         await this.requireMember(teamId, user.userId);
         const issue = await this.createIssueUseCase.execute({ ...dto, teamId, createdBy: user.userId });
+        // 담당자 할당 알림
+        if (dto.assigneeIds?.length) {
+            void this.createNotification.executeBulk(
+                dto.assigneeIds.map((recipientId) => ({
+                    teamId, recipientId, type: 'issue_assigned' as const,
+                    actorId: user.userId, actorName: '', content: `이슈 "${issue.title}" 담당자로 지정됨`,
+                    resourceType: 'issue' as const, resourceId: issue.id,
+                })),
+            );
+        }
         return { success: true, data: issue.toPublic() };
     }
 
@@ -65,6 +77,16 @@ export class IssueController {
     ) {
         await this.requireMember(teamId, user.userId);
         const issue = await this.updateIssueUseCase.execute({ id: issueId, ...dto });
+        // 새로 할당된 담당자에게 알림
+        if (dto.assigneeIds?.length) {
+            void this.createNotification.executeBulk(
+                dto.assigneeIds.map((recipientId) => ({
+                    teamId, recipientId, type: 'issue_assigned' as const,
+                    actorId: user.userId, actorName: '', content: `이슈 "${issue.title}" 담당자로 지정됨`,
+                    resourceType: 'issue' as const, resourceId: issue.id,
+                })),
+            );
+        }
         return { success: true, data: issue.toPublic() };
     }
 

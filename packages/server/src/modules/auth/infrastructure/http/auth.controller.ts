@@ -37,12 +37,13 @@ export class AuthController {
         @Res({ passthrough: true }) res: Response,
     ): Promise<{ success: boolean; data: LoginOutput }> {
         const result = await this.loginUseCase.execute(dto);
+        const maxAge = dto.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
         res.cookie('access_token', result.accessToken, {
             httpOnly: true,
             sameSite: 'lax',
             secure: this.isSecureCookie(),
             path: '/',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge,
         });
         return { success: true, data: result };
     }
