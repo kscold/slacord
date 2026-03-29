@@ -7,6 +7,7 @@ import { USER_REPOSITORY } from '../../domain/auth.port';
 export interface LoginInput {
     email: string;
     password: string;
+    rememberMe?: boolean;
 }
 
 export interface LoginOutput {
@@ -34,7 +35,8 @@ export class LoginUseCase {
         }
 
         const payload = { sub: user.id, email: user.email, username: user.username };
-        const accessToken = this.jwtService.sign(payload);
+        const expiresIn = input.rememberMe ? '30d' : '7d';
+        const accessToken = this.jwtService.sign(payload, { expiresIn });
 
         return { accessToken, user: user.toPublic() };
     }

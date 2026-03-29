@@ -17,10 +17,11 @@ import { MessageUploadController } from './infrastructure/http/message-upload.co
 import { MessageGateway } from './infrastructure/websocket/message.gateway';
 import { AuthModule } from '../auth/auth.module';
 import { TeamModule } from '../team/team.module';
+import { NotificationModule } from '../notification/notification.module';
 import { StorageModule } from '../../shared/storage/storage.module';
 
 @Module({
-    imports: [AuthModule, TeamModule, StorageModule, MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }])],
+    imports: [AuthModule, TeamModule, NotificationModule, StorageModule, MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }])],
     controllers: [MessageController, MessageUploadController],
     providers: [
         { provide: MESSAGE_REPOSITORY, useClass: MessageRepository },
