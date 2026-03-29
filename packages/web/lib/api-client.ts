@@ -105,6 +105,9 @@ export const teamApi = {
     async revokeInviteLink(teamId: string, code: string) {
         return apiFetch(`/api/team/${teamId}/invite-links/${code}/revoke`, { method: 'PATCH' });
     },
+    async deleteInviteLink(teamId: string, code: string) {
+        return apiFetch(`/api/team/${teamId}/invite-links/${code}`, { method: 'DELETE' });
+    },
     async updateMemberAccess(teamId: string, memberId: string, data: { role?: 'admin' | 'member'; canManageInvites?: boolean }) {
         return apiFetch(`/api/team/${teamId}/member/${memberId}/access`, { method: 'PATCH', body: JSON.stringify(data) });
     },

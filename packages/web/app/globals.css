@@ -71,6 +71,20 @@
         text-rendering: optimizeLegibility;
     }
 
+    /* Electron macOS — 창 드래그 영역 */
+    .desktop-drag-region {
+        -webkit-app-region: drag;
+    }
+
+    .desktop-drag-region a,
+    .desktop-drag-region button,
+    .desktop-drag-region input,
+    .desktop-drag-region textarea,
+    .desktop-drag-region select,
+    .desktop-drag-region [role='button'] {
+        -webkit-app-region: no-drag;
+    }
+
     img,
     video {
         display: block;

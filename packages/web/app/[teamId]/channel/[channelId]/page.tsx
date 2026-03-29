@@ -49,11 +49,13 @@ export default function ChannelPage({ params }: Props) {
                         currentUserId={room.currentUserId}
                         onReact={room.reactToMessage}
                         onDelete={room.deleteMessage}
+                        onEdit={room.editMessage}
                         onOpenThread={(message) => setThreadMessageId(message.id)}
                         onTogglePin={room.togglePinMessage}
                     />
                     <MessageInput
                         channelName={room.channelLabel}
+                        members={room.members}
                         onSend={(content) => room.sendMessage(content)}
                         onUpload={(files, content) => room.sendAttachments(files, content)}
                         onTyping={room.sendTyping}
@@ -72,9 +74,11 @@ export default function ChannelPage({ params }: Props) {
                     <ThreadPanel
                         channelId={channelId}
                         parentMessage={threadMessage}
+                        currentUserId={room.currentUserId}
                         onClose={() => setThreadMessageId(null)}
                         onSendReply={room.sendMessage}
                         onUploadReply={room.sendAttachments}
+                        onDelete={room.deleteMessage}
                         isUploading={room.isUploading}
                     />
                 )}

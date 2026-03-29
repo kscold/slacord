@@ -108,6 +108,12 @@ export function useChannelRoom(teamId: string, channelId: string) {
             removeMessage(messageId);
             messageApi.deleteMessage(channelId, messageId);
         },
+        editMessage: async (messageId: string, content: string) => {
+            const response = await messageApi.editMessage(channelId, messageId, content);
+            if (response.success && response.data) {
+                updateMessage(messageId, response.data as Message);
+            }
+        },
         togglePinMessage: async (message: Message) => {
             const response = await messageApi.pinMessage(channelId, message.id, !message.isPinned);
             if (response.success && response.data) {
