@@ -41,7 +41,7 @@ export function TeamInviteSettingsPanel({ teamId }: Props) {
                         </div>
                         <InviteQrCard value={settings.inviteUrl} />
                     </div>
-                    <InviteLinkList inviteUrl={settings.inviteUrl} invites={settings.invites} onRevoke={settings.revokeInvite} />
+                    <InviteLinkList inviteUrl={settings.inviteUrl} invites={settings.invites} onRevoke={settings.revokeInvite} onDelete={settings.deleteInvite} />
                     {settings.canManageMembers ? <InviteMemberAccessList currentUserId={settings.currentUserId} members={settings.members} onUpdate={settings.updateMemberAccess} /> : null}
                 </>
             ) : null}

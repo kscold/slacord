@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist } from 'next/font/google';
 import { siteConfig } from '@/src/shared/config/site';
 import { DesktopRuntimeBadge } from '@/src/widgets/desktop/ui/DesktopRuntimeBadge';
+import { DesktopDragBar } from '@/src/widgets/desktop/ui/DesktopDragBar';
 import './globals.css';
 
 const geist = Geist({
@@ -35,6 +36,7 @@ export default function RootLayout({
     return (
         <html lang="ko" className={geist.className}>
             <body>
+                <DesktopDragBar />
                 <DesktopRuntimeBadge />
                 {children}
             </body>

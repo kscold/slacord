@@ -48,7 +48,7 @@ export function CreateChannelButton({ teamId }: Props) {
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             </button>
             {open && (
-                <div className="absolute left-0 top-full z-50 mt-2 w-56 space-y-2 rounded-xl border border-border-primary bg-bg-secondary p-3 shadow-xl">
+                <div className="absolute left-0 top-full z-50 mt-2 w-56 space-y-2 rounded-xl border border-[rgba(201,162,114,0.25)] bg-[#1e1814] p-3 shadow-2xl">
                     <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}

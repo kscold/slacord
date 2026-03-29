@@ -4,9 +4,10 @@ interface Props {
     inviteUrl: string;
     invites: TeamInviteLink[];
     onRevoke: (code: string) => Promise<void>;
+    onDelete: (code: string) => Promise<void>;
 }
 
-export function InviteLinkList({ inviteUrl, invites, onRevoke }: Props) {
+export function InviteLinkList({ inviteUrl, invites, onRevoke, onDelete }: Props) {
     return (
         <div className="space-y-3">
             {invites.map((invite) => (
@@ -27,6 +28,9 @@ export function InviteLinkList({ inviteUrl, invites, onRevoke }: Props) {
                         </button>
                         <button onClick={() => onRevoke(invite.code)} disabled={!invite.active} className="rounded-full border border-red-400/20 px-3 py-2 text-sm text-red-200 transition hover:bg-red-400/10 disabled:opacity-40">
                             비활성화
+                        </button>
+                        <button onClick={() => onDelete(invite.code)} className="rounded-full border border-red-500/20 px-3 py-2 text-sm text-red-300 transition hover:bg-red-500/15">
+                            삭제
                         </button>
                     </div>
                 </article>

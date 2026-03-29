@@ -78,6 +78,16 @@ export function useTeamInviteSettings(teamId: string) {
         }
     };
 
+    const deleteInvite = async (code: string) => {
+        setError('');
+        try {
+            await teamApi.deleteInviteLink(teamId, code);
+            await load();
+        } catch (err: any) {
+            setError(err.message ?? '초대 링크 삭제 실패');
+        }
+    };
+
     const updateMemberAccess = async (memberId: string, data: { role?: 'admin' | 'member'; canManageInvites?: boolean }) => {
         setError('');
         try {
@@ -88,5 +98,5 @@ export function useTeamInviteSettings(teamId: string) {
         }
     };
 
-    return { activeInvite, canManageInvites, canManageMembers, creating, currentUserId, error, form, inviteUrl, invites, loading, members, createInvite, revokeInvite, updateField, updateMemberAccess };
+    return { activeInvite, canManageInvites, canManageMembers, creating, currentUserId, error, form, inviteUrl, invites, loading, members, createInvite, deleteInvite, revokeInvite, updateField, updateMemberAccess };
 }

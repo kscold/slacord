@@ -35,11 +35,11 @@ export function IssueModal(props: Props) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={props.onClose}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md" onClick={props.onClose}>
             <form
                 onClick={(e) => e.stopPropagation()}
                 onSubmit={handleSubmit}
-                className="bg-bg-secondary border border-border-primary rounded-2xl p-6 w-full max-w-md shadow-2xl"
+                className="bg-[#1e1814] border border-[rgba(201,162,114,0.25)] rounded-2xl p-6 w-full max-w-md shadow-2xl"
             >
                 <h3 className="text-lg font-bold text-white mb-4">{isEdit ? '이슈 수정' : '이슈 생성'}</h3>
 
