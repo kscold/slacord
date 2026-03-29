@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { TeamModule } from '../team/team.module';
 import { Announcement, AnnouncementSchema } from './infrastructure/persistence/announcement.schema';
 import { AnnouncementRepository } from './infrastructure/persistence/announcement.repository';
 import { ANNOUNCEMENT_REPOSITORY } from './domain/announcement.port';
@@ -9,7 +10,7 @@ import { PinAnnouncementUseCase } from './application/use-cases/pin-announcement
 import { AnnouncementController } from './infrastructure/http/announcement.controller';
 
 @Module({
-    imports: [MongooseModule.forFeature([{ name: Announcement.name, schema: AnnouncementSchema }])],
+    imports: [MongooseModule.forFeature([{ name: Announcement.name, schema: AnnouncementSchema }]), TeamModule],
     controllers: [AnnouncementController],
     providers: [
         { provide: ANNOUNCEMENT_REPOSITORY, useClass: AnnouncementRepository },

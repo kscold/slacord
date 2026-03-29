@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Inject, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { CreateAnnouncementUseCase } from '../../application/use-cases/create-announcement.use-case';
 import { GetAnnouncementsUseCase } from '../../application/use-cases/get-announcements.use-case';
 import { PinAnnouncementUseCase } from '../../application/use-cases/pin-announcement.use-case';
+import type { ITeamRepository } from '../../../team/domain/team.port';
+import { TEAM_REPOSITORY } from '../../../team/domain/team.port';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { PinAnnouncementDto } from './dto/pin-announcement.dto';
 
@@ -18,11 +20,21 @@ export class AnnouncementController {
         private readonly createUseCase: CreateAnnouncementUseCase,
         private readonly getUseCase: GetAnnouncementsUseCase,
         private readonly pinUseCase: PinAnnouncementUseCase,
+        @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
     ) {}
+
+    private async requireMember(teamId: string, userId: string) {
+        const team = await this.teamRepo.findById(teamId);
+        if (!team) throw new ForbiddenException('워크스페이스를 찾을 수 없습니다.');
+        const member = team.members.find((m) => m.userId === userId);
+        if (!member) throw new ForbiddenException('이 워크스페이스의 멤버가 아닙니다.');
+        return member.role;
+    }
 
     @Get()
     @ApiOperation({ summary: '팀 공지사항 목록 조회 (핀 고정 우선)' })
-    async getAnnouncements(@Param('teamId') teamId: string) {
+    async getAnnouncements(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
+        await this.requireMember(teamId, user.userId);
         const list = await this.getUseCase.execute(teamId);
         return { success: true, data: list.map((a) => a.toPublic()) };
     }
@@ -34,16 +46,20 @@ export class AnnouncementController {
         @CurrentUser() user: { userId: string },
         @Body() dto: CreateAnnouncementDto,
     ) {
+        await this.requireMember(teamId, user.userId);
         const announcement = await this.createUseCase.execute({ ...dto, teamId, createdBy: user.userId });
         return { success: true, data: announcement.toPublic() };
     }
 
     @Patch(':announcementId/pin')
-    @ApiOperation({ summary: '공지사항 핀 고정/해제' })
+    @ApiOperation({ summary: '공지사항 핀 고정/해제 (멤버만)' })
     async pinAnnouncement(
+        @Param('teamId') teamId: string,
         @Param('announcementId') announcementId: string,
+        @CurrentUser() user: { userId: string },
         @Body() dto: PinAnnouncementDto,
     ) {
+        await this.requireMember(teamId, user.userId);
         const announcement = await this.pinUseCase.execute(announcementId, dto.isPinned);
         return { success: true, data: announcement.toPublic() };
     }

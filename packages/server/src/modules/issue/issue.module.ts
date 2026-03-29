@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { TeamModule } from '../team/team.module';
 import { Issue, IssueSchema } from './infrastructure/persistence/issue.schema';
 import { IssueRepository } from './infrastructure/persistence/issue.repository';
 import { ISSUE_REPOSITORY } from './domain/issue.port';
@@ -10,7 +11,7 @@ import { DeleteIssueUseCase } from './application/use-cases/delete-issue.use-cas
 import { IssueController } from './infrastructure/http/issue.controller';
 
 @Module({
-    imports: [MongooseModule.forFeature([{ name: Issue.name, schema: IssueSchema }])],
+    imports: [MongooseModule.forFeature([{ name: Issue.name, schema: IssueSchema }]), TeamModule],
     controllers: [IssueController],
     providers: [
         { provide: ISSUE_REPOSITORY, useClass: IssueRepository },
