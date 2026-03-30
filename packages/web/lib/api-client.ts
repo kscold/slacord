@@ -126,7 +126,7 @@ export const teamApi = {
         return apiFetch(`/api/team/${teamId}`);
     },
     async importDiscordGuild(teamId: string, data: { botToken: string; guildId: string; channelIds: string[] }) {
-        return apiFetch(`/api/team/${teamId}/import/discord`, { method: 'POST', body: JSON.stringify(data) });
+        return apiFetch(`/api/team/${teamId}/discord/import`, { method: 'POST', body: JSON.stringify(data) });
     },
 };
 
@@ -187,9 +187,13 @@ export const messageApi = {
  * 이슈 API
  */
 export const issueApi = {
-    async getIssues(teamId: string, status?: string) {
-        const params = status ? `?status=${status}` : '';
-        return apiFetch(`/api/team/${teamId}/issue${params}`);
+    async getIssues(teamId: string, filters?: { status?: string; query?: string; assigneeId?: string }) {
+        const params = new URLSearchParams();
+        if (filters?.status) params.set('status', filters.status);
+        if (filters?.query?.trim()) params.set('q', filters.query.trim());
+        if (filters?.assigneeId) params.set('assigneeId', filters.assigneeId);
+        const query = params.toString();
+        return apiFetch(`/api/team/${teamId}/issue${query ? `?${query}` : ''}`);
     },
     async createIssue(teamId: string, data: { title: string; description?: string; priority?: string; assigneeIds?: string[]; labels?: string[] }) {
         return apiFetch(`/api/team/${teamId}/issue`, { method: 'POST', body: JSON.stringify(data) });

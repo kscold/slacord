@@ -1,16 +1,25 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useNotifications } from '../model/useNotifications';
 import { NotificationPanel } from './NotificationPanel';
+import { resolveNotificationHref } from '@/src/entities/notification/lib/resolveNotificationHref';
+import type { AppNotification } from '@/src/entities/notification/types';
 
 interface Props {
     teamId: string;
 }
 
 export function NotificationBell({ teamId }: Props) {
+    const router = useRouter();
     const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(teamId);
     const [open, setOpen] = useState(false);
+
+    const openNotification = (notification: AppNotification) => {
+        setOpen(false);
+        router.push(resolveNotificationHref(teamId, notification));
+    };
 
     return (
         <>
@@ -36,6 +45,7 @@ export function NotificationBell({ teamId }: Props) {
                         onClose={() => setOpen(false)}
                         onMarkAsRead={markAsRead}
                         onMarkAllAsRead={markAllAsRead}
+                        onOpen={openNotification}
                     />
                 </div>
             )}
