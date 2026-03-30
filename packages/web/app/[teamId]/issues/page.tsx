@@ -1,15 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { use } from 'react';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import { KanbanColumn } from '@/src/features/issue/ui/KanbanColumn';
 import { IssueModal } from '@/src/features/issue/ui/IssueModal';
-import { useIssueStore } from '@/src/features/issue/model/issue.store';
-import { issueApi, teamApi } from '@/lib/api-client';
-import type { Issue, IssueStatus, IssuePriority } from '@/src/entities/issue/types';
+import { IssueBoardFilters } from '@/src/features/issue/ui/IssueBoardFilters';
+import type { IssueStatus } from '@/src/entities/issue/types';
 import { ISSUE_STATUS_LABELS } from '@/src/entities/issue/types';
-import type { TeamMemberSummary } from '@/src/entities/team/types';
+import { useIssueBoard } from '@/src/features/issue/model/useIssueBoard';
 
 const COLUMNS: IssueStatus[] = ['todo', 'in_progress', 'in_review', 'done'];
 
@@ -19,48 +17,12 @@ interface Props {
 
 export default function IssuesPage({ params }: Props) {
     const { teamId } = use(params);
-    const { issues, setIssues, addIssue, updateIssue, removeIssue, byStatus } = useIssueStore();
-    const [members, setMembers] = useState<TeamMemberSummary[]>([]);
-    const [showCreate, setShowCreate] = useState(false);
-    const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
-    const [createStatus, setCreateStatus] = useState<IssueStatus>('todo');
-
-    useEffect(() => {
-        Promise.all([
-            issueApi.getIssues(teamId),
-            teamApi.getMembers(teamId),
-        ]).then(([issueRes, memberRes]) => {
-            if (issueRes.success && Array.isArray(issueRes.data)) setIssues(issueRes.data as Issue[]);
-            if (memberRes.success && Array.isArray(memberRes.data)) setMembers(memberRes.data as TeamMemberSummary[]);
-        });
-    }, [teamId]);
-
-    const handleCreate = async (data: { title: string; description?: string; priority: IssuePriority; assigneeIds?: string[] }) => {
-        const res = await issueApi.createIssue(teamId, { ...data, status: createStatus } as any);
-        if (res.success && res.data) addIssue(res.data as Issue);
-    };
-
-    const handleUpdate = async (data: Partial<Issue>) => {
-        if (!selectedIssue) return;
-        const res = await issueApi.updateIssue(teamId, selectedIssue.id, data);
-        if (res.success && res.data) updateIssue(selectedIssue.id, res.data as Issue);
-    };
-
-    const handleDelete = async (issueId: string) => {
-        await issueApi.deleteIssue(teamId, issueId);
-        removeIssue(issueId);
-    };
+    const board = useIssueBoard(teamId);
 
     const handleDragEnd = async (result: DropResult) => {
         const { draggableId, destination, source } = result;
         if (!destination || destination.droppableId === source.droppableId) return;
-
-        const newStatus = destination.droppableId as IssueStatus;
-        // optimistic update
-        const issue = issues.find((i) => i.id === draggableId);
-        if (issue) updateIssue(draggableId, { ...issue, status: newStatus } as Issue);
-        // persist
-        await issueApi.updateIssue(teamId, draggableId, { status: newStatus });
+        await board.handleMove(draggableId, destination.droppableId as IssueStatus);
     };
 
     return (
@@ -68,7 +30,7 @@ export default function IssuesPage({ params }: Props) {
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-primary shrink-0">
                 <h2 className="text-xl font-bold text-white">이슈 트래커</h2>
                 <button
-                    onClick={() => { setCreateStatus('todo'); setShowCreate(true); }}
+                    onClick={() => { board.setCreateStatus('todo'); board.setShowCreate(true); }}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slack-green text-white text-sm font-medium hover:bg-slack-green/90 transition-colors"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,6 +39,20 @@ export default function IssuesPage({ params }: Props) {
                     이슈 생성
                 </button>
             </div>
+            <IssueBoardFilters
+                query={board.query}
+                assigneeId={board.assigneeId}
+                status={board.statusFilter}
+                members={board.members}
+                onQueryChange={board.setQuery}
+                onAssigneeChange={board.setAssigneeId}
+                onStatusChange={board.setStatusFilter}
+                onReset={() => {
+                    board.setQuery('');
+                    board.setAssigneeId('');
+                    board.setStatusFilter('all');
+                }}
+            />
 
             <div className="flex-1 overflow-x-auto p-6">
                 <DragDropContext onDragEnd={handleDragEnd}>
@@ -86,32 +62,32 @@ export default function IssuesPage({ params }: Props) {
                                 key={status}
                                 status={status}
                                 label={ISSUE_STATUS_LABELS[status]}
-                                issues={byStatus(status)}
-                                members={members}
-                                onCardClick={(issue) => setSelectedIssue(issue)}
-                                onAddClick={() => { setCreateStatus(status); setShowCreate(true); }}
+                                issues={board.issuesByStatus[status]}
+                                members={board.members}
+                                onCardClick={board.setSelectedIssue}
+                                onAddClick={() => { board.setCreateStatus(status); board.setShowCreate(true); }}
                             />
                         ))}
                     </div>
                 </DragDropContext>
             </div>
 
-            {showCreate && (
+            {board.showCreate && (
                 <IssueModal
                     mode="create"
                     teamId={teamId}
-                    members={members}
-                    onSubmit={handleCreate}
-                    onClose={() => setShowCreate(false)}
+                    members={board.members}
+                    onSubmit={board.handleCreate}
+                    onClose={() => board.setShowCreate(false)}
                 />
             )}
-            {selectedIssue && (
+            {board.selectedIssue && (
                 <IssueModal
                     mode="edit"
-                    issue={selectedIssue}
-                    members={members}
-                    onSubmit={handleUpdate}
-                    onClose={() => setSelectedIssue(null)}
+                    issue={board.selectedIssue}
+                    members={board.members}
+                    onSubmit={board.handleUpdate}
+                    onClose={() => board.setSelectedIssue(null)}
                 />
             )}
         </div>

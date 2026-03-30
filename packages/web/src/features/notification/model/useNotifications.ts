@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { notificationApi } from '@/lib/api-client';
 import type { AppNotification } from '@/src/entities/notification/types';
+import { getNotificationSocket } from '@/lib/socket';
+import {
+    applyNotificationRead,
+    applyNotificationReadAll,
+    prependNotification,
+} from '@/src/entities/notification/lib/syncNotifications';
 
 export function useNotifications(teamId: string) {
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -21,21 +27,51 @@ export function useNotifications(teamId: string) {
     useEffect(() => {
         setLoading(true);
         load().finally(() => setLoading(false));
-        // 30초마다 폴링
-        const interval = setInterval(() => void load(), 30000);
-        return () => clearInterval(interval);
+        const socket = getNotificationSocket();
+
+        const joinRoom = () => socket.emit('join_team_notifications', { teamId });
+        const handleNewNotification = (notification: AppNotification) => {
+            setNotifications((prev) => prependNotification(prev, notification));
+            setUnreadCount((count) => count + (notification.isRead ? 0 : 1));
+        };
+        const handleReadNotification = ({ id }: { id: string }) => {
+            setNotifications((prev) => applyNotificationRead(prev, id));
+            setUnreadCount((count) => Math.max(0, count - 1));
+        };
+        const handleReadAll = () => {
+            setNotifications((prev) => applyNotificationReadAll(prev));
+            setUnreadCount(0);
+        };
+
+        joinRoom();
+        socket.on('connect', joinRoom);
+        socket.on('notification:new', handleNewNotification);
+        socket.on('notification:read', handleReadNotification);
+        socket.on('notification:read_all', handleReadAll);
+
+        return () => {
+            socket.emit('leave_team_notifications', { teamId });
+            socket.off('connect', joinRoom);
+            socket.off('notification:new', handleNewNotification);
+            socket.off('notification:read', handleReadNotification);
+            socket.off('notification:read_all', handleReadAll);
+        };
     }, [load]);
 
     const markAsRead = async (id: string) => {
         await notificationApi.markAsRead(teamId, id);
-        setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n));
-        setUnreadCount((c) => Math.max(0, c - 1));
+        if (!getNotificationSocket().connected) {
+            setNotifications((prev) => applyNotificationRead(prev, id));
+            setUnreadCount((count) => Math.max(0, count - 1));
+        }
     };
 
     const markAllAsRead = async () => {
         await notificationApi.markAllAsRead(teamId);
-        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-        setUnreadCount(0);
+        if (!getNotificationSocket().connected) {
+            setNotifications((prev) => applyNotificationReadAll(prev));
+            setUnreadCount(0);
+        }
     };
 
     return { notifications, unreadCount, loading, markAsRead, markAllAsRead, refresh: load };

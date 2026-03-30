@@ -13,11 +13,12 @@ const TYPE_LABELS: Record<string, string> = {
 interface Props {
     notifications: AppNotification[];
     onClose: () => void;
-    onMarkAsRead: (id: string) => void;
-    onMarkAllAsRead: () => void;
+    onMarkAsRead: (id: string) => Promise<void> | void;
+    onMarkAllAsRead: () => Promise<void> | void;
+    onOpen: (notification: AppNotification) => void;
 }
 
-export function NotificationPanel({ notifications, onClose, onMarkAsRead, onMarkAllAsRead }: Props) {
+export function NotificationPanel({ notifications, onClose, onMarkAsRead, onMarkAllAsRead, onOpen }: Props) {
     return (
         <aside className="fixed inset-0 z-50 flex flex-col bg-bg-primary lg:static lg:z-auto lg:w-96 lg:border-l lg:border-border-primary">
             <div className="flex items-center justify-between border-b border-border-primary px-4 py-3 shrink-0">
@@ -41,7 +42,10 @@ export function NotificationPanel({ notifications, onClose, onMarkAsRead, onMark
                     return (
                         <button
                             key={n.id}
-                            onClick={() => !n.isRead && onMarkAsRead(n.id)}
+                            onClick={async () => {
+                                if (!n.isRead) await onMarkAsRead(n.id);
+                                onOpen(n);
+                            }}
                             className={`w-full flex gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03] border-b border-border-primary ${n.isRead ? 'opacity-60' : ''}`}
                         >
                             {!n.isRead && <div className="w-2 h-2 rounded-full bg-blue-400 shrink-0 mt-2" />}

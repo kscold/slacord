@@ -3,6 +3,7 @@ import { socketUrl } from './runtime-config';
 
 /** 채팅 Socket.IO 싱글톤 */
 let chatSocket: Socket | null = null;
+let notificationSocket: Socket | null = null;
 
 export function getChatSocket(): Socket {
     if (!chatSocket) {
@@ -21,4 +22,23 @@ export function getChatSocket(): Socket {
 export function disconnectChatSocket() {
     chatSocket?.disconnect();
     chatSocket = null;
+}
+
+export function getNotificationSocket(): Socket {
+    if (!notificationSocket) {
+        const options = {
+            path: '/socket.io',
+            transports: ['websocket'] as string[],
+            withCredentials: true,
+            reconnection: true,
+        };
+        const endpoint = socketUrl();
+        notificationSocket = endpoint ? io(`${endpoint}/notification`, options) : io('/notification', options);
+    }
+    return notificationSocket;
+}
+
+export function disconnectNotificationSocket() {
+    notificationSocket?.disconnect();
+    notificationSocket = null;
 }
