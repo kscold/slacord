@@ -234,7 +234,7 @@ export const documentApi = {
     async getDocument(teamId: string, documentId: string) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`);
     },
-    async createDocument(teamId: string, data: { title: string; content?: string; parentId?: string | null }) {
+    async createDocument(teamId: string, data: { title: string; content?: string; parentId?: string | null; contentFormat?: 'plain' | 'html' | 'json' }) {
         return apiFetch(`/api/team/${teamId}/document`, { method: 'POST', body: JSON.stringify(data) });
     },
     async importConfluence(teamId: string, data: { siteUrl: string; email: string; apiToken: string; spaceKey: string; rootPageId?: string }) {

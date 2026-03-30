@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { documentApi } from '@/lib/api-client';
 import { useDocumentDetail } from '@/src/features/document/model/useDocumentDetail';
 import { useDocumentVersions } from '@/src/features/document/model/useDocumentVersions';
@@ -20,6 +20,7 @@ interface Props {
 export default function DocDetailPage({ params }: Props) {
     const { teamId, docId } = use(params);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { doc, setDoc, children, loading } = useDocumentDetail(teamId, docId);
     const { loading: versionLoading, restoreVersion, versions } = useDocumentVersions(teamId, docId);
     const [editing, setEditing] = useState(false);
@@ -30,7 +31,10 @@ export default function DocDetailPage({ params }: Props) {
         if (!doc) return;
         setTitle(doc.title);
         setContent(doc.content);
-    }, [doc]);
+        if (searchParams.get('edit') === '1' && doc.canEdit !== false) {
+            setEditing(true);
+        }
+    }, [doc, searchParams]);
 
     const handleSave = async () => {
         const response = await documentApi.updateDocument(teamId, docId, { title, content, contentFormat: doc?.contentFormat ?? 'html' });
@@ -63,7 +67,7 @@ export default function DocDetailPage({ params }: Props) {
     }
 
     return (
-        <div className="mx-auto max-w-4xl p-6">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
             <DocumentDetailHeader
                 doc={doc}
                 editing={editing}
@@ -86,7 +90,7 @@ export default function DocDetailPage({ params }: Props) {
                     teamId={teamId}
                 />
             ) : (
-                <div className="min-h-48 rounded-xl border border-border-primary bg-bg-secondary p-6">
+                <div className="min-h-48 overflow-hidden rounded-xl border border-border-primary bg-bg-secondary p-4 sm:p-6">
                     <DocumentContent doc={doc} />
                 </div>
             )}

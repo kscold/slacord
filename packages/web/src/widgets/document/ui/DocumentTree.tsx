@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useMemo, useState } from 'react';
 import { buildDocumentTree, type DocumentTreeNode } from '@/src/entities/document/lib/buildDocumentTree';
+import { collectExpandedIds, filterDocumentTree } from '@/src/entities/document/lib/filterDocumentTree';
 import type { DocumentNode } from '@/src/entities/document/types';
+import { DocumentTreeBranch } from './DocumentTreeBranch';
+import { DocumentTreeSearch } from './DocumentTreeSearch';
 
 interface Props {
     documents: DocumentNode[];
@@ -12,42 +14,41 @@ interface Props {
 
 export function DocumentTree({ documents, teamId }: Props) {
     const roots = buildDocumentTree(documents);
-    if (roots.length === 0) return <p className="py-12 text-center text-sm text-text-tertiary">문서가 없습니다. 첫 문서를 만들어 보세요.</p>;
-    return <div className="space-y-2">{roots.map((node) => <TreeBranch key={node.id} node={node} teamId={teamId} depth={0} />)}</div>;
-}
+    const [query, setQuery] = useState('');
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+    const filteredRoots = useMemo(() => filterDocumentTree(roots, query), [query, roots]);
+    const visibleExpandedIds = useMemo(() => query.trim() ? collectExpandedIds(filteredRoots) : expandedIds, [expandedIds, filteredRoots, query]);
 
-function TreeBranch({ node, teamId, depth }: { node: DocumentTreeNode; teamId: string; depth: number }) {
-    const hasChildren = node.children.length > 0;
-    const [collapsed, setCollapsed] = useState(true);
+    if (roots.length === 0) {
+        return <p className="py-12 text-center text-sm text-text-tertiary">문서가 없습니다. 첫 문서를 만들어 보세요.</p>;
+    }
 
     return (
-        <div>
-            <div className="flex items-center gap-1" style={{ marginLeft: `${depth * 14}px` }}>
-                {hasChildren ? (
-                    <button
-                        onClick={() => setCollapsed(!collapsed)}
-                        className="shrink-0 rounded p-1 text-text-tertiary transition hover:bg-bg-hover hover:text-white"
-                    >
-                        <svg className={`h-3.5 w-3.5 transition-transform ${collapsed ? '' : 'rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                ) : (
-                    <span className="w-5" />
-                )}
-                <Link href={`/${teamId}/docs/${node.id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-border-primary bg-bg-secondary p-4 transition-all hover:border-brand-400/30 hover:bg-bg-hover">
-                    <span className="text-text-tertiary">{hasChildren ? '📁' : '📄'}</span>
-                    <div className="min-w-0">
-                        <p className="truncate font-medium text-white">{node.title}</p>
-                        <p className="text-xs text-text-tertiary">{new Date(node.updatedAt).toLocaleDateString('ko-KR')} 수정</p>
-                    </div>
-                </Link>
-            </div>
-            {hasChildren && !collapsed && (
-                <div className="mt-2 space-y-2">
-                    {node.children.map((child) => <TreeBranch key={child.id} node={child} teamId={teamId} depth={depth + 1} />)}
+        <div className="space-y-4">
+            <DocumentTreeSearch onChange={setQuery} query={query} />
+            {filteredRoots.length === 0 ? (
+                <p className="rounded-2xl border border-border-primary bg-bg-secondary px-4 py-6 text-center text-sm text-text-tertiary">검색 조건에 맞는 문서를 찾지 못했습니다.</p>
+            ) : (
+                <div className="space-y-2">
+                    {filteredRoots.map((node) => (
+                        <DocumentTreeBranch
+                            key={node.id}
+                            depth={0}
+                            expandedIds={visibleExpandedIds}
+                            node={node}
+                            onToggle={(id) => setExpandedIds((prev) => toggleExpanded(prev, id))}
+                            teamId={teamId}
+                        />
+                    ))}
                 </div>
             )}
         </div>
     );
+}
+
+function toggleExpanded(current: Set<string>, id: string) {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
 }

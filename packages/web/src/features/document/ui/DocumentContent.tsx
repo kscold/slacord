@@ -18,5 +18,5 @@ export function DocumentContent({ doc }: Props) {
     }
 
     const rendered = renderDocumentContent(doc);
-    return <div className="confluence-render text-sm text-text-secondary" dangerouslySetInnerHTML={{ __html: rendered }} />;
+    return <div className="confluence-render overflow-x-hidden text-sm text-text-secondary" dangerouslySetInnerHTML={{ __html: rendered }} />;
 }

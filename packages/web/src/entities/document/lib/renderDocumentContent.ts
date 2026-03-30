@@ -58,6 +58,10 @@ function sanitizeHtml(html: string): string {
 
 export function renderDocumentContent(doc: Pick<DocumentFull, 'content' | 'contentFormat'>) {
     if (!doc.content.trim()) return '';
-    if (doc.contentFormat === 'html') return sanitizeHtml(doc.content);
-    return doc.content.replace(/\r\n/g, '\n').split(/\n{2,}/).map((block) => renderBlock(block)).join('');
+    if (doc.contentFormat === 'html') return wrapTables(sanitizeHtml(doc.content));
+    return wrapTables(doc.content.replace(/\r\n/g, '\n').split(/\n{2,}/).map((block) => renderBlock(block)).join(''));
+}
+
+function wrapTables(html: string) {
+    return html.replace(/<table\b[\s\S]*?<\/table>/gi, (table) => `<div class="table-scroll">${table}</div>`);
 }
