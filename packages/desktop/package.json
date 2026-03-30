@@ -1,6 +1,6 @@
 {
   "name": "@slacord/desktop",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Slacord 데스크톱 앱 (Electron + DMG)",
   "author": "kscold",
   "private": true,
@@ -18,7 +18,7 @@
     "clean": "rm -rf dist release"
   },
   "dependencies": {
-    "@slacord/contracts": "1.0.6",
+    "@slacord/contracts": "1.0.9",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.6.2"
   },
