@@ -2,13 +2,7 @@
 
 import { getAvatarColor } from '@/src/shared/lib/avatar';
 import type { AppNotification } from '@/src/entities/notification/types';
-
-const TYPE_LABELS: Record<string, string> = {
-    mention: '멘션',
-    issue_assigned: '이슈 할당',
-    issue_updated: '이슈 변경',
-    thread_reply: '스레드 답글',
-};
+import { buildNotificationCopy } from '@/src/entities/notification/lib/buildNotificationCopy';
 
 interface Props {
     notifications: AppNotification[];
@@ -37,7 +31,7 @@ export function NotificationPanel({ notifications, onClose, onMarkAsRead, onMark
                     <p className="px-4 py-8 text-center text-sm text-text-tertiary">알림이 없습니다.</p>
                 )}
                 {notifications.map((n) => {
-                    const actorLabel = n.actorName || '알 수 없음';
+                    const copy = buildNotificationCopy(n);
                     const time = new Date(n.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     return (
                         <button
@@ -50,14 +44,14 @@ export function NotificationPanel({ notifications, onClose, onMarkAsRead, onMark
                         >
                             {!n.isRead && <div className="w-2 h-2 rounded-full bg-blue-400 shrink-0 mt-2" />}
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ backgroundColor: getAvatarColor(n.actorId) }}>
-                                {actorLabel.slice(0, 1).toUpperCase()}
+                                {copy.actorName.slice(0, 1).toUpperCase()}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-baseline gap-2">
-                                    <span className="text-[13px] font-semibold text-white">{actorLabel}</span>
-                                    <span className="text-[11px] text-text-tertiary">{TYPE_LABELS[n.type] ?? n.type}</span>
+                                    <span className="text-[13px] font-semibold text-white">{copy.actorName}</span>
+                                    <span className="text-[11px] text-text-tertiary">{copy.typeLabel}</span>
                                 </div>
-                                <p className="mt-0.5 text-[13px] text-text-secondary line-clamp-2">{n.content}</p>
+                                <p className="mt-0.5 text-[13px] text-text-secondary line-clamp-2">{copy.body}</p>
                                 <p className="mt-1 text-[11px] text-text-tertiary">{time}</p>
                             </div>
                         </button>
