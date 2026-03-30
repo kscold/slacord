@@ -16,6 +16,7 @@
 - `yarn dist:desktop:win`
 - `yarn release:desktop:mac`
 - `yarn release:desktop:win`
+- `yarn release:desktop:preflight`
 - `yarn version:all 1.0.1`
 
 `yarn dev:desktop` 는 모노레포 루트에서 `@slacord/web` dev 서버와 `@slacord/desktop` shell을 같이 띄우는 진입점임.
@@ -43,6 +44,12 @@
 - `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`: notarization
 - Windows 코드사인 시 `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD`
 
+릴리즈 전에 아래 명령으로 먼저 확인하는 게 안전함.
+
+```bash
+yarn release:desktop:preflight --target=mac
+```
+
 ## Notes
 
 - 코드사인 없이도 로컬 DMG는 만들 수 있지만, macOS 자동업데이트는 서명·공증된 앱 기준으로 잡는 게 맞음.
@@ -57,3 +64,5 @@
 3. `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` 를 GitHub Secrets에 등록
 4. 태그 릴리즈를 올리면 GitHub Actions가 서명 + 공증까지 같이 진행
 5. 서명 없는 예전 앱에서 서명된 첫 버전으로 넘어갈 때는 한 번 수동 재설치가 필요할 수 있음
+
+상세 순서는 [`docs/desktop-release-checklist.md`](/Users/kscold/Desktop/slacord/docs/desktop-release-checklist.md) 참고
