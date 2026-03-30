@@ -1,10 +1,10 @@
 import { app, BrowserWindow, Notification, ipcMain } from 'electron';
-import { getNotificationIcon } from './config';
+import { getAppOrigin, getNotificationIcon } from './config';
 
 export function registerNotificationIpc() {
     ipcMain.handle('desktop:notify', (_event, payload: unknown) => {
         if (typeof payload !== 'object' || payload === null) return false;
-        const { title, body } = payload as Record<string, unknown>;
+        const { title, body, href } = payload as Record<string, unknown>;
         if (typeof title !== 'string' || typeof body !== 'string') return false;
         if (!Notification.isSupported()) return false;
         try {
@@ -20,6 +20,9 @@ export function registerNotificationIpc() {
             notification.on('click', () => {
                 const win = BrowserWindow.getAllWindows()[0];
                 if (win) {
+                    if (typeof href === 'string' && href.startsWith('/')) {
+                        void win.loadURL(new URL(href, getAppOrigin()).toString());
+                    }
                     if (win.isMinimized()) win.restore();
                     win.show();
                     win.focus();
