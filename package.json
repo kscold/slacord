@@ -11,6 +11,7 @@
     "dev:web": "yarn workspace @slacord/web dev",
     "dev:desktop": "concurrently -k \"yarn workspace @slacord/web dev\" \"yarn workspace @slacord/desktop dev\"",
     "version:all": "node scripts/set-monorepo-version.mjs",
+    "release:desktop:preflight": "node scripts/check-desktop-release-secrets.mjs",
     "build:server": "yarn workspace @slacord/server build",
     "build:web": "yarn workspace @slacord/web build",
     "build:desktop": "yarn workspace @slacord/desktop build",

@@ -10,7 +10,31 @@ permissions:
   contents: write
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate release secrets
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          node scripts/check-desktop-release-secrets.mjs --target=mac
+
   publish:
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:
@@ -49,27 +73,6 @@ jobs:
               exit 1
             }
           fi
-
-      - name: Validate mac signing secrets
-        if: runner.os == 'macOS'
-        run: |
-          missing=0
-          for key in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
-            if [[ -z "${!key}" ]]; then
-              echo "missing required secret: $key"
-              missing=1
-            fi
-          done
-          if [[ "$missing" -ne 0 ]]; then
-            echo "macOS 릴리즈는 서명과 공증 시크릿이 모두 준비돼야 합니다."
-            exit 1
-          fi
-        env:
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Warn when Windows signing is missing
         if: runner.os == 'Windows'
