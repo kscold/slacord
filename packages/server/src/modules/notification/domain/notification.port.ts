@@ -14,8 +14,8 @@ export interface INotificationRepository {
         resourceId: string;
         channelId: string | null;
     }): Promise<NotificationEntity>;
-    markAsRead(id: string): Promise<void>;
-    markAllAsRead(teamId: string, recipientId: string): Promise<void>;
+    markAsRead(id: string, recipientId: string): Promise<NotificationEntity | null>;
+    markAllAsRead(teamId: string, recipientId: string): Promise<number>;
 }
 
 export const NOTIFICATION_REPOSITORY = Symbol('INotificationRepository');

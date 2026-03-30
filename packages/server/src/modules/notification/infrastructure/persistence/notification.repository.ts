@@ -43,11 +43,17 @@ export class NotificationRepository implements INotificationRepository {
         return this.toEntity(doc);
     }
 
-    async markAsRead(id: string): Promise<void> {
-        await this.model.updateOne({ _id: id }, { isRead: true }).exec();
+    async markAsRead(id: string, recipientId: string): Promise<NotificationEntity | null> {
+        const doc = await this.model
+            .findOneAndUpdate({ _id: id, recipientId, isRead: false }, { isRead: true }, { new: true })
+            .exec();
+        return doc ? this.toEntity(doc) : null;
     }
 
-    async markAllAsRead(teamId: string, recipientId: string): Promise<void> {
-        await this.model.updateMany({ teamId, recipientId, isRead: false }, { isRead: true }).exec();
+    async markAllAsRead(teamId: string, recipientId: string): Promise<number> {
+        const result = await this.model
+            .updateMany({ teamId, recipientId, isRead: false }, { isRead: true })
+            .exec();
+        return result.modifiedCount ?? 0;
     }
 }

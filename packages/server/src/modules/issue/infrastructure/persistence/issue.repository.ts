@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { IIssueRepository } from '../../domain/issue.port';
-import { IssueEntity, IssueStatus, IssuePriority } from '../../domain/issue.entity';
+import { IIssueRepository, type IssueSearchFilters } from '../../domain/issue.port';
+import { IssueEntity, IssuePriority, IssueStatus } from '../../domain/issue.entity';
 import { Issue, IssueDocument } from './issue.schema';
 
 /** Issue Repository Adapter - MongoDB 구현체 */
@@ -10,9 +10,14 @@ import { Issue, IssueDocument } from './issue.schema';
 export class IssueRepository implements IIssueRepository {
     constructor(@InjectModel(Issue.name) private readonly issueModel: Model<IssueDocument>) {}
 
-    async findByTeam(teamId: string, status?: IssueStatus): Promise<IssueEntity[]> {
+    async findByTeam(teamId: string, filters?: IssueSearchFilters): Promise<IssueEntity[]> {
         const query: any = { teamId };
-        if (status) query.status = status;
+        if (filters?.status) query.status = filters.status;
+        if (filters?.assigneeId) query.assigneeIds = filters.assigneeId;
+        if (filters?.query?.trim()) {
+            const pattern = new RegExp(escapeRegExp(filters.query.trim()), 'i');
+            query.$or = [{ title: pattern }, { description: pattern }];
+        }
         const docs = await this.issueModel.find(query).sort({ createdAt: -1 }).lean();
         return docs.map((d) => this.toEntity(d));
     }
@@ -67,4 +72,8 @@ export class IssueRepository implements IIssueRepository {
             doc.updatedAt,
         );
     }
+}
+
+function escapeRegExp(value: string) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
