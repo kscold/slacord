@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import type { Reaction } from '@/src/entities/message/types';
+import { EmojiPickerPopover } from './EmojiPickerPopover';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '🎉', '🚀', '👀'];
 
@@ -11,6 +13,8 @@ interface Props {
 }
 
 export function ReactionBar({ reactions, currentUserId, onToggle }: Props) {
+    const [showPicker, setShowPicker] = useState(false);
+
     return (
         <div className="flex flex-wrap gap-1 mt-1">
             {reactions.map((r) => {
@@ -30,22 +34,20 @@ export function ReactionBar({ reactions, currentUserId, onToggle }: Props) {
                     </button>
                 );
             })}
-            {/* 이모지 추가 버튼 */}
-            <div className="relative group">
-                <button className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border border-transparent text-text-tertiary hover:border-border-primary hover:text-text-secondary transition-colors">
+            <div className="relative">
+                <button
+                    onClick={() => setShowPicker((prev) => !prev)}
+                    className="flex items-center gap-1 rounded-full border border-transparent px-2 py-0.5 text-xs text-text-tertiary transition-colors hover:border-border-primary hover:text-text-secondary"
+                >
                     +
                 </button>
-                <div className="absolute bottom-full left-0 mb-1 hidden group-hover:flex bg-bg-secondary border border-border-primary rounded-lg p-1 gap-0.5 z-10">
-                    {QUICK_EMOJIS.map((emoji) => (
-                        <button
-                            key={emoji}
-                            onClick={() => onToggle(emoji)}
-                            className="p-1 rounded hover:bg-bg-hover text-base"
-                        >
-                            {emoji}
-                        </button>
-                    ))}
-                </div>
+                <EmojiPickerPopover
+                    align="left"
+                    emojis={QUICK_EMOJIS}
+                    onClose={() => setShowPicker(false)}
+                    onSelect={onToggle}
+                    open={showPicker}
+                />
             </div>
         </div>
     );
