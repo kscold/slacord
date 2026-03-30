@@ -9,6 +9,7 @@ import {
     applyNotificationReadAll,
     prependNotification,
 } from '@/src/entities/notification/lib/syncNotifications';
+import { notifyAppNotification } from './notifyAppNotification';
 
 export function useNotifications(teamId: string) {
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -33,6 +34,9 @@ export function useNotifications(teamId: string) {
         const handleNewNotification = (notification: AppNotification) => {
             setNotifications((prev) => prependNotification(prev, notification));
             setUnreadCount((count) => count + (notification.isRead ? 0 : 1));
+            if (!notification.isRead) {
+                void notifyAppNotification(notification);
+            }
         };
         const handleReadNotification = ({ id }: { id: string }) => {
             setNotifications((prev) => applyNotificationRead(prev, id));

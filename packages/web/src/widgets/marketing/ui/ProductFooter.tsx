@@ -1,4 +1,5 @@
 import { siteConfig } from '@/src/shared/config/site';
+import Link from 'next/link';
 
 export function ProductFooter() {
     const currentYear = new Date().getFullYear();
@@ -20,8 +21,20 @@ export function ProductFooter() {
                         <p><span className="mr-2 text-[#d2bd9c]">이메일</span><a href="mailto:coldingcontact@gmail.com" className="transition-colors hover:text-white">coldingcontact@gmail.com</a></p>
                     </div>
                 </div>
-                <div className="mt-10 border-t border-white/5 pt-6 text-xs tracking-[0.08em] text-[#6b6054]">
-                    &copy; {currentYear} Colding. All rights reserved.
+                <div className="mt-10 border-t border-white/5 pt-6">
+                    <div className="flex flex-col gap-3 text-sm text-[#8e8072] sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-4">
+                            <Link href="/privacy" className="transition-colors hover:text-white">
+                                개인정보 처리 방침
+                            </Link>
+                            <a href={siteConfig.releasePage} target="_blank" rel="noreferrer" className="transition-colors hover:text-white">
+                                릴리즈 노트
+                            </a>
+                        </div>
+                        <p className="text-xs tracking-[0.08em] text-[#6b6054]">
+                            &copy; {currentYear} Colding. All rights reserved.
+                        </p>
+                    </div>
                 </div>
             </div>
         </footer>
