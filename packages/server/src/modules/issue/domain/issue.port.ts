@@ -1,7 +1,13 @@
 import { IssueEntity, IssueStatus, IssuePriority } from './issue.entity';
 
+export interface IssueSearchFilters {
+    status?: IssueStatus;
+    query?: string;
+    assigneeId?: string;
+}
+
 export interface IIssueRepository {
-    findByTeam(teamId: string, status?: IssueStatus): Promise<IssueEntity[]>;
+    findByTeam(teamId: string, filters?: IssueSearchFilters): Promise<IssueEntity[]>;
     findById(id: string): Promise<IssueEntity | null>;
     save(data: {
         teamId: string;

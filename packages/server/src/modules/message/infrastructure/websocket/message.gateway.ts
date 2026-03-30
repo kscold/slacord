@@ -8,11 +8,12 @@ import {
     OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { JwtService } from '@nestjs/jwt';
-import { Logger, UnauthorizedException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { SendMessageUseCase } from '../../application/use-cases/send-message.use-case';
 import { ReactMessageUseCase } from '../../application/use-cases/react-message.use-case';
 import { Attachment } from '../../domain/message.entity';
+import { authenticateSocketUser, type SocketUser } from '../../../../shared/lib/socket-auth';
 
 interface SendMessagePayload {
     teamId: string;
@@ -26,12 +27,6 @@ interface ReactionPayload {
     messageId: string;
     channelId: string;
     emoji: string;
-}
-
-interface SocketUser {
-    userId: string;
-    email: string;
-    username?: string;
 }
 
 /** 실시간 채팅 WebSocket Gateway */
@@ -50,7 +45,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
     handleConnection(client: Socket) {
         try {
-            client.data.user = this.authenticate(client);
+            client.data.user = authenticateSocketUser(this.jwtService, client);
         } catch (error) {
             this.logger.warn(`Client rejected: ${client.id}`);
             client.emit('error', { message: 'Authentication required.' });
@@ -121,39 +116,6 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
             userId: user.userId,
             username: user.username ?? '동료',
         });
-    }
-
-    private authenticate(client: Socket): SocketUser {
-        const token = this.extractToken(client);
-        if (!token) {
-            throw new UnauthorizedException('Missing token');
-        }
-        const payload = this.jwtService.verify(token) as {
-            sub: string;
-            email: string;
-            username?: string;
-        };
-        return { userId: payload.sub, email: payload.email, username: payload.username };
-    }
-
-    private extractToken(client: Socket) {
-        const authToken = client.handshake.auth?.token;
-        if (typeof authToken === 'string' && authToken.trim()) {
-            return authToken;
-        }
-        const authorization = client.handshake.headers.authorization;
-        if (typeof authorization === 'string' && authorization.startsWith('Bearer ')) {
-            return authorization.slice(7);
-        }
-        const cookieHeader = client.handshake.headers.cookie;
-        if (!cookieHeader) {
-            return null;
-        }
-        return cookieHeader
-            .split(';')
-            .map((value) => value.trim())
-            .find((value) => value.startsWith('access_token='))
-            ?.slice('access_token='.length) ?? null;
     }
 
     private getUser(client: Socket): SocketUser {
