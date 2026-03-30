@@ -8,6 +8,10 @@ export function getStartUrl() {
     return process.env.SLACORD_DESKTOP_START_URL || process.env.SLACORD_APP_URL || PROD_URL;
 }
 
+export function getAppOrigin() {
+    return new URL(getStartUrl()).origin;
+}
+
 export function isAllowedUrl(target: string) {
     try {
         const current = new URL(target);

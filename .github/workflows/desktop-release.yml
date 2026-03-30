@@ -50,6 +50,37 @@ jobs:
             }
           fi
 
+      - name: Validate mac signing secrets
+        if: runner.os == 'macOS'
+        run: |
+          missing=0
+          for key in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [[ -z "${!key}" ]]; then
+              echo "missing required secret: $key"
+              missing=1
+            fi
+          done
+          if [[ "$missing" -ne 0 ]]; then
+            echo "macOS 릴리즈는 서명과 공증 시크릿이 모두 준비돼야 합니다."
+            exit 1
+          fi
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Warn when Windows signing is missing
+        if: runner.os == 'Windows'
+        run: |
+          if [[ -z "${WIN_CSC_LINK}" || -z "${WIN_CSC_KEY_PASSWORD}" ]]; then
+            echo "Windows 코드사인 시크릿이 비어 있습니다. 릴리즈는 되지만 SmartScreen 경고가 남을 수 있습니다."
+          fi
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
       - name: Publish desktop artifacts
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}

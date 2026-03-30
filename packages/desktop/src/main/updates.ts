@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, type BrowserWindow as BrowserWindowType } from 'electron';
-import type { DesktopUpdateCheckResult, DesktopUpdateDownloadResult, DesktopUpdateInstallResult, DesktopUpdateStage } from '@slacord/contracts';
+import type { DesktopUpdateCheckResult, DesktopUpdateDownloadResult, DesktopUpdateInstallResult, DesktopUpdateStage, DesktopUpdateStatus } from '@slacord/contracts';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { attachUpdateWindow, getUpdateStatus, setUpdateProgress, setUpdateStatus } from './update-status';
@@ -24,15 +24,13 @@ export function setupAutoUpdates(window: BrowserWindowType) {
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.autoRunAppAfterInstall = true;
-    if (process.platform === 'darwin') {
-        autoUpdater.forceCodeSigning = false;
-    }
+    autoUpdater.forceCodeSigning = process.platform === 'darwin';
     autoUpdater.on('checking-for-update', () => send('checking'));
     autoUpdater.on('update-available', (info) => {
         downloadedVersion = '';
         installRequested = false;
         setUpdateProgress(null);
-        send('available', `v${info.version}`);
+        send('available', `v${info.version}`, { availableVersion: info.version });
     });
     autoUpdater.on('update-not-available', () => {
         downloadedVersion = '';
@@ -41,12 +39,15 @@ export function setupAutoUpdates(window: BrowserWindowType) {
     });
     autoUpdater.on('download-progress', (progress) => {
         setUpdateProgress(progress.percent / 100);
-        send('downloading', `${Math.round(progress.percent)}%`);
+        send('downloading', `${Math.round(progress.percent)}%`, {
+            availableVersion: getUpdateStatus().availableVersion,
+            progress: progress.percent / 100,
+        });
     });
     autoUpdater.on('update-downloaded', async (info) => {
         downloadedVersion = info.version;
         setUpdateProgress(null);
-        send('downloaded', `v${info.version}`);
+        send('downloaded', `v${info.version}`, { availableVersion: info.version, progress: 1 });
         if (installRequested) return;
         const choice = await dialog.showMessageBox({
             type: 'info',
@@ -61,7 +62,11 @@ export function setupAutoUpdates(window: BrowserWindowType) {
         setUpdateProgress(null);
         installRequested = false;
         downloadedVersion = '';
-        send('error', normalizeUpdateError(error));
+        const detail = normalizeUpdateError(error);
+        send('error', detail, {
+            availableVersion: getUpdateStatus().availableVersion,
+            manualDownloadRequired: shouldFallbackToManualDownload(error),
+        });
     });
     scheduleChecks();
 }
@@ -77,14 +82,15 @@ function registerHandlers() {
 
 async function checkForUpdates(): Promise<DesktopUpdateCheckResult> {
     if (!app.isPackaged) {
-        return { ok: false, status: { stage: 'idle', detail: '패키징된 앱에서만 업데이트 확인 가능' } };
+        return { ok: false, status: createStatus('idle', '패키징된 앱에서만 업데이트를 확인할 수 있어요.') };
     }
     if (runningCheck) return runningCheck;
     runningCheck = autoUpdater
         .checkForUpdates()
         .then(() => ({ ok: true, status: getUpdateStatus() }))
         .catch((error: Error) => {
-            send('error', error.message);
+            const detail = normalizeUpdateError(error);
+            send('error', detail, { manualDownloadRequired: shouldFallbackToManualDownload(error) });
             return { ok: false, status: getUpdateStatus() };
         })
         .finally(() => {
@@ -95,18 +101,25 @@ async function checkForUpdates(): Promise<DesktopUpdateCheckResult> {
 
 async function downloadUpdate(): Promise<DesktopUpdateDownloadResult> {
     if (!app.isPackaged) {
-        return { ok: false, status: { stage: 'idle', detail: '패키징된 앱에서만 다운로드할 수 있습니다.' } };
+        return { ok: false, status: createStatus('idle', '패키징된 앱에서만 업데이트를 내려받을 수 있어요.') };
     }
     if (getUpdateStatus().stage === 'downloaded') {
         return { ok: true, status: getUpdateStatus() };
     }
     if (runningDownload) return runningDownload;
-    send('downloading', '준비 중');
+    send('downloading', '다운로드를 준비하고 있어요.', {
+        availableVersion: getUpdateStatus().availableVersion,
+        progress: 0,
+    });
     runningDownload = autoUpdater
         .downloadUpdate()
         .then(() => ({ ok: true, status: getUpdateStatus() }))
         .catch((error: Error) => {
-            send('error', normalizeUpdateError(error));
+            const detail = normalizeUpdateError(error);
+            send('error', detail, {
+                availableVersion: getUpdateStatus().availableVersion,
+                manualDownloadRequired: shouldFallbackToManualDownload(error),
+            });
             return { ok: false, status: getUpdateStatus() };
         })
         .finally(() => {
@@ -117,10 +130,10 @@ async function downloadUpdate(): Promise<DesktopUpdateDownloadResult> {
 
 async function restartToInstall(): Promise<DesktopUpdateInstallResult> {
     if (!app.isPackaged) {
-        return { ok: false, status: { stage: 'idle', detail: '패키징된 앱에서만 설치할 수 있습니다.' } };
+        return { ok: false, status: createStatus('idle', '패키징된 앱에서만 업데이트를 설치할 수 있어요.') };
     }
     if (!downloadedVersion) {
-        return { ok: false, status: { stage: 'idle', detail: '설치할 업데이트가 아직 준비되지 않았습니다.' } };
+        return { ok: false, status: createStatus('idle', '설치할 업데이트가 아직 준비되지 않았어요.') };
     }
     if (installRequested) {
         return { ok: true, status: getUpdateStatus() };
@@ -128,7 +141,7 @@ async function restartToInstall(): Promise<DesktopUpdateInstallResult> {
 
     installRequested = true;
     setUpdateProgress(null);
-    send('installing', `v${downloadedVersion}`);
+    send('installing', `v${downloadedVersion}`, { availableVersion: downloadedVersion, progress: 1 });
     const windows = BrowserWindow.getAllWindows();
     for (const window of windows) {
         if (!window.isDestroyed()) window.webContents.send('desktop:update-status', getUpdateStatus());
@@ -141,7 +154,10 @@ async function restartToInstall(): Promise<DesktopUpdateInstallResult> {
             autoUpdater.quitAndInstall(false, true);
         } catch (error) {
             installRequested = false;
-            send('error', error instanceof Error ? error.message : '업데이트 설치를 시작하지 못했습니다.');
+            send('error', error instanceof Error ? normalizeUpdateError(error) : '업데이트 설치를 시작하지 못했어요.', {
+                availableVersion: downloadedVersion,
+                manualDownloadRequired: error instanceof Error && shouldFallbackToManualDownload(error),
+            });
         }
     });
     return { ok: true, status: getUpdateStatus() };
@@ -154,11 +170,32 @@ function scheduleChecks() {
     setInterval(() => void checkForUpdates(), CHECK_INTERVAL_MS);
 }
 
-function send(stage: DesktopUpdateStage, detail = '') {
-    setUpdateStatus({ stage, detail });
+function send(stage: DesktopUpdateStage, detail = '', overrides: Partial<DesktopUpdateStatus> = {}) {
+    setUpdateStatus({ ...createStatus(stage, detail), ...overrides });
+}
+
+function createStatus(stage: DesktopUpdateStage, detail = ''): DesktopUpdateStatus {
+    return {
+        stage,
+        detail,
+        progress: null,
+        availableVersion: null,
+        manualDownloadRequired: false,
+    };
+}
+
+function shouldFallbackToManualDownload(error: Error) {
+    const message = error.message.toLowerCase();
+    return process.platform === 'darwin' && (
+        message.includes('code signature') ||
+        message.includes('did not pass validation') ||
+        message.includes('not pass validation')
+    );
 }
 
 function normalizeUpdateError(error: Error) {
-    const message = error.message ?? '업데이트를 처리하지 못했습니다.';
-    return message;
+    if (shouldFallbackToManualDownload(error)) {
+        return 'macOS 서명 검증을 통과하지 못했어요. 다운로드 페이지에서 새 버전을 다시 설치해 주세요.';
+    }
+    return error.message ?? '업데이트를 처리하지 못했어요.';
 }

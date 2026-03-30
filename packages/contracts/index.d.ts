@@ -10,6 +10,9 @@ export type DesktopUpdateStage =
 export interface DesktopUpdateStatus {
     stage: DesktopUpdateStage;
     detail: string;
+    progress: number | null;
+    availableVersion: string | null;
+    manualDownloadRequired: boolean;
 }
 
 export interface DesktopUpdateCheckResult {
@@ -30,7 +33,7 @@ export interface DesktopUpdateInstallResult {
 export interface SlacordDesktopBridge {
     isDesktop: boolean;
     platform: string;
-    notify: (title: string, body: string) => Promise<boolean>;
+    notify: (title: string, body: string, href?: string) => Promise<boolean>;
     requestMediaAccess: () => Promise<{ microphone: boolean; camera: boolean }>;
     getUpdateStatus: () => Promise<DesktopUpdateStatus>;
     checkForUpdates: () => Promise<DesktopUpdateCheckResult>;

@@ -2,7 +2,13 @@ import type { DesktopUpdateStatus } from '@slacord/contracts';
 import type { BrowserWindow } from 'electron';
 
 const windows = new Set<BrowserWindow>();
-let currentStatus: DesktopUpdateStatus = { stage: 'idle', detail: '' };
+let currentStatus: DesktopUpdateStatus = {
+    stage: 'idle',
+    detail: '',
+    progress: null,
+    availableVersion: null,
+    manualDownloadRequired: false,
+};
 
 export function attachUpdateWindow(window: BrowserWindow) {
     windows.add(window);
