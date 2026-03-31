@@ -3,6 +3,7 @@ import type { DesktopUpdateCheckResult, DesktopUpdateDownloadResult, DesktopUpda
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { attachUpdateWindow, getUpdateStatus, setUpdateProgress, setUpdateStatus } from './update-status';
+import { normalizeUpdateError, shouldFallbackToManualDownload } from './update-errors';
 
 const CHECK_INTERVAL_MS = 1000 * 60 * 60 * 6;
 const INITIAL_CHECK_DELAY_MS = 5000;
@@ -182,20 +183,4 @@ function createStatus(stage: DesktopUpdateStage, detail = ''): DesktopUpdateStat
         availableVersion: null,
         manualDownloadRequired: false,
     };
-}
-
-function shouldFallbackToManualDownload(error: Error) {
-    const message = error.message.toLowerCase();
-    return process.platform === 'darwin' && (
-        message.includes('code signature') ||
-        message.includes('did not pass validation') ||
-        message.includes('not pass validation')
-    );
-}
-
-function normalizeUpdateError(error: Error) {
-    if (shouldFallbackToManualDownload(error)) {
-        return 'macOS 서명 검증을 통과하지 못했어요. 다운로드 페이지에서 새 버전을 다시 설치해 주세요.';
-    }
-    return error.message ?? '업데이트를 처리하지 못했어요.';
 }
