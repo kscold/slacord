@@ -232,6 +232,26 @@
         margin-top: 1rem;
     }
 
+    @media (max-width: 768px) {
+        .confluence-render table {
+            width: 100%;
+            min-width: 100%;
+            table-layout: fixed;
+        }
+
+        .confluence-render th,
+        .confluence-render td {
+            min-width: 0;
+            padding: 0.7rem 0.75rem;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .confluence-render .table-scroll table {
+            min-width: 100%;
+        }
+    }
+
     .confluence-render .slacord-task-list {
         list-style: none;
         padding-left: 0;

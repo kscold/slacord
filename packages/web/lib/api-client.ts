@@ -195,7 +195,7 @@ export const issueApi = {
         const query = params.toString();
         return apiFetch(`/api/team/${teamId}/issue${query ? `?${query}` : ''}`);
     },
-    async createIssue(teamId: string, data: { title: string; description?: string; priority?: string; assigneeIds?: string[]; labels?: string[] }) {
+    async createIssue(teamId: string, data: { title: string; description?: string; priority?: string; status?: string; assigneeIds?: string[]; labels?: string[] }) {
         return apiFetch(`/api/team/${teamId}/issue`, { method: 'POST', body: JSON.stringify(data) });
     },
     async updateIssue(teamId: string, issueId: string, data: object) {
