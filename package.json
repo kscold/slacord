@@ -17,6 +17,8 @@
     "build:desktop": "yarn workspace @slacord/desktop build",
     "test:web": "yarn workspace @slacord/web test",
     "test:desktop": "yarn workspace @slacord/desktop test",
+    "test:e2e:web": "playwright test",
+    "test:e2e:web:prepare": "playwright install chromium",
     "verify:web:mobile": "node scripts/verify-slacord-web-mobile.mjs",
     "verify:web:mobile:prepare": "playwright install webkit",
     "dist:desktop": "yarn workspace @slacord/desktop dist:dmg",

@@ -27,6 +27,8 @@ lerna-debug.log*
 /.nyc_output
 /packages/*/coverage
 /artifacts
+/playwright-report
+/test-results
 
 # IDEs and editors
 /.idea
