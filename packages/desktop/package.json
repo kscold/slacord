@@ -10,6 +10,7 @@
     "shell": "concurrently -k \"yarn watch\" \"wait-on tcp:3002 file:dist/main.js && cross-env SLACORD_DESKTOP_START_URL=http://localhost:3002/auth/login electron .\"",
     "watch": "tsup --config tsup.config.ts --watch",
     "build": "tsup --config tsup.config.ts",
+    "test": "vitest run",
     "dist:dir": "yarn build && electron-builder --dir --publish never",
     "dist:dmg": "yarn build && electron-builder --mac dmg zip --publish never",
     "dist:win": "yarn build && electron-builder --win nsis --publish never",
@@ -29,6 +30,7 @@
     "electron-builder": "^26.0.12",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
     "wait-on": "^9.0.3"
   },
   "build": {
