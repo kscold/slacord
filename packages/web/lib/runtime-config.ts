@@ -9,10 +9,6 @@ function browserApiBaseUrl() {
     if (typeof window === 'undefined') {
         return '';
     }
-    const { protocol, hostname, port } = window.location;
-    if (port === '3003') {
-        return `${protocol}//${hostname}:8084`;
-    }
     return '';
 }
 
@@ -23,7 +19,7 @@ function serverApiBaseUrl() {
 export function toApiUrl(path: string) {
     const normalized = normalizePath(path);
     if (typeof window !== 'undefined') {
-        return `${browserApiBaseUrl()}${normalized}`;
+        return normalized;
     }
     return `${serverApiBaseUrl()}${normalized}`;
 }
