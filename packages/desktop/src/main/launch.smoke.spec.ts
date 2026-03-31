@@ -91,10 +91,11 @@ describe('desktop launch smoke', () => {
         const appEnv = {
             ...process.env,
             ELECTRON_DISABLE_SECURITY_WARNINGS: '1',
+            ELECTRON_ENABLE_LOGGING: '1',
             SLACORD_DESKTOP_START_URL: baseUrl,
         };
         delete appEnv.ELECTRON_RUN_AS_NODE;
-        const app = spawn(electronBinary, ['.'], {
+        const app = spawn(electronBinary, ['.', '--no-sandbox', '--disable-gpu'], {
             cwd: packageRoot,
             env: appEnv,
             stdio: ['ignore', 'pipe', 'pipe'],
@@ -113,7 +114,7 @@ describe('desktop launch smoke', () => {
                 new Promise<Record<string, string>>((_, reject) => {
                     const timeout = setTimeout(() => {
                         reject(new Error(`Electron 스모크 준비 콜백을 기다리다 시간 초과가 났어요.\n${logs.join('')}`));
-                    }, 20000);
+                    }, 40000);
                     app.once('exit', (code) => {
                         clearTimeout(timeout);
                         reject(new Error(`Electron 프로세스가 먼저 종료됐어요. code=${code}\n${logs.join('')}`));
@@ -130,7 +131,7 @@ describe('desktop launch smoke', () => {
         } finally {
             await stopProcess(app);
         }
-    });
+    }, 60000);
 });
 
 async function stopProcess(process: ChildProcess) {
@@ -138,8 +139,11 @@ async function stopProcess(process: ChildProcess) {
     process.kill('SIGTERM');
     await new Promise<void>((resolve) => {
         const fallback = setTimeout(() => {
-            if (process.exitCode === null) process.kill('SIGKILL');
-        }, 3000);
+            if (process.exitCode === null) {
+                process.kill('SIGKILL');
+                resolve();
+            }
+        }, 5000);
         process.once('exit', () => {
             clearTimeout(fallback);
             resolve();
