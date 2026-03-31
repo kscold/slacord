@@ -72,7 +72,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Run desktop tests
-        run: yarn test:desktop
+        run: xvfb-run -a yarn test:desktop
 
       - name: Build desktop
         run: yarn build:desktop
