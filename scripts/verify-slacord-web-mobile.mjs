@@ -171,6 +171,50 @@ async function collectMetrics(page) {
     });
 }
 
+function toResponseKey(rawUrl) {
+    try {
+        const parsed = new URL(rawUrl);
+        return `${parsed.pathname}${parsed.search}`;
+    } catch {
+        return rawUrl;
+    }
+}
+
+function extractAccessControlPath(message) {
+    const match = message.match(/^\/[^/]+(?<path>\/api\/\S+?) due to access control checks\.$/);
+    return match?.groups?.path ?? null;
+}
+
+function splitBenignAccessControlEvents(events, responseStatuses) {
+    const filtered = [];
+    const ignored = [];
+
+    for (const event of events) {
+        if (event.type !== 'pageerror') {
+            filtered.push(event);
+            continue;
+        }
+
+        const pathName = extractAccessControlPath(event.message);
+        if (!pathName) {
+            filtered.push(event);
+            continue;
+        }
+
+        // WebKit이 same-origin API 성공 응답을 access control pageerror로 잘못 내보내는 경우가 있어,
+        // 실제 응답 상태가 2xx/3xx인 요청만 오경보로 분리함.
+        const status = responseStatuses.get(pathName);
+        if (status && status < 400) {
+            ignored.push(event);
+            continue;
+        }
+
+        filtered.push(event);
+    }
+
+    return { filtered, ignored };
+}
+
 async function main() {
     const seeded = await getVerificationTarget();
     await fs.mkdir(outputDir, { recursive: true });
@@ -182,6 +226,7 @@ async function main() {
     });
     const page = await context.newPage();
     const events = [];
+    const responseStatuses = new Map();
 
     page.on('pageerror', (error) => {
         events.push({ type: 'pageerror', message: error.message });
@@ -191,6 +236,10 @@ async function main() {
         if (message.type() === 'error') {
             events.push({ type: 'console', message: message.text() });
         }
+    });
+
+    page.on('response', (response) => {
+        responseStatuses.set(toResponseKey(response.url()), response.status());
     });
 
     await page.goto(`${baseUrl}/auth/login`, { waitUntil: 'networkidle' });
@@ -217,10 +266,13 @@ async function main() {
             fullPage: true,
         });
 
+        const { filtered, ignored } = splitBenignAccessControlEvents(events, responseStatuses);
+
         results.push({
             route,
             metrics: await collectMetrics(page),
-            events: [...events],
+            events: filtered,
+            ignoredEvents: ignored,
         });
     }
 
