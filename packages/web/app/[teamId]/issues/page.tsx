@@ -1,12 +1,13 @@
 'use client';
 
 import { use } from 'react';
-import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
-import { KanbanColumn } from '@/src/features/issue/ui/KanbanColumn';
+import type { DropResult } from '@hello-pangea/dnd';
 import { IssueModal } from '@/src/features/issue/ui/IssueModal';
 import { IssueBoardFilters } from '@/src/features/issue/ui/IssueBoardFilters';
+import { IssueDesktopBoard } from '@/src/features/issue/ui/IssueDesktopBoard';
+import { IssueBoardHeader } from '@/src/features/issue/ui/IssueBoardHeader';
+import { IssueMobileSection } from '@/src/features/issue/ui/IssueMobileSection';
 import type { IssueStatus } from '@/src/entities/issue/types';
-import { ISSUE_STATUS_LABELS } from '@/src/entities/issue/types';
 import { useIssueBoard } from '@/src/features/issue/model/useIssueBoard';
 
 const COLUMNS: IssueStatus[] = ['todo', 'in_progress', 'in_review', 'done'];
@@ -27,18 +28,7 @@ export default function IssuesPage({ params }: Props) {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border-primary shrink-0">
-                <h2 className="text-xl font-bold text-white">이슈 트래커</h2>
-                <button
-                    onClick={() => { board.setCreateStatus('todo'); board.setShowCreate(true); }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slack-green text-white text-sm font-medium hover:bg-slack-green/90 transition-colors"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    이슈 생성
-                </button>
-            </div>
+            <IssueBoardHeader onCreate={() => { board.setCreateStatus('todo'); board.setShowCreate(true); }} />
             <IssueBoardFilters
                 query={board.query}
                 assigneeId={board.assigneeId}
@@ -54,22 +44,29 @@ export default function IssuesPage({ params }: Props) {
                 }}
             />
 
-            <div className="flex-1 overflow-x-auto p-6">
-                <DragDropContext onDragEnd={handleDragEnd}>
-                    <div className="flex gap-4 h-full">
-                        {COLUMNS.map((status) => (
-                            <KanbanColumn
-                                key={status}
-                                status={status}
-                                label={ISSUE_STATUS_LABELS[status]}
-                                issues={board.issuesByStatus[status]}
-                                members={board.members}
-                                onCardClick={board.setSelectedIssue}
-                                onAddClick={() => { board.setCreateStatus(status); board.setShowCreate(true); }}
-                            />
-                        ))}
-                    </div>
-                </DragDropContext>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+                <div className="space-y-4 lg:hidden">
+                    {COLUMNS.map((status) => (
+                        <IssueMobileSection
+                            key={status}
+                            issues={board.issuesByStatus[status]}
+                            members={board.members}
+                            onAddClick={() => { board.setCreateStatus(status); board.setShowCreate(true); }}
+                            onCardClick={board.setSelectedIssue}
+                            status={status}
+                        />
+                    ))}
+                </div>
+                <div className="hidden h-full lg:block lg:overflow-x-auto">
+                    <IssueDesktopBoard
+                        columns={COLUMNS}
+                        issuesByStatus={board.issuesByStatus}
+                        members={board.members}
+                        onAddClick={(status) => { board.setCreateStatus(status); board.setShowCreate(true); }}
+                        onCardClick={board.setSelectedIssue}
+                        onDragEnd={handleDragEnd}
+                    />
+                </div>
             </div>
 
             {board.showCreate && (

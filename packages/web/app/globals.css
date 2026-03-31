@@ -190,6 +190,7 @@
         border-collapse: collapse;
         border: 1px solid var(--color-border-primary);
         border-radius: 18px;
+        table-layout: auto;
     }
 
     .confluence-render th,
@@ -197,10 +198,12 @@
         border: 1px solid var(--color-border-secondary);
         padding: 0.75rem 0.9rem;
         vertical-align: top;
-        min-width: 8rem;
-        white-space: pre-wrap;
-        word-break: keep-all;
+        min-width: 10rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: normal;
         writing-mode: horizontal-tb;
+        line-height: 1.7;
     }
 
     .confluence-render th {
@@ -219,6 +222,10 @@
     .confluence-render .table-scroll {
         overflow-x: auto;
         overscroll-behavior-x: contain;
+    }
+
+    .confluence-render .table-scroll table {
+        min-width: max(100%, 44rem);
     }
 
     .confluence-render .table-scroll + .table-scroll {
