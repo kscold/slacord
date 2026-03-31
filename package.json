@@ -17,6 +17,8 @@
     "build:desktop": "yarn workspace @slacord/desktop build",
     "test:web": "yarn workspace @slacord/web test",
     "test:desktop": "yarn workspace @slacord/desktop test",
+    "verify:web:mobile": "node scripts/verify-slacord-web-mobile.mjs",
+    "verify:web:mobile:prepare": "playwright install webkit",
     "dist:desktop": "yarn workspace @slacord/desktop dist:dmg",
     "dist:desktop:win": "yarn workspace @slacord/desktop dist:win",
     "release:desktop:mac": "yarn workspace @slacord/desktop release:mac",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "playwright": "^1.54.2",
     "prettier": "^3.4.2"
   },
   "engines": {
