@@ -1,0 +1,176 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run backend tests
+        run: yarn test:server
+
+      - name: Build backend
+        run: yarn build:server
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run frontend tests
+        run: yarn test:web
+
+      - name: Build frontend
+        run: yarn build:web
+
+  desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run desktop tests
+        run: yarn test:desktop
+
+      - name: Build desktop
+        run: yarn build:desktop
+
+  web-e2e:
+    needs:
+      - backend
+      - frontend
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      HOST: 127.0.0.1
+      PORT: 8084
+      MONGODB_URI: mongodb://127.0.0.1:27017/slacord_ci
+      INTERNAL_API_URL: http://127.0.0.1:8084
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:3002/api
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3002
+      SLACORD_E2E_BASE_URL: http://127.0.0.1:3002
+      SLACORD_E2E_API_URL: http://127.0.0.1:8084/api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build backend and frontend
+        run: |
+          yarn build:server
+          yarn build:web
+
+      - name: Start backend
+        run: |
+          yarn start:server > /tmp/slacord-server.log 2>&1 &
+          echo $! > /tmp/slacord-server.pid
+
+      - name: Wait for backend
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8084/api/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/slacord-server.log || true
+          exit 1
+
+      - name: Start frontend
+        run: |
+          yarn start:web > /tmp/slacord-web.log 2>&1 &
+          echo $! > /tmp/slacord-web.pid
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3002 >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/slacord-web.log || true
+          exit 1
+
+      - name: Run web e2e
+        run: yarn test:e2e:web
+
+      - name: Upload E2E artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-e2e-artifacts
+          path: |
+            playwright-report
+            test-results
+            /tmp/slacord-server.log
+            /tmp/slacord-web.log
+          if-no-files-found: ignore
+
+      - name: Stop frontend and backend
+        if: always()
+        run: |
+          if [[ -f /tmp/slacord-web.pid ]]; then kill "$(cat /tmp/slacord-web.pid)" || true; fi
+          if [[ -f /tmp/slacord-server.pid ]]; then kill "$(cat /tmp/slacord-server.pid)" || true; fi

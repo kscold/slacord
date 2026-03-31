@@ -15,6 +15,7 @@
     "build:server": "yarn workspace @slacord/server build",
     "build:web": "yarn workspace @slacord/web build",
     "build:desktop": "yarn workspace @slacord/desktop build",
+    "test:server": "yarn workspace @slacord/server test --runInBand",
     "test:web": "yarn workspace @slacord/web test",
     "test:desktop": "yarn workspace @slacord/desktop test",
     "test:e2e:web": "playwright test",
