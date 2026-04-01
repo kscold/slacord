@@ -57,6 +57,13 @@ yarn release:desktop:preflight --target=mac
 - Windows 설치파일은 NSIS `.exe` 기준으로 GitHub Releases에 올라가게 잡았음.
 - remote content를 로드하므로 `nodeIntegration: false`, `contextIsolation: true`, `sandbox: true` 조합 유지해야 함.
 
+## Current Operation Policy
+
+- Windows: 앱 안에서 업데이트 확인, 다운로드, 재시작 적용까지 계속 지원
+- macOS: Apple Developer 서명·공증 전까지는 다운로드 페이지에서 새 DMG를 다시 설치하는 기준으로 운영
+- 그래서 현재 웹 다운로드 페이지와 앱 안 안내 문구도 같은 기준으로 맞춰둠
+- macOS 자동 업데이트 라인은 서명 시크릿 준비 뒤 다시 여는 게 맞음
+
 ## macOS Signing Checklist
 
 1. Apple Developer 계정에서 `Developer ID Application` 인증서를 `.p12` 로 export
