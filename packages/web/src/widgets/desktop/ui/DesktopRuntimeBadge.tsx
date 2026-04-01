@@ -7,12 +7,15 @@ export function DesktopRuntimeBadge() {
         status,
         formatted,
         isVisible,
+        platform,
         downloading,
         installing,
         setStatus,
         setDownloading,
         setInstalling,
     } = useDesktopRuntimeBadge();
+
+    const isMac = platform === 'darwin';
 
     if (!isVisible) return null;
 
@@ -50,19 +53,19 @@ export function DesktopRuntimeBadge() {
                 </div>
             ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
-                {status.stage === 'available' && typeof window.slacordDesktop?.downloadUpdate === 'function' ? (
+                {status.stage === 'available' && !isMac && typeof window.slacordDesktop?.downloadUpdate === 'function' ? (
                     <button onClick={() => void handleDownload()} className="rounded-full bg-[#b97532] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#cf8640] disabled:cursor-wait disabled:opacity-70" disabled={downloading}>
                         {downloading ? '다운로드 준비 중' : '업데이트 받기'}
                     </button>
                 ) : null}
-                {status.stage === 'downloaded' && typeof window.slacordDesktop?.restartToUpdate === 'function' ? (
+                {status.stage === 'downloaded' && !isMac && typeof window.slacordDesktop?.restartToUpdate === 'function' ? (
                     <button onClick={() => void handleRestart()} className="rounded-full bg-[#b97532] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#cf8640] disabled:cursor-wait disabled:opacity-70" disabled={installing}>
                         {installing ? '재시작 준비 중' : '지금 재시작'}
                     </button>
                 ) : null}
-                {(status.stage === 'available' || status.stage === 'error' || status.manualDownloadRequired) ? (
+                {(status.stage === 'available' || status.stage === 'error' || status.manualDownloadRequired || isMac) ? (
                     <a href="/download" className="rounded-full border border-white/15 px-3.5 py-2 text-xs font-semibold text-white/85 transition hover:border-white/30 hover:text-white">
-                        설치 파일 다시 받기
+                        {isMac ? '최신 DMG 받기' : '설치 파일 다시 받기'}
                     </a>
                 ) : null}
             </div>

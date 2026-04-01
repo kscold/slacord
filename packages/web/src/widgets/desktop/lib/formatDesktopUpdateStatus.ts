@@ -9,17 +9,23 @@ const TITLES: Record<Exclude<DesktopUpdateStage, 'idle'>, string> = {
     error: '업데이트를 마치지 못했어요',
 };
 
-export function formatDesktopUpdateStatus(status: DesktopUpdateStatus) {
+export function formatDesktopUpdateStatus(status: DesktopUpdateStatus, platform = '') {
     const progress = status.progress !== null && status.progress !== undefined
         ? `${Math.round(status.progress * 100)}%`
         : '';
 
-    const detail = status.stage === 'downloading' && progress
+    const title = status.manualDownloadRequired && platform === 'darwin'
+        ? '새 설치 파일로 업데이트해 주세요'
+        : TITLES[status.stage as Exclude<DesktopUpdateStage, 'idle'>] || 'Desktop status';
+
+    const detail = status.manualDownloadRequired && platform === 'darwin'
+        ? status.detail || 'macOS 앱 안 자동 업데이트는 잠시 보류 중이에요. 다운로드 페이지에서 최신 DMG를 다시 설치해 주세요.'
+        : status.stage === 'downloading' && progress
         ? `지금 ${progress}까지 받았어요.`
         : status.detail;
 
     return {
-        title: TITLES[status.stage as Exclude<DesktopUpdateStage, 'idle'>] || 'Desktop status',
+        title,
         detail,
         progress,
     };

@@ -16,6 +16,7 @@ export function useDesktopRuntimeBadge() {
     const [status, setStatus] = useState<DesktopUpdateStatus>(IDLE_STATUS);
     const [downloading, setDownloading] = useState(false);
     const [installing, setInstalling] = useState(false);
+    const platform = typeof window !== 'undefined' ? window.slacordDesktop?.platform ?? '' : '';
 
     useEffect(() => {
         if (!window.slacordDesktop?.isDesktop) return;
@@ -27,13 +28,14 @@ export function useDesktopRuntimeBadge() {
         });
     }, []);
 
-    const formatted = useMemo(() => formatDesktopUpdateStatus(status), [status]);
+    const formatted = useMemo(() => formatDesktopUpdateStatus(status, platform), [platform, status]);
     const isVisible = typeof window !== 'undefined' && !!window.slacordDesktop?.isDesktop && status.stage !== 'idle';
 
     return {
         status,
         formatted,
         isVisible,
+        platform,
         downloading,
         installing,
         setStatus,

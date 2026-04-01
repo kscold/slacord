@@ -35,4 +35,15 @@ describe('formatDesktopUpdateStatus', () => {
         expect(result.detail).toBe('설치할 버전이 있어요.');
         expect(result.progress).toBe('');
     });
+
+    it('mac 수동 설치 상태면 수동 설치 안내를 우선 보여줌', () => {
+        const result = formatDesktopUpdateStatus(makeStatus({
+            stage: 'error',
+            detail: '',
+            manualDownloadRequired: true,
+        }), 'darwin');
+
+        expect(result.title).toBe('새 설치 파일로 업데이트해 주세요');
+        expect(result.detail).toContain('다운로드 페이지에서 최신 DMG를 다시 설치');
+    });
 });
