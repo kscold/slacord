@@ -16,11 +16,19 @@ let installRequested = false;
 let runningCheck: Promise<DesktopUpdateCheckResult> | null = null;
 let runningDownload: Promise<DesktopUpdateDownloadResult> | null = null;
 
+function supportsInAppAutoUpdate() {
+    return process.platform !== 'darwin' || process.env.SLACORD_MAC_AUTO_UPDATE === 'true';
+}
+
 export function setupAutoUpdates(window: BrowserWindowType) {
     attachUpdateWindow(window);
     registerHandlers();
     if (!app.isPackaged || configured) return;
     configured = true;
+    if (!supportsInAppAutoUpdate()) {
+        send('idle');
+        return;
+    }
     autoUpdater.logger = log;
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
@@ -85,6 +93,14 @@ async function checkForUpdates(): Promise<DesktopUpdateCheckResult> {
     if (!app.isPackaged) {
         return { ok: false, status: createStatus('idle', '패키징된 앱에서만 업데이트를 확인할 수 있어요.') };
     }
+    if (!supportsInAppAutoUpdate()) {
+        return {
+            ok: false,
+            status: createStatus('idle', 'macOS는 지금 다운로드 페이지에서 새 설치 파일로 업데이트해 주세요.', {
+                manualDownloadRequired: true,
+            }),
+        };
+    }
     if (runningCheck) return runningCheck;
     runningCheck = autoUpdater
         .checkForUpdates()
@@ -103,6 +119,14 @@ async function checkForUpdates(): Promise<DesktopUpdateCheckResult> {
 async function downloadUpdate(): Promise<DesktopUpdateDownloadResult> {
     if (!app.isPackaged) {
         return { ok: false, status: createStatus('idle', '패키징된 앱에서만 업데이트를 내려받을 수 있어요.') };
+    }
+    if (!supportsInAppAutoUpdate()) {
+        return {
+            ok: false,
+            status: createStatus('error', 'macOS는 지금 앱 안 다운로드 대신 다운로드 페이지에서 새 설치 파일을 안내하고 있어요.', {
+                manualDownloadRequired: true,
+            }),
+        };
     }
     if (getUpdateStatus().stage === 'downloaded') {
         return { ok: true, status: getUpdateStatus() };
@@ -175,12 +199,13 @@ function send(stage: DesktopUpdateStage, detail = '', overrides: Partial<Desktop
     setUpdateStatus({ ...createStatus(stage, detail), ...overrides });
 }
 
-function createStatus(stage: DesktopUpdateStage, detail = ''): DesktopUpdateStatus {
+function createStatus(stage: DesktopUpdateStage, detail = '', overrides: Partial<DesktopUpdateStatus> = {}): DesktopUpdateStatus {
     return {
         stage,
         detail,
         progress: null,
         availableVersion: null,
         manualDownloadRequired: false,
+        ...overrides,
     };
 }

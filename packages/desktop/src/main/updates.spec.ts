@@ -3,14 +3,17 @@ interface UpdateHarnessOptions {
     dialogResponse?: number;
     checkReject?: Error | null;
     downloadReject?: Error | null;
+    allowMacAutoUpdate?: boolean;
 }
 
 const ORIGINAL_PLATFORM = process.platform;
+const ORIGINAL_MAC_UPDATE = process.env.SLACORD_MAC_AUTO_UPDATE;
 
 async function createHarness(options: UpdateHarnessOptions = {}) {
     vi.resetModules();
     vi.useFakeTimers();
     Object.defineProperty(process, 'platform', { value: 'darwin' });
+    process.env.SLACORD_MAC_AUTO_UPDATE = options.allowMacAutoUpdate ? 'true' : '';
     vi.spyOn(global, 'setImmediate').mockImplementation(((callback: (...args: any[]) => void, ...args: any[]) => {
         callback(...args);
         return 0 as any;
@@ -83,10 +86,12 @@ describe('desktop updates integration', () => {
         vi.useRealTimers();
         vi.restoreAllMocks();
         Object.defineProperty(process, 'platform', { value: ORIGINAL_PLATFORM });
+        if (ORIGINAL_MAC_UPDATE === undefined) delete process.env.SLACORD_MAC_AUTO_UPDATE;
+        else process.env.SLACORD_MAC_AUTO_UPDATE = ORIGINAL_MAC_UPDATE;
     });
 
     it('패키징된 앱에서 업데이트 IPC와 autoUpdater 기본값을 구성함', async () => {
-        const harness = await createHarness();
+        const harness = await createHarness({ allowMacAutoUpdate: true });
 
         expect(harness.ipcHandlers.has('desktop:get-update-status')).toBe(true);
         expect(harness.ipcHandlers.has('desktop:check-for-updates')).toBe(true);
@@ -99,7 +104,7 @@ describe('desktop updates integration', () => {
     });
 
     it('패키징된 앱에서 다운로드 후 재시작 설치 흐름을 진행함', async () => {
-        const harness = await createHarness();
+        const harness = await createHarness({ allowMacAutoUpdate: true });
         harness.updateEvents.get('update-available')?.({ version: '1.1.0' });
 
         const downloadPromise = harness.ipcHandlers.get('desktop:download-update')?.();
@@ -123,6 +128,7 @@ describe('desktop updates integration', () => {
 
     it('서명 검증 오류는 수동 다운로드 fallback 상태로 전환함', async () => {
         const harness = await createHarness({
+            allowMacAutoUpdate: true,
             downloadReject: new Error('Code signature at URL did not pass validation'),
         });
         harness.updateEvents.get('update-available')?.({ version: '1.1.1' });
@@ -134,5 +140,22 @@ describe('desktop updates integration', () => {
         expect(status.stage).toBe('error');
         expect(status.manualDownloadRequired).toBe(true);
         expect(status.detail).toContain('다운로드 페이지에서 새 버전을 다시 설치');
+    });
+
+    it('mac 자동 업데이트를 보류할 때는 앱 안 다운로드를 막고 수동 설치를 안내함', async () => {
+        const harness = await createHarness();
+
+        const result = await harness.ipcHandlers.get('desktop:download-update')?.();
+        const status = harness.updateStatus.getUpdateStatus();
+
+        expect(result?.ok).toBe(false);
+        expect(status.stage).toBe('idle');
+        expect(harness.autoUpdater.checkForUpdates).not.toHaveBeenCalled();
+        expect(harness.autoUpdater.downloadUpdate).not.toHaveBeenCalled();
+
+        const checkResult = await harness.ipcHandlers.get('desktop:check-for-updates')?.();
+        expect(checkResult?.ok).toBe(false);
+        expect(checkResult?.status.manualDownloadRequired).toBe(true);
+        expect(checkResult?.status.detail).toContain('다운로드 페이지');
     });
 });
