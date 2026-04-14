@@ -5,6 +5,7 @@ import {
   createGuestSessionForTeam,
   createWorkspaceFixture,
   e2eBaseUrl,
+  jsonFetch,
   sendSocketMessage,
   type WorkspaceFixture,
 } from "./support/slacord-api";
@@ -332,5 +333,65 @@ test.describe.serial("slacord web e2e", () => {
     await expect(
       page.getByText("guest는 공지를 읽기만 할 수 있습니다."),
     ).toBeVisible();
+  });
+
+  test("설정 페이지에서 외부 브리지 relay 구성을 저장함", async ({ page }) => {
+    await loginWithSession(page, fixture.owner);
+    await page.goto(`/${fixture.teamId}/settings`);
+
+    const slackCard = page.locator("article").filter({
+      hasText: "Slack Relay Worker",
+    });
+    const discordCard = page.locator("article").filter({
+      hasText: "Discord Relay Worker",
+    });
+
+    await slackCard.getByRole("checkbox", { name: "활성화" }).check();
+    await slackCard
+      .getByLabel("Webhook URL")
+      .fill("https://hooks.slack.com/services/test/e2e/path");
+    await slackCard.getByRole("checkbox", { name: "공지 relay" }).check();
+    await slackCard.getByRole("checkbox", { name: "GitHub relay" }).check();
+
+    await discordCard.getByRole("checkbox", { name: "활성화" }).check();
+    await discordCard
+      .getByLabel("Webhook URL")
+      .fill("https://discord.com/api/webhooks/test/e2e-path");
+    await discordCard.getByRole("checkbox", { name: "공지 relay" }).check();
+
+    await page.getByRole("button", { name: "브리지 설정 저장" }).click();
+    await expect(page.getByText("브리지 설정 저장 완료됨")).toBeVisible();
+
+    const team = await jsonFetch<{
+      bridgeConfig: {
+        slack: {
+          enabled: boolean;
+          webhookUrl: string;
+          relayAnnouncements: boolean;
+          relayGithub: boolean;
+        };
+        discord: {
+          enabled: boolean;
+          webhookUrl: string;
+          relayAnnouncements: boolean;
+          relayGithub: boolean;
+        };
+      };
+    }>(`/team/${fixture.teamId}`, {
+      token: fixture.owner.token,
+    });
+
+    expect(team.data?.bridgeConfig.slack).toMatchObject({
+      enabled: true,
+      webhookUrl: "https://hooks.slack.com/services/test/e2e/path",
+      relayAnnouncements: true,
+      relayGithub: true,
+    });
+    expect(team.data?.bridgeConfig.discord).toMatchObject({
+      enabled: true,
+      webhookUrl: "https://discord.com/api/webhooks/test/e2e-path",
+      relayAnnouncements: true,
+      relayGithub: false,
+    });
   });
 });

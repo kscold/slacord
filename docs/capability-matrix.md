@@ -23,12 +23,11 @@ The target is to reproduce the collaboration workflows users expect from Slack, 
 | Rich upload workflows                 | Image preview / DnD    | Multi-file upload    | Asset staging     | Live           |
 | Voice / huddle style rooms            | Slack huddle           | Discord voice room   | Quick sync room   | Live           |
 | Role-based permissions                | Workspace roles        | Server roles         | Team access lanes | Live           |
+| External bridge workers               | Workflow bridge        | Webhook relay        | Event relay       | Live           |
 
 ## Next Parity Targets
 
-| Priority | Capability              | Notes                                            |
-| -------- | ----------------------- | ------------------------------------------------ |
-| P3       | External bridge workers | Optional Slack, Discord, GitHub relay workers    |
+All currently tracked large parity targets are now live in the product surface.
 
 ## Storage Rule
 

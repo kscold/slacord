@@ -1,0 +1,129 @@
+'use client';
+
+import type { BridgeConfig, BridgeTargetConfig } from '@/src/entities/team/types';
+import { useExternalBridgeSettings } from '../model/useExternalBridgeSettings';
+
+const TARGETS: Array<{ key: keyof BridgeConfig; label: string; description: string; placeholder: string }> = [
+    {
+        key: 'slack',
+        label: 'Slack Relay Worker',
+        description: '공지와 GitHub 카드 메시지를 Slack incoming webhook으로 비동기 relay합니다.',
+        placeholder: 'https://hooks.slack.com/services/...',
+    },
+    {
+        key: 'discord',
+        label: 'Discord Relay Worker',
+        description: '공지와 GitHub 카드 메시지를 Discord webhook으로 비동기 relay합니다.',
+        placeholder: 'https://discord.com/api/webhooks/...',
+    },
+];
+
+interface Props {
+    teamId: string;
+}
+
+export function ExternalBridgeSettingsPanel({ teamId }: Props) {
+    const settings = useExternalBridgeSettings(teamId);
+    const isReadonly = !settings.canManageBridge;
+
+    if (settings.loading) {
+        return <div className="rounded-[28px] border border-border-primary bg-bg-secondary p-6 text-sm text-text-secondary">브리지 설정 불러오는 중...</div>;
+    }
+
+    return (
+        <section className="rounded-[28px] border border-border-primary bg-bg-secondary p-5 sm:p-6">
+            <div className="max-w-2xl">
+                <p className="text-xs uppercase tracking-[0.24em] text-brand-200">Bridge Workers</p>
+                <h2 className="mt-3 text-2xl font-bold text-white">Slack과 Discord로 공지와 GitHub 흐름을 이어 붙임</h2>
+                <p className="mt-3 text-sm leading-7 text-text-secondary">설정 저장 후 worker가 outbox를 비동기로 처리해서 외부 채널까지 안전하게 relay합니다.</p>
+                {isReadonly ? <p className="mt-3 text-sm text-amber-300">현재 역할은 {settings.viewerRole ?? 'viewer'}이며 owner/admin만 브리지 설정을 변경할 수 있습니다.</p> : null}
+            </div>
+
+            <div className="mt-6 grid gap-4 xl:grid-cols-2">
+                {TARGETS.map((target) => (
+                    <BridgeTargetCard
+                        key={target.key}
+                        description={target.description}
+                        label={target.label}
+                        placeholder={target.placeholder}
+                        value={settings.form[target.key]}
+                        disabled={isReadonly}
+                        onChange={(key, value) => settings.updateTargetField(target.key, key, value)}
+                    />
+                ))}
+            </div>
+
+            {settings.error ? <p className="mt-4 text-sm text-red-400">{settings.error}</p> : null}
+            {settings.saved ? <p className="mt-4 text-sm text-brand-300">브리지 설정 저장 완료됨</p> : null}
+            <button type="button" onClick={settings.save} disabled={settings.saving || isReadonly} className="mt-6 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 font-medium text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50">
+                {settings.saving ? '저장 중...' : '브리지 설정 저장'}
+            </button>
+        </section>
+    );
+}
+
+interface CardProps {
+    description: string;
+    disabled?: boolean;
+    label: string;
+    placeholder: string;
+    value: BridgeTargetConfig;
+    onChange: <K extends keyof BridgeTargetConfig>(key: K, value: BridgeTargetConfig[K]) => void;
+}
+
+function BridgeTargetCard({ description, disabled = false, label, placeholder, value, onChange }: CardProps) {
+    return (
+        <article className={`rounded-[24px] border border-white/8 bg-black/20 p-4 ${disabled ? 'opacity-75' : ''}`}>
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <h3 className="text-lg font-semibold text-white">{label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-text-secondary">{description}</p>
+                </div>
+                <label className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs text-white">
+                    <input
+                        type="checkbox"
+                        checked={value.enabled}
+                        disabled={disabled}
+                        onChange={(event) => onChange('enabled', event.target.checked)}
+                    />
+                    활성화
+                </label>
+            </div>
+
+            <label className="mt-4 block space-y-2">
+                <span className="text-xs text-text-tertiary">Webhook URL</span>
+                <input
+                    value={value.webhookUrl}
+                    disabled={disabled}
+                    onChange={(event) => onChange('webhookUrl', event.target.value)}
+                    placeholder={placeholder}
+                    className="w-full rounded-2xl border border-border-primary bg-bg-primary px-4 py-3 text-sm text-white outline-none transition focus:border-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+            </label>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <ToggleChip
+                    checked={value.relayAnnouncements}
+                    disabled={disabled}
+                    label="공지 relay"
+                    onChange={(next) => onChange('relayAnnouncements', next)}
+                />
+                <ToggleChip
+                    checked={value.relayGithub}
+                    disabled={disabled}
+                    label="GitHub relay"
+                    onChange={(next) => onChange('relayGithub', next)}
+                />
+            </div>
+        </article>
+    );
+}
+
+function ToggleChip({ checked, disabled = false, label, onChange }: { checked: boolean; disabled?: boolean; label: string; onChange: (value: boolean) => void }) {
+    return (
+        <label className={`flex items-center gap-2 rounded-2xl border px-3 py-3 text-sm transition ${checked ? 'border-brand-400/40 bg-brand-500/10 text-white' : 'border-border-primary text-text-secondary'} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}>
+            <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
+            {label}
+        </label>
+    );
+}

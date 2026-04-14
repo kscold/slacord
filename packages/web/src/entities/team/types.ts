@@ -1,3 +1,15 @@
+export interface BridgeTargetConfig {
+    enabled: boolean;
+    webhookUrl: string;
+    relayAnnouncements: boolean;
+    relayGithub: boolean;
+}
+
+export interface BridgeConfig {
+    slack: BridgeTargetConfig;
+    discord: BridgeTargetConfig;
+}
+
 export interface TeamSummary {
     id: string;
     name: string;
@@ -11,6 +23,7 @@ export interface TeamSummary {
         webhookSecret: string;
         notifyChannelId: string;
     } | null;
+    bridgeConfig: BridgeConfig;
     createdAt: string;
 }
 

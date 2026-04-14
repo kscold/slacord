@@ -290,6 +290,10 @@ function expectNoEvent(
   });
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function emitWithAck(socket, eventName, payload) {
   if (
     typeof socket.timeout === "function" &&
@@ -361,6 +365,76 @@ async function startConfluenceStub() {
     server,
     port: typeof address === "object" && address ? address.port : null,
   };
+}
+
+async function startBridgeStub() {
+  const deliveries = {
+    slack: [],
+    discord: [],
+  };
+
+  const server = http.createServer(async (req, res) => {
+    const url = new URL(req.url || "/", "http://127.0.0.1");
+    res.setHeader("Content-Type", "application/json");
+
+    if (
+      req.method === "POST" &&
+      (url.pathname === "/slack" || url.pathname === "/discord")
+    ) {
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      const body = Buffer.concat(chunks).toString("utf8");
+      const payload = parsePayload(body);
+      const platform = url.pathname.slice(1);
+      deliveries[platform].push({
+        headers: req.headers,
+        payload,
+        receivedAt: new Date().toISOString(),
+      });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    res.statusCode = 404;
+    res.end(JSON.stringify({ message: "not found" }));
+  });
+
+  await new Promise((resolve) => server.listen(0, "0.0.0.0", resolve));
+  const address = server.address();
+  return {
+    deliveries,
+    server,
+    port: typeof address === "object" && address ? address.port : null,
+  };
+}
+
+async function waitForBridgeDelivery(
+  deliveries,
+  platform,
+  predicate,
+  timeoutMs = 9000,
+) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    const match = deliveries[platform].find((entry) => {
+      try {
+        return predicate(entry.payload);
+      } catch {
+        return false;
+      }
+    });
+    if (match) {
+      return match.payload;
+    }
+    await delay(150);
+  }
+
+  throw new Error(
+    `${platform} bridge delivery를 ${timeoutMs}ms 안에 받지 못했습니다.`,
+  );
 }
 
 async function writeReport() {
@@ -1775,6 +1849,32 @@ async function main() {
     },
   );
 
+  await check(
+    "integration",
+    "일반 멤버는 bridge 설정을 바꾸면 안 됨",
+    async () => {
+      await expectFailure(`/team/${context.teamId}/bridge`, {
+        method: "PATCH",
+        token: context.users.deniedMember.token,
+        body: {
+          slack: {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/services/member/denied/path",
+            relayAnnouncements: true,
+            relayGithub: false,
+          },
+          discord: {
+            enabled: false,
+            webhookUrl: "",
+            relayAnnouncements: false,
+            relayGithub: false,
+          },
+        },
+      });
+      return "member denied";
+    },
+  );
+
   await check("integration", "GitHub 설정과 Webhook 수신", async () => {
     const repoFullName = `acme/slacord-live-${Date.now()}`;
     await api(`/team/${context.teamId}/github`, {
@@ -1851,6 +1951,148 @@ async function main() {
     );
     return githubMessage.id;
   });
+
+  const bridgeStub = await startBridgeStub();
+  if (!bridgeStub.port) {
+    await skip(
+      "integration",
+      "외부 브리지 설정과 relay",
+      "bridge stub port를 잡지 못했습니다.",
+    );
+  } else {
+    try {
+      await check(
+        "integration",
+        "외부 브리지 설정 저장",
+        async () => {
+          const response = await api(`/team/${context.teamId}/bridge`, {
+            method: "PATCH",
+            token: context.users.owner.token,
+            body: {
+              slack: {
+                enabled: true,
+                webhookUrl: `http://127.0.0.1:${bridgeStub.port}/slack`,
+                relayAnnouncements: true,
+                relayGithub: true,
+              },
+              discord: {
+                enabled: true,
+                webhookUrl: `http://127.0.0.1:${bridgeStub.port}/discord`,
+                relayAnnouncements: true,
+                relayGithub: true,
+              },
+            },
+          });
+          assert(
+            response.payload?.data?.bridgeConfig?.slack?.enabled === true,
+            "Slack bridge 설정이 저장되지 않았습니다.",
+          );
+          assert(
+            response.payload?.data?.bridgeConfig?.discord?.enabled === true,
+            "Discord bridge 설정이 저장되지 않았습니다.",
+          );
+          return response.payload?.data?.bridgeConfig;
+        },
+      );
+
+      await check("integration", "공지 relay가 Slack/Discord로 전달됨", async () => {
+        const title = `bridge notice ${Date.now().toString().slice(-6)}`;
+        await api(`/team/${context.teamId}/announcement`, {
+          method: "POST",
+          token: context.users.owner.token,
+          body: { title, content: "bridge announcement body" },
+        });
+
+        const slackPayload = await waitForBridgeDelivery(
+          bridgeStub.deliveries,
+          "slack",
+          (payload) =>
+            payload?.blocks?.[0]?.text?.text === title &&
+            payload?.text?.includes("bridge announcement body"),
+        );
+        const discordPayload = await waitForBridgeDelivery(
+          bridgeStub.deliveries,
+          "discord",
+          (payload) =>
+            payload?.embeds?.[0]?.title === title &&
+            payload?.embeds?.[0]?.description === "bridge announcement body",
+        );
+
+        return {
+          discordFooter: discordPayload.embeds?.[0]?.footer?.text,
+          slackContext: slackPayload.blocks?.[slackPayload.blocks.length - 1]
+            ?.elements?.[0]?.text,
+        };
+      });
+
+      await check("integration", "GitHub relay가 Slack/Discord로 전달됨", async () => {
+        const repoFullName = `acme/slacord-bridge-${Date.now()}`;
+        const prTitle = `Bridge relay ${Date.now().toString().slice(-4)}`;
+        const prNumber = 13;
+
+        await api(`/team/${context.teamId}/github`, {
+          method: "PATCH",
+          token: context.users.owner.token,
+          body: {
+            repoUrl: `https://github.com/${repoFullName}`,
+            webhookSecret: "bridge-secret",
+            notifyChannelId: context.channels.public,
+          },
+        });
+
+        const webhookBody = JSON.stringify({
+          action: "opened",
+          repository: { full_name: repoFullName },
+          sender: { login: "bridge-bot" },
+          pull_request: {
+            number: prNumber,
+            title: prTitle,
+            html_url: `https://github.com/${repoFullName}/pull/${prNumber}`,
+          },
+        });
+        const signature = `sha256=${crypto
+          .createHmac("sha256", "bridge-secret")
+          .update(webhookBody)
+          .digest("hex")}`;
+
+        const response = await fetch(`${apiBaseUrl}/github/webhook`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-github-event": "pull_request",
+            "x-hub-signature-256": signature,
+          },
+          body: webhookBody,
+        });
+        const payload = parsePayload(await response.text());
+        assert(response.ok, `GitHub bridge webhook HTTP 실패: ${response.status}`);
+        assert(payload?.success === true, "GitHub bridge webhook 처리에 실패했습니다.");
+
+        const expectedTitle = `[PR #${prNumber}] ${prTitle}`;
+        const slackPayload = await waitForBridgeDelivery(
+          bridgeStub.deliveries,
+          "slack",
+          (entry) =>
+            entry?.blocks?.[0]?.text?.text?.startsWith(expectedTitle) &&
+            entry?.text?.includes(repoFullName),
+        );
+        const discordPayload = await waitForBridgeDelivery(
+          bridgeStub.deliveries,
+          "discord",
+          (entry) =>
+            entry?.embeds?.[0]?.title?.startsWith(expectedTitle) &&
+            entry?.embeds?.[0]?.description?.includes(repoFullName),
+        );
+
+        return {
+          discordUrl: discordPayload.embeds?.[0]?.url,
+          slackLink: slackPayload.blocks?.[2]?.text?.text,
+        };
+      });
+    } finally {
+      await new Promise((resolve) => bridgeStub.server.close(resolve));
+    }
+  }
 
   await check("integration", "Confluence 가져오기", async () => {
     const stub = await startConfluenceStub();

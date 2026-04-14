@@ -6,7 +6,7 @@
 
 import { toApiUrl } from './runtime-config';
 import type { ChannelType } from '@/src/entities/channel/types';
-import type { TeamInvitePreview } from '@/src/entities/team/types';
+import type { BridgeConfig, TeamInvitePreview } from '@/src/entities/team/types';
 
 interface ApiResponse<T = any> {
     success: boolean;
@@ -98,6 +98,9 @@ export const teamApi = {
         data: { repoUrl: string; webhookSecret: string; notifyChannelId: string },
     ) {
         return apiFetch(`/api/team/${teamId}/github`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    async updateBridgeConfig(teamId: string, data: BridgeConfig) {
+        return apiFetch(`/api/team/${teamId}/bridge`, { method: 'PATCH', body: JSON.stringify(data) });
     },
     async getInviteLinks(teamId: string) {
         return apiFetch(`/api/team/${teamId}/invite-links`);

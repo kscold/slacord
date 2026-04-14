@@ -8,6 +8,7 @@ import { GitHubWebhookGuide } from '@/src/features/team/ui/GitHubWebhookGuide';
 import { TeamInviteSettingsPanel } from '@/src/features/team/ui/TeamInviteSettingsPanel';
 import { ConfluenceImportPanel } from '@/src/features/document/ui/ConfluenceImportPanel';
 import { DiscordImportPanel } from '@/src/features/team/ui/DiscordImportPanel';
+import { ExternalBridgeSettingsPanel } from '@/src/features/team/ui/ExternalBridgeSettingsPanel';
 
 interface Props {
     params: Promise<{ teamId: string }>;
@@ -23,8 +24,8 @@ export default function SettingsPage({ params }: Props) {
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
             <div className="max-w-2xl">
                 <p className="text-xs uppercase tracking-[0.24em] text-brand-200">Team Settings</p>
-                <h1 className="mt-3 text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">GitHub 연동을 바로 운영 가능한 상태로 맞춤</h1>
-                <p className="mt-3 text-sm leading-7 text-text-secondary sm:text-base">설정 저장 후 GitHub webhook만 등록하면 PR, 리뷰, CI 이벤트가 채널 카드로 바로 흘러옴.</p>
+                <h1 className="mt-3 text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">GitHub와 외부 브리지를 바로 운영 가능한 상태로 맞춤</h1>
+                <p className="mt-3 text-sm leading-7 text-text-secondary sm:text-base">GitHub webhook, Slack/Discord relay worker, 초대와 import 설정까지 한 화면에서 같이 관리합니다.</p>
             </div>
             {settings.loading ? <div className="mt-8 rounded-[28px] border border-border-primary bg-bg-secondary p-6 text-sm text-text-secondary">설정과 채널 목록 불러오는 중...</div> : null}
             {!settings.loading ? (
@@ -43,6 +44,7 @@ export default function SettingsPage({ params }: Props) {
                             saving={settings.saving}
                         />
                     </div>
+                    <ExternalBridgeSettingsPanel teamId={teamId} />
                     <div className="space-y-5">
                         <p className="text-xs uppercase tracking-[0.24em] text-brand-200">외부 서비스 연동</p>
                         <ConfluenceImportPanel teamId={teamId} onImported={async () => {}} />
