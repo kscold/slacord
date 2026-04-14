@@ -93,13 +93,19 @@ export const teamApi = {
     async joinTeam(slug: string) {
         return apiFetch(`/api/team/${slug}/join`, { method: 'POST' });
     },
-    async updateGithubConfig(teamId: string, data: { repoUrl: string; webhookSecret: string; notifyChannelId: string }) {
+    async updateGithubConfig(
+        teamId: string,
+        data: { repoUrl: string; webhookSecret: string; notifyChannelId: string },
+    ) {
         return apiFetch(`/api/team/${teamId}/github`, { method: 'PATCH', body: JSON.stringify(data) });
     },
     async getInviteLinks(teamId: string) {
         return apiFetch(`/api/team/${teamId}/invite-links`);
     },
-    async createInviteLink(teamId: string, data: { label?: string; defaultRole?: 'admin' | 'member'; maxUses?: number; expiresInDays?: number }) {
+    async createInviteLink(
+        teamId: string,
+        data: { label?: string; defaultRole?: 'admin' | 'member' | 'guest'; maxUses?: number; expiresInDays?: number },
+    ) {
         return apiFetch(`/api/team/${teamId}/invite-links`, { method: 'POST', body: JSON.stringify(data) });
     },
     async revokeInviteLink(teamId: string, code: string) {
@@ -108,8 +114,15 @@ export const teamApi = {
     async deleteInviteLink(teamId: string, code: string) {
         return apiFetch(`/api/team/${teamId}/invite-links/${code}`, { method: 'DELETE' });
     },
-    async updateMemberAccess(teamId: string, memberId: string, data: { role?: 'admin' | 'member'; canManageInvites?: boolean }) {
-        return apiFetch(`/api/team/${teamId}/member/${memberId}/access`, { method: 'PATCH', body: JSON.stringify(data) });
+    async updateMemberAccess(
+        teamId: string,
+        memberId: string,
+        data: { role?: 'admin' | 'member' | 'guest'; canManageInvites?: boolean },
+    ) {
+        return apiFetch(`/api/team/${teamId}/member/${memberId}/access`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        });
     },
     async getInvitePreview(code: string) {
         return apiFetch<TeamInvitePreview>(`/api/team/invite/${code}`);
@@ -137,8 +150,14 @@ export const channelApi = {
     async getChannels(teamId: string) {
         return apiFetch(`/api/team/${teamId}/channel`);
     },
-    async createChannel(teamId: string, data: { name: string; description?: string; type?: ChannelType; memberIds?: string[] }) {
+    async createChannel(
+        teamId: string,
+        data: { name: string; description?: string; type?: ChannelType; memberIds?: string[] },
+    ) {
         return apiFetch(`/api/team/${teamId}/channel`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async markChannelRead(channelId: string) {
+        return apiFetch(`/api/channel/${channelId}/read`, { method: 'PATCH' });
     },
 };
 
@@ -195,7 +214,17 @@ export const issueApi = {
         const query = params.toString();
         return apiFetch(`/api/team/${teamId}/issue${query ? `?${query}` : ''}`);
     },
-    async createIssue(teamId: string, data: { title: string; description?: string; priority?: string; status?: string; assigneeIds?: string[]; labels?: string[] }) {
+    async createIssue(
+        teamId: string,
+        data: {
+            title: string;
+            description?: string;
+            priority?: string;
+            status?: string;
+            assigneeIds?: string[];
+            labels?: string[];
+        },
+    ) {
         return apiFetch(`/api/team/${teamId}/issue`, { method: 'POST', body: JSON.stringify(data) });
     },
     async updateIssue(teamId: string, issueId: string, data: object) {
@@ -234,13 +263,26 @@ export const documentApi = {
     async getDocument(teamId: string, documentId: string) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`);
     },
-    async createDocument(teamId: string, data: { title: string; content?: string; parentId?: string | null; contentFormat?: 'plain' | 'html' | 'json' }) {
+    async createDocument(
+        teamId: string,
+        data: { title: string; content?: string; parentId?: string | null; contentFormat?: 'plain' | 'html' | 'json' },
+    ) {
         return apiFetch(`/api/team/${teamId}/document`, { method: 'POST', body: JSON.stringify(data) });
     },
-    async importConfluence(teamId: string, data: { siteUrl: string; email: string; apiToken: string; spaceKey: string; rootPageId?: string }) {
-        return apiFetch(`/api/team/${teamId}/document/import/confluence`, { method: 'POST', body: JSON.stringify(data) });
+    async importConfluence(
+        teamId: string,
+        data: { siteUrl: string; email: string; apiToken: string; spaceKey: string; rootPageId?: string },
+    ) {
+        return apiFetch(`/api/team/${teamId}/document/import/confluence`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
     },
-    async updateDocument(teamId: string, documentId: string, data: { title?: string; content?: string; contentFormat?: 'plain' | 'html' | 'json' }) {
+    async updateDocument(
+        teamId: string,
+        documentId: string,
+        data: { title?: string; content?: string; contentFormat?: 'plain' | 'html' | 'json' },
+    ) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`, { method: 'PATCH', body: JSON.stringify(data) });
     },
     async getDocumentVersions(teamId: string, documentId: string) {

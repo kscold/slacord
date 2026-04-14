@@ -17,6 +17,7 @@ describe('MessageController', () => {
     const mockMessageAccessService = {
         ensureChannelMember: jest.fn(),
         ensureMessageInChannel: jest.fn(),
+        ensureMessageWriter: jest.fn(),
     };
     const mockMessageGateway = {
         emitPinnedUpdated: jest.fn(),
@@ -60,7 +61,7 @@ describe('MessageController', () => {
 
         const result = await controller.pinMessage('channel-1', 'message-1', { userId: 'user-1' }, { isPinned: true } as any);
 
-        expect(mockMessageAccessService.ensureMessageInChannel).toHaveBeenCalledWith('channel-1', 'message-1', 'user-1');
+        expect(mockMessageAccessService.ensureMessageWriter).toHaveBeenCalledWith('channel-1', 'message-1', 'user-1');
         expect(mockPinMessageUseCase.execute).toHaveBeenCalledWith('message-1', true);
         expect(mockMessageGateway.emitPinnedUpdated).toHaveBeenCalledWith('channel-1', message.toPublic());
         expect(result).toEqual({ success: true, data: message.toPublic() });

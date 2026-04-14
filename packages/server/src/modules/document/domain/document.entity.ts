@@ -37,6 +37,7 @@ export class DocumentEntity {
 
     canEdit(userId: string, role: string): boolean {
         if (role === 'owner') return true;
+        if (role === 'guest') return false;
         if (this.editPolicy === 'all') return true;
         if (this.editPolicy === 'owner_admin' && (role === 'admin' || this.createdBy === userId)) return true;
         if (this.editPolicy === 'restricted') return this.allowedEditorIds.includes(userId) || this.createdBy === userId;

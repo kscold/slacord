@@ -12,6 +12,10 @@ function browserApiBaseUrl() {
     return '';
 }
 
+function normalizeBaseUrl(url: string) {
+    return url.replace(/\/+$/, '');
+}
+
 function serverApiBaseUrl() {
     return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
 }
@@ -33,7 +37,8 @@ export function publicAppUrl() {
 
 export function socketUrl() {
     if (typeof window !== 'undefined') {
-        return browserApiBaseUrl() || window.location.origin;
+        const configured = process.env.NEXT_PUBLIC_SOCKET_URL;
+        return normalizeBaseUrl(configured || browserApiBaseUrl() || window.location.origin);
     }
-    return serverApiBaseUrl();
+    return normalizeBaseUrl(serverApiBaseUrl().replace(/\/api$/, ''));
 }

@@ -5,13 +5,14 @@ import type { TeamMemberSummary } from '@/src/entities/team/types';
 
 interface Props {
     assigneeIds: string[];
+    disabled?: boolean;
     members: TeamMemberSummary[];
     open: boolean;
     onToggleOpen: () => void;
     onToggleAssignee: (userId: string) => void;
 }
 
-export function IssueAssigneePicker({ assigneeIds, members, open, onToggleOpen, onToggleAssignee }: Props) {
+export function IssueAssigneePicker({ assigneeIds, disabled = false, members, open, onToggleOpen, onToggleAssignee }: Props) {
     const selectedMembers = members.filter((member) => assigneeIds.includes(member.userId));
 
     return (
@@ -20,7 +21,8 @@ export function IssueAssigneePicker({ assigneeIds, members, open, onToggleOpen, 
             <button
                 type="button"
                 onClick={onToggleOpen}
-                className="flex w-full items-center gap-2 rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-left text-sm transition hover:border-[#d6b08a]/40"
+                disabled={disabled}
+                className="flex w-full items-center gap-2 rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-left text-sm transition hover:border-[#d6b08a]/40 disabled:opacity-50"
             >
                 {selectedMembers.length > 0 ? (
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -52,8 +54,9 @@ export function IssueAssigneePicker({ assigneeIds, members, open, onToggleOpen, 
                             <button
                                 key={member.userId}
                                 type="button"
+                                disabled={disabled}
                                 onClick={() => onToggleAssignee(member.userId)}
-                                className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors ${selected ? 'bg-white/8 text-white' : 'text-text-secondary hover:bg-white/5'}`}
+                                className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors disabled:opacity-50 ${selected ? 'bg-white/8 text-white' : 'text-text-secondary hover:bg-white/5'}`}
                             >
                                 <div
                                     className="h-6 w-6 shrink-0 rounded-full text-[10px] font-bold text-white flex items-center justify-center"

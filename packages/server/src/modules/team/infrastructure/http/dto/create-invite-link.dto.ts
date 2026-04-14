@@ -6,8 +6,8 @@ export class CreateInviteLinkDto {
     label?: string;
 
     @IsOptional()
-    @IsIn(['admin', 'member'])
-    defaultRole?: 'admin' | 'member';
+    @IsIn(['admin', 'member', 'guest'])
+    defaultRole?: 'admin' | 'member' | 'guest';
 
     @IsOptional()
     @IsInt()

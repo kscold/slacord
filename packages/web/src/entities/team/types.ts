@@ -16,7 +16,7 @@ export interface TeamSummary {
 
 export interface TeamMemberSummary {
     userId: string;
-    role: 'owner' | 'admin' | 'member';
+    role: 'owner' | 'admin' | 'member' | 'guest';
     joinedAt: string;
     canManageInvites: boolean;
     user: {
@@ -32,7 +32,7 @@ export interface TeamInviteLink {
     code: string;
     label: string | null;
     createdBy: string;
-    defaultRole: 'admin' | 'member';
+    defaultRole: 'admin' | 'member' | 'guest';
     expiresAt: string | null;
     maxUses: number | null;
     useCount: number;
@@ -53,7 +53,7 @@ export interface TeamInvitePreview {
     teamId: string;
     teamName: string;
     teamSlug: string;
-    defaultRole: 'admin' | 'member';
+    defaultRole: 'admin' | 'member' | 'guest';
     expiresAt: string | null;
     maxUses: number | null;
     useCount: number;

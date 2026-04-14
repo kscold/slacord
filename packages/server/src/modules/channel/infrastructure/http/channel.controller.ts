@@ -21,7 +21,16 @@ export class ChannelController {
     @ApiOperation({ summary: '팀의 채널 목록 조회' })
     async getChannels(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
         const channels = await this.getChannelsUseCase.execute(teamId, user.userId);
-        return { success: true, data: channels.map((c) => c.toPublic()) };
+        return {
+            success: true,
+            data: channels.map(({ channel, unreadCount, mentionCount, lastReadAt, lastMessageAt }) => ({
+                ...channel.toPublic(),
+                unreadCount,
+                mentionCount,
+                lastReadAt: lastReadAt?.toISOString() ?? null,
+                lastMessageAt: lastMessageAt?.toISOString() ?? null,
+            })),
+        };
     }
 
     @Post()

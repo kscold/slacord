@@ -1,4 +1,5 @@
 interface Props {
+    canStartHuddle?: boolean;
     channelName: string;
     channelDescription?: string | null;
     channelType?: string;
@@ -7,7 +8,7 @@ interface Props {
     huddleActive?: boolean;
 }
 
-export function ChannelHeader({ channelName, channelDescription, channelType, onOpenPins, onStartHuddle, huddleActive }: Props) {
+export function ChannelHeader({ canStartHuddle = true, channelName, channelDescription, channelType, onOpenPins, onStartHuddle, huddleActive }: Props) {
     const label = channelType === 'dm' ? 'Direct Message' : channelType === 'voice' ? 'Voice Channel' : 'Channel';
 
     return (
@@ -23,8 +24,9 @@ export function ChannelHeader({ channelName, channelDescription, channelType, on
                 {onStartHuddle && (
                     <button
                         onClick={onStartHuddle}
-                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition ${huddleActive ? 'border-green-500/40 bg-green-500/10 text-green-400' : 'border-border-primary text-text-secondary hover:text-white hover:border-text-tertiary'}`}
-                        title={huddleActive ? '허들 나가기' : '허들 시작'}
+                        disabled={!canStartHuddle}
+                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-35 ${huddleActive ? 'border-green-500/40 bg-green-500/10 text-green-400' : 'border-border-primary text-text-secondary hover:text-white hover:border-text-tertiary'}`}
+                        title={!canStartHuddle ? 'guest는 허들에 참여할 수 없습니다.' : (huddleActive ? '허들 나가기' : '허들 시작')}
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.536 8.464a5 5 0 010 7.072M12 6a6.978 6.978 0 00-3 .682M18.364 5.636a9 9 0 010 12.728M6.343 6.343a8.96 8.96 0 00-1.659 2.3M9.879 9.879a3 3 0 010 4.242" />

@@ -10,17 +10,18 @@ import { ThreadMessageItem } from './ThreadMessageItem';
 import { ThreadParentMessage } from './ThreadParentMessage';
 
 interface Props {
+    canWrite: boolean;
     channelId: string;
     parentMessage: Message;
     currentUserId: string;
     onClose: () => void;
-    onSendReply: (content: string, replyToId: string) => void;
+    onSendReply: (content: string, replyToId: string) => void | Promise<void>;
     onUploadReply: (files: File[], content: string, replyToId: string) => Promise<void>;
     onDelete: (messageId: string) => void;
     isUploading: boolean;
 }
 
-export function ThreadPanel({ channelId, parentMessage, currentUserId, onClose, onSendReply, onUploadReply, onDelete, isUploading }: Props) {
+export function ThreadPanel({ canWrite, channelId, parentMessage, currentUserId, onClose, onSendReply, onUploadReply, onDelete, isUploading }: Props) {
     const allMessages = useChatStore((state) => state.messages);
     const liveReplies = useMemo(() => allMessages.filter((m) => m.replyToId === parentMessage.id), [allMessages, parentMessage.id]);
     const [replies, setReplies] = useState<Message[]>([]);
@@ -80,6 +81,8 @@ export function ThreadPanel({ channelId, parentMessage, currentUserId, onClose, 
 
             <MessageInput
                 channelName="스레드"
+                readOnly={!canWrite}
+                readOnlyMessage="guest는 스레드 답글을 보낼 수 없습니다."
                 onSend={(content) => onSendReply(content, parentMessage.id)}
                 onUpload={(files, content) => onUploadReply(files, content, parentMessage.id)}
                 onTyping={() => {}}

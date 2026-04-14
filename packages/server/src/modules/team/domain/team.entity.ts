@@ -1,5 +1,5 @@
-export type TeamMemberRole = 'owner' | 'admin' | 'member';
-export type TeamInviteRole = Extract<TeamMemberRole, 'admin' | 'member'>;
+export type TeamMemberRole = 'owner' | 'admin' | 'member' | 'guest';
+export type TeamInviteRole = Exclude<TeamMemberRole, 'owner'>;
 
 export interface TeamMember {
     userId: string;
@@ -18,6 +18,14 @@ export interface TeamInviteLink {
     useCount: number;
     revokedAt: Date | null;
     createdAt: Date;
+}
+
+export function hasAdminRole(role: TeamMemberRole) {
+    return role === 'owner' || role === 'admin';
+}
+
+export function hasWriteRole(role: TeamMemberRole) {
+    return role !== 'guest';
 }
 
 /** GitHub Webhook 연동 설정 */
@@ -61,9 +69,14 @@ export class TeamEntity {
         return this.isOwner(userId) || this.isAdmin(userId);
     }
 
+    hasWriteAccess(userId: string): boolean {
+        const member = this.getMember(userId);
+        return !!member && hasWriteRole(member.role);
+    }
+
     canManageInvites(userId: string): boolean {
         const member = this.getMember(userId);
-        return !!member && (this.hasAdminAccess(userId) || member.canManageInvites);
+        return !!member && member.role !== 'guest' && (this.hasAdminAccess(userId) || member.canManageInvites);
     }
 
     getInvite(code: string): TeamInviteLink | undefined {

@@ -4,6 +4,7 @@ import { socketUrl } from './runtime-config';
 /** 채팅 Socket.IO 싱글톤 */
 let chatSocket: Socket | null = null;
 let notificationSocket: Socket | null = null;
+let workspaceChatSocket: Socket | null = null;
 
 export function getChatSocket(): Socket {
     if (!chatSocket) {
@@ -22,6 +23,25 @@ export function getChatSocket(): Socket {
 export function disconnectChatSocket() {
     chatSocket?.disconnect();
     chatSocket = null;
+}
+
+export function getWorkspaceChatSocket(): Socket {
+    if (!workspaceChatSocket) {
+        const options = {
+            path: '/socket.io',
+            transports: ['websocket'] as string[],
+            withCredentials: true,
+            reconnection: true,
+        };
+        const endpoint = socketUrl();
+        workspaceChatSocket = endpoint ? io(`${endpoint}/chat`, options) : io('/chat', options);
+    }
+    return workspaceChatSocket;
+}
+
+export function disconnectWorkspaceChatSocket() {
+    workspaceChatSocket?.disconnect();
+    workspaceChatSocket = null;
 }
 
 export function getNotificationSocket(): Socket {

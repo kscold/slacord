@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Inject, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
@@ -11,8 +11,8 @@ import { RestoreDocumentUseCase } from '../../application/use-cases/restore-docu
 import { ImportConfluenceSpaceUseCase } from '../../application/use-cases/import-confluence-space.use-case';
 import { GetDocumentVersionsUseCase } from '../../application/use-cases/get-document-versions.use-case';
 import { RestoreDocumentVersionUseCase } from '../../application/use-cases/restore-document-version.use-case';
-import type { ITeamRepository } from '../../../team/domain/team.port';
-import { TEAM_REPOSITORY } from '../../../team/domain/team.port';
+import { TeamAccessService } from '../../../team/application/services/team-access.service';
+import type { TeamMemberRole } from '../../../team/domain/team.entity';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { ImportConfluenceSpaceDto } from './dto/import-confluence-space.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -33,20 +33,16 @@ export class DocumentController {
         private readonly importConfluenceUseCase: ImportConfluenceSpaceUseCase,
         private readonly getVersionsUseCase: GetDocumentVersionsUseCase,
         private readonly restoreVersionUseCase: RestoreDocumentVersionUseCase,
-        @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
+        private readonly teamAccessService: TeamAccessService,
     ) {}
 
-    private async getMemberRole(teamId: string, userId: string): Promise<string | null> {
-        const team = await this.teamRepo.findById(teamId);
-        if (!team) return null;
-        const member = team.members.find((m) => m.userId === userId);
-        return member?.role ?? null;
+    private async getMemberRole(teamId: string, userId: string): Promise<TeamMemberRole> {
+        const access = await this.teamAccessService.requireMember(teamId, userId);
+        return access.role;
     }
 
     private async requireMemberRole(teamId: string, userId: string) {
-        const role = await this.getMemberRole(teamId, userId);
-        if (!role) throw new ForbiddenException('이 워크스페이스 문서에 접근할 권한이 없습니다.');
-        return role;
+        return this.getMemberRole(teamId, userId);
     }
 
     @Get()
@@ -85,7 +81,7 @@ export class DocumentController {
         @CurrentUser() user: { userId: string },
         @Body() dto: CreateDocumentDto,
     ) {
-        await this.requireMemberRole(teamId, user.userId);
+        await this.teamAccessService.requireWritableMember(teamId, user.userId);
         const doc = await this.createUseCase.execute({
             teamId,
             title: dto.title,

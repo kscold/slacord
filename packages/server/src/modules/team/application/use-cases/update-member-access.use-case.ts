@@ -1,11 +1,12 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../domain/team.port';
+import type { TeamMemberRole } from '../../domain/team.entity';
 
 @Injectable()
 export class UpdateMemberAccessUseCase {
     constructor(@Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository) {}
 
-    async execute(teamId: string, actorId: string, memberId: string, input: { role?: 'admin' | 'member'; canManageInvites?: boolean }) {
+    async execute(teamId: string, actorId: string, memberId: string, input: { role?: Exclude<TeamMemberRole, 'owner'>; canManageInvites?: boolean }) {
         const team = await this.teamRepo.findById(teamId);
         if (!team || !team.isOwner(actorId)) throw new BadRequestException('멤버 권한을 변경할 수 없습니다.');
         const target = team.getMember(memberId);
@@ -16,7 +17,9 @@ export class UpdateMemberAccessUseCase {
                 ? {
                       ...member,
                       role: input.role ?? member.role,
-                      canManageInvites: input.canManageInvites ?? member.canManageInvites,
+                      canManageInvites: (input.role ?? member.role) === 'guest'
+                          ? false
+                          : (input.canManageInvites ?? member.canManageInvites),
                   }
                 : member,
         );

@@ -20,6 +20,7 @@ export function useIssueBoard(teamId: string) {
     });
 
     return {
+        canWrite: board.canWrite,
         createStatus,
         ...actions,
         issuesByStatus: board.issuesByStatus,

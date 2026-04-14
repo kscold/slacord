@@ -7,9 +7,14 @@ interface Props {
     label: string;
     active: boolean;
     icon?: React.ReactNode;
+    unreadCount?: number;
+    mentionCount?: number;
 }
 
-export function SidebarNavLink({ href, label, active, icon }: Props) {
+export function SidebarNavLink({ href, label, active, icon, unreadCount = 0, mentionCount = 0 }: Props) {
+    const showMentionBadge = mentionCount > 0;
+    const showUnreadBadge = !showMentionBadge && unreadCount > 0;
+
     return (
         <Link
             href={href}
@@ -20,7 +25,17 @@ export function SidebarNavLink({ href, label, active, icon }: Props) {
             }`}
         >
             {icon}
-            {label}
+            <span className="min-w-0 flex-1 truncate">{label}</span>
+            {showMentionBadge ? (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white">
+                    @{mentionCount > 9 ? '9+' : mentionCount}
+                </span>
+            ) : null}
+            {showUnreadBadge ? (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b97532] px-1.5 text-[11px] font-bold text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+            ) : null}
         </Link>
     );
 }

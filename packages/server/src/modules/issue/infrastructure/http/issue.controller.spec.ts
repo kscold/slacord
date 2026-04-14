@@ -36,6 +36,7 @@ describe('IssueController', () => {
 
     const mockIssueAccessService = {
         ensureMember: jest.fn(),
+        ensureWritableMember: jest.fn(),
     };
 
     const mockIssueNotificationService = {
@@ -84,7 +85,7 @@ describe('IssueController', () => {
 
         const result = await controller.createIssue('team-1', { userId: 'user-1' }, dto as any);
 
-        expect(mockIssueAccessService.ensureMember).toHaveBeenCalledWith('team-1', 'user-1');
+        expect(mockIssueAccessService.ensureWritableMember).toHaveBeenCalledWith('team-1', 'user-1');
         expect(mockCreateIssueUseCase.execute).toHaveBeenCalledWith({
             ...dto,
             teamId: 'team-1',
@@ -110,7 +111,7 @@ describe('IssueController', () => {
 
         const result = await controller.updateIssue('team-1', 'issue-1', { userId: 'user-1' }, dto as any);
 
-        expect(mockIssueAccessService.ensureMember).toHaveBeenCalledWith('team-1', 'user-1');
+        expect(mockIssueAccessService.ensureWritableMember).toHaveBeenCalledWith('team-1', 'user-1');
         expect(mockUpdateIssueUseCase.execute).toHaveBeenCalledWith({
             id: 'issue-1',
             ...dto,
@@ -128,7 +129,7 @@ describe('IssueController', () => {
     it('이슈 삭제를 위임함', async () => {
         const result = await controller.deleteIssue('team-1', 'issue-1', { userId: 'user-1' });
 
-        expect(mockIssueAccessService.ensureMember).toHaveBeenCalledWith('team-1', 'user-1');
+        expect(mockIssueAccessService.ensureWritableMember).toHaveBeenCalledWith('team-1', 'user-1');
         expect(mockDeleteIssueUseCase.execute).toHaveBeenCalledWith('issue-1');
         expect(result).toEqual({ success: true });
     });

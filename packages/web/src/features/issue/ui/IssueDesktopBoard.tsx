@@ -6,6 +6,7 @@ import type { TeamMemberSummary } from '@/src/entities/team/types';
 import type { Issue } from '@/src/entities/issue/types';
 
 interface Props {
+    canWrite: boolean;
     columns: IssueStatus[];
     issuesByStatus: Record<IssueStatus, Issue[]>;
     members: TeamMemberSummary[];
@@ -14,12 +15,13 @@ interface Props {
     onDragEnd: (result: DropResult) => void;
 }
 
-export function IssueDesktopBoard({ columns, issuesByStatus, members, onAddClick, onCardClick, onDragEnd }: Props) {
+export function IssueDesktopBoard({ canWrite, columns, issuesByStatus, members, onAddClick, onCardClick, onDragEnd }: Props) {
     return (
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DragDropContext onDragEnd={canWrite ? onDragEnd : () => undefined}>
             <div className="flex h-full gap-4">
                 {columns.map((status) => (
                     <KanbanColumn
+                        canWrite={canWrite}
                         key={status}
                         status={status}
                         label={ISSUE_STATUS_LABELS[status]}

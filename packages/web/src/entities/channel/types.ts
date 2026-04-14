@@ -8,5 +8,9 @@ export interface Channel {
     type: ChannelType;
     memberIds?: string[];
     memberCount?: number;
+    unreadCount?: number;
+    mentionCount?: number;
+    lastReadAt?: string | null;
+    lastMessageAt?: string | null;
     createdAt: string;
 }

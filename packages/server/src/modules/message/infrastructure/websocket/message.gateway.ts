@@ -99,7 +99,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     async handleSendMessage(@MessageBody() payload: SendMessagePayload, @ConnectedSocket() client: Socket) {
         try {
             const user = this.getUser(client);
-            const { channel } = await this.messageAccessService.ensureChannelMember(payload.channelId, user.userId);
+            const { channel } = await this.messageAccessService.ensureChannelWriter(payload.channelId, user.userId);
             const message = await this.sendMessageUseCase.execute({
                 ...payload,
                 teamId: channel.teamId,
@@ -121,7 +121,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     async handleReaction(@MessageBody() payload: ReactionPayload, @ConnectedSocket() client: Socket) {
         try {
             const user = this.getUser(client);
-            await this.messageAccessService.ensureMessageInChannel(payload.channelId, payload.messageId, user.userId);
+            await this.messageAccessService.ensureMessageWriter(payload.channelId, payload.messageId, user.userId);
             const message = await this.reactMessageUseCase.execute(payload.messageId, payload.emoji, user.userId);
             this.server.to(`channel:${payload.channelId}`).emit('reaction_updated', message.toPublic());
             return { success: true };
@@ -139,7 +139,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     ) {
         try {
             const user = this.getUser(client);
-            await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            await this.messageAccessService.ensureChannelWriter(data.channelId, user.userId);
             client.to(`channel:${data.channelId}`).emit('user_typing', {
                 userId: user.userId,
                 username: user.username ?? '동료',
@@ -174,7 +174,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     async handleHuddleJoin(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
         try {
             const user = this.getUser(client);
-            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            const { channel } = await this.messageAccessService.ensureChannelWriter(data.channelId, user.userId);
             const roomKey = `huddle:${channel.id}`;
             client.join(roomKey);
 
@@ -212,7 +212,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     ) {
         try {
             const user = this.getUser(client);
-            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            const { channel } = await this.messageAccessService.ensureChannelWriter(data.channelId, user.userId);
             this.ensureHuddleParticipant(channel.id, user.userId);
             this.ensureHuddleParticipant(channel.id, data.targetUserId);
             this.server.to(this.getUserRoomKey(data.targetUserId)).emit('huddle:offer', {
@@ -232,7 +232,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     ) {
         try {
             const user = this.getUser(client);
-            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            const { channel } = await this.messageAccessService.ensureChannelWriter(data.channelId, user.userId);
             this.ensureHuddleParticipant(channel.id, user.userId);
             this.ensureHuddleParticipant(channel.id, data.targetUserId);
             this.server.to(this.getUserRoomKey(data.targetUserId)).emit('huddle:answer', {
@@ -252,7 +252,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     ) {
         try {
             const user = this.getUser(client);
-            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            const { channel } = await this.messageAccessService.ensureChannelWriter(data.channelId, user.userId);
             this.ensureHuddleParticipant(channel.id, user.userId);
             this.ensureHuddleParticipant(channel.id, data.targetUserId);
             this.server.to(this.getUserRoomKey(data.targetUserId)).emit('huddle:ice-candidate', {
@@ -272,7 +272,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     ) {
         try {
             const user = this.getUser(client);
-            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            const { channel } = await this.messageAccessService.ensureChannelWriter(data.channelId, user.userId);
             this.ensureHuddleParticipant(channel.id, user.userId);
             this.huddleRooms.get(channel.id)?.set(user.userId, { audio: data.audio, video: data.video });
             this.broadcastHuddleParticipants(channel.id);

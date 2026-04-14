@@ -8,6 +8,7 @@ import { IssueModalFields } from './IssueModalFields';
 
 interface CreateProps {
     mode: 'create';
+    readOnly?: boolean;
     teamId: string;
     members?: TeamMemberSummary[];
     onSubmit: (data: { title: string; description?: string; priority: IssuePriority; assigneeIds?: string[] }) => void;
@@ -17,6 +18,7 @@ interface CreateProps {
 interface EditProps {
     mode: 'edit';
     issue: Issue;
+    readOnly?: boolean;
     members?: TeamMemberSummary[];
     onSubmit: (data: Partial<Issue>) => void;
     onClose: () => void;
@@ -33,6 +35,7 @@ export function IssueModal(props: Props) {
     const [assigneeIds, setAssigneeIds] = useState<string[]>(isEdit ? (props.issue.assigneeIds ?? []) : []);
     const [showAssignees, setShowAssignees] = useState(false);
     const members = props.members ?? [];
+    const readOnly = props.readOnly ?? false;
 
     const toggleAssignee = (userId: string) => {
         setAssigneeIds((prev) => prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]);
@@ -40,6 +43,10 @@ export function IssueModal(props: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (readOnly) {
+            props.onClose();
+            return;
+        }
         if (!title.trim()) return;
         if (isEdit) {
             props.onSubmit({ title, description, priority, status, assigneeIds });
@@ -56,11 +63,12 @@ export function IssueModal(props: Props) {
                 onSubmit={handleSubmit}
                 className="bg-[#1e1814] border border-[rgba(201,162,114,0.25)] rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto"
             >
-                <h3 className="text-lg font-bold text-white mb-4">{isEdit ? '이슈 수정' : '이슈 생성'}</h3>
+                <h3 className="text-lg font-bold text-white mb-4">{readOnly ? '이슈 보기' : isEdit ? '이슈 수정' : '이슈 생성'}</h3>
                 <IssueModalFields
                     description={description}
                     isEdit={isEdit}
                     priority={priority}
+                    readOnly={readOnly}
                     setDescription={setDescription}
                     setPriority={setPriority}
                     setStatus={setStatus}
@@ -71,6 +79,7 @@ export function IssueModal(props: Props) {
                 {members.length > 0 ? (
                     <IssueAssigneePicker
                         assigneeIds={assigneeIds}
+                        disabled={readOnly}
                         members={members}
                         open={showAssignees}
                         onToggleAssignee={toggleAssignee}
@@ -80,11 +89,13 @@ export function IssueModal(props: Props) {
 
                 <div className="flex gap-3">
                     <button type="button" onClick={props.onClose} className="flex-1 py-2 rounded-lg border border-border-primary text-text-secondary hover:text-white hover:bg-bg-hover transition-colors text-sm">
-                        취소
+                        {readOnly ? '닫기' : '취소'}
                     </button>
-                    <button type="submit" className="flex-1 py-2 rounded-lg bg-slack-green text-white hover:bg-slack-green/90 transition-colors text-sm font-medium">
-                        {isEdit ? '저장' : '생성'}
-                    </button>
+                    {!readOnly ? (
+                        <button type="submit" className="flex-1 py-2 rounded-lg bg-slack-green text-white hover:bg-slack-green/90 transition-colors text-sm font-medium">
+                            {isEdit ? '저장' : '생성'}
+                        </button>
+                    ) : null}
                 </div>
             </form>
         </div>

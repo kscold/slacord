@@ -4,6 +4,7 @@ import { ISSUE_STATUS_LABELS } from '@/src/entities/issue/types';
 import { IssueCard } from './IssueCard';
 
 interface Props {
+    canWrite: boolean;
     issues: any[];
     members: TeamMemberSummary[];
     onAddClick: () => void;
@@ -11,7 +12,7 @@ interface Props {
     status: IssueStatus;
 }
 
-export function IssueMobileSection({ issues, members, onAddClick, onCardClick, status }: Props) {
+export function IssueMobileSection({ canWrite, issues, members, onAddClick, onCardClick, status }: Props) {
     return (
         <section className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -22,7 +23,8 @@ export function IssueMobileSection({ issues, members, onAddClick, onCardClick, s
                 <button
                     type="button"
                     onClick={onAddClick}
-                    className="rounded-full border border-border-primary px-3 py-1.5 text-xs text-text-secondary transition hover:border-brand-300/40 hover:text-white"
+                    disabled={!canWrite}
+                    className="rounded-full border border-border-primary px-3 py-1.5 text-xs text-text-secondary transition hover:border-brand-300/40 hover:text-white disabled:opacity-30"
                 >
                     이슈 추가
                 </button>

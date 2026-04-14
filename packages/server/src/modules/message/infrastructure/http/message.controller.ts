@@ -77,7 +77,7 @@ export class MessageController {
         @CurrentUser() user: { userId: string },
         @Body() dto: EditMessageDto,
     ) {
-        await this.messageAccessService.ensureMessageInChannel(_channelId, messageId, user.userId);
+        await this.messageAccessService.ensureMessageWriter(_channelId, messageId, user.userId);
         const message = await this.editMessageUseCase.execute(messageId, user.userId, dto.content);
         return { success: true, data: message.toPublic() };
     }
@@ -90,7 +90,7 @@ export class MessageController {
         @CurrentUser() user: { userId: string },
         @Body() dto: PinMessageDto,
     ) {
-        await this.messageAccessService.ensureMessageInChannel(channelId, messageId, user.userId);
+        await this.messageAccessService.ensureMessageWriter(channelId, messageId, user.userId);
         const message = await this.pinMessageUseCase.execute(messageId, dto.isPinned);
         this.messageGateway.emitPinnedUpdated(channelId, message.toPublic());
         return { success: true, data: message.toPublic() };
@@ -103,7 +103,7 @@ export class MessageController {
         @Param('messageId') messageId: string,
         @CurrentUser() user: { userId: string },
     ) {
-        await this.messageAccessService.ensureMessageInChannel(channelId, messageId, user.userId);
+        await this.messageAccessService.ensureMessageWriter(channelId, messageId, user.userId);
         await this.deleteMessageUseCase.execute(messageId, user.userId);
         this.messageGateway.emitMessageDeleted(channelId, messageId);
         return { success: true };

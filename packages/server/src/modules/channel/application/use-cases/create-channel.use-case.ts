@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import type { IChannelRepository } from '../../domain/channel.port';
 import { CHANNEL_REPOSITORY } from '../../domain/channel.port';
 import { ChannelEntity, ChannelType } from '../../domain/channel.entity';
@@ -29,6 +29,9 @@ export class CreateChannelUseCase {
 
         if (!team || !team.isMember(input.createdBy)) {
             throw new BadRequestException('채널을 만들 수 있는 팀 멤버가 아닙니다.');
+        }
+        if (!team.hasWriteAccess(input.createdBy)) {
+            throw new ForbiddenException('게스트는 채널을 만들 수 없습니다.');
         }
         if (memberIds.some((userId) => !team.isMember(userId))) {
             throw new BadRequestException('팀에 속하지 않은 멤버가 포함되어 있습니다.');

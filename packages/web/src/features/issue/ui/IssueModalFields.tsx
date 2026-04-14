@@ -5,6 +5,7 @@ interface Props {
     description: string;
     isEdit: boolean;
     priority: IssuePriority;
+    readOnly?: boolean;
     setDescription: (value: string) => void;
     setPriority: (value: IssuePriority) => void;
     setStatus: (value: IssueStatus) => void;
@@ -19,8 +20,9 @@ export function IssueModalFields(props: Props) {
             <label className="mb-1 block text-xs text-text-tertiary">제목 *</label>
             <input
                 value={props.title}
+                disabled={props.readOnly}
                 onChange={(event) => props.setTitle(event.target.value)}
-                className="mb-3 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d6b08a]/60"
+                className="mb-3 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d6b08a]/60 disabled:opacity-60"
                 placeholder="이슈 제목"
                 required
             />
@@ -28,8 +30,9 @@ export function IssueModalFields(props: Props) {
             <label className="mb-1 block text-xs text-text-tertiary">설명</label>
             <textarea
                 value={props.description}
+                disabled={props.readOnly}
                 onChange={(event) => props.setDescription(event.target.value)}
-                className="mb-3 w-full resize-none rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d6b08a]/60"
+                className="mb-3 w-full resize-none rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d6b08a]/60 disabled:opacity-60"
                 rows={3}
                 placeholder="이슈 설명을 입력해 주세요"
             />
@@ -39,8 +42,9 @@ export function IssueModalFields(props: Props) {
                     <label className="mb-1 block text-xs text-text-tertiary">우선순위</label>
                     <select
                         value={props.priority}
+                        disabled={props.readOnly}
                         onChange={(event) => props.setPriority(event.target.value as IssuePriority)}
-                        className="w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d6b08a]/60"
+                        className="w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d6b08a]/60 disabled:opacity-60"
                     >
                         {PRIORITIES.map((priority) => <option key={priority} value={priority}>{PRIORITY_LABELS[priority]}</option>)}
                     </select>
@@ -50,8 +54,9 @@ export function IssueModalFields(props: Props) {
                         <label className="mb-1 block text-xs text-text-tertiary">상태</label>
                         <select
                             value={props.status}
+                            disabled={props.readOnly}
                             onChange={(event) => props.setStatus(event.target.value as IssueStatus)}
-                            className="w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d6b08a]/60"
+                            className="w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d6b08a]/60 disabled:opacity-60"
                         >
                             {STATUSES.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}
                         </select>

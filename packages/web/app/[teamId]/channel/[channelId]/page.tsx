@@ -37,6 +37,7 @@ export default function ChannelPage({ params }: Props) {
     return (
         <div className="flex flex-col h-full">
             <ChannelHeader
+                canStartHuddle={room.canWrite}
                 channelName={room.channelLabel}
                 channelType={room.channel?.type}
                 onOpenPins={() => setShowPins(true)}
@@ -56,6 +57,7 @@ export default function ChannelPage({ params }: Props) {
                     <MessageInput
                         channelName={room.channelLabel}
                         members={room.members}
+                        readOnly={!room.canWrite}
                         onSend={(content) => room.sendMessage(content)}
                         onUpload={(files, content) => room.sendAttachments(files, content)}
                         onTyping={room.sendTyping}
@@ -72,6 +74,7 @@ export default function ChannelPage({ params }: Props) {
                 )}
                 {threadMessage && (
                     <ThreadPanel
+                        canWrite={room.canWrite}
                         channelId={channelId}
                         parentMessage={threadMessage}
                         currentUserId={room.currentUserId}

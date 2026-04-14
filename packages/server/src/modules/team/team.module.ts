@@ -16,6 +16,7 @@ import { RevokeInviteLinkUseCase } from './application/use-cases/revoke-invite-l
 import { DeleteInviteLinkUseCase } from './application/use-cases/delete-invite-link.use-case';
 import { UpdateGithubConfigUseCase } from './application/use-cases/update-github-config.use-case';
 import { UpdateMemberAccessUseCase } from './application/use-cases/update-member-access.use-case';
+import { TeamAccessService } from './application/services/team-access.service';
 import { TeamInviteController } from './infrastructure/http/team-invite.controller';
 import { TeamController } from './infrastructure/http/team.controller';
 import { AuthModule } from '../auth/auth.module';
@@ -38,7 +39,8 @@ import { AuthModule } from '../auth/auth.module';
         GetInvitePreviewUseCase,
         JoinTeamByInviteUseCase,
         UpdateMemberAccessUseCase,
+        TeamAccessService,
     ],
-    exports: [TEAM_REPOSITORY],
+    exports: [TEAM_REPOSITORY, TeamAccessService],
 })
 export class TeamModule {}

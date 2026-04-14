@@ -49,7 +49,7 @@ export class MessageUploadController {
         if (!file?.buffer) {
             throw new BadRequestException('업로드할 파일이 필요합니다.');
         }
-        const { channel } = await this.messageAccessService.ensureChannelMember(channelId, user.userId);
+        const { channel } = await this.messageAccessService.ensureChannelWriter(channelId, user.userId);
         return {
             success: true,
             data: await this.uploadMessageAttachmentUseCase.execute({

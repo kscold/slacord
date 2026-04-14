@@ -4,6 +4,7 @@ import { IssueCard } from './IssueCard';
 import type { TeamMemberSummary } from '@/src/entities/team/types';
 
 interface Props {
+    canWrite: boolean;
     status: IssueStatus;
     label: string;
     issues: Issue[];
@@ -19,7 +20,7 @@ const COLUMN_HEADER_COLORS: Record<IssueStatus, string> = {
     done: 'text-slack-green',
 };
 
-export function KanbanColumn({ status, label, issues, members, onCardClick, onAddClick }: Props) {
+export function KanbanColumn({ canWrite, status, label, issues, members, onCardClick, onAddClick }: Props) {
     return (
         <div className="flex flex-col bg-bg-secondary rounded-xl border border-border-primary min-w-64 w-64 shrink-0">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
@@ -29,14 +30,15 @@ export function KanbanColumn({ status, label, issues, members, onCardClick, onAd
                 </div>
                 <button
                     onClick={onAddClick}
-                    className="text-text-tertiary hover:text-white hover:bg-bg-hover rounded p-0.5 transition-colors"
+                    disabled={!canWrite}
+                    className="text-text-tertiary hover:text-white hover:bg-bg-hover rounded p-0.5 transition-colors disabled:opacity-30"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                 </button>
             </div>
-            <Droppable droppableId={status}>
+            <Droppable droppableId={status} isDropDisabled={!canWrite}>
                 {(provided, snapshot) => (
                     <div
                         ref={provided.innerRef}
@@ -44,7 +46,7 @@ export function KanbanColumn({ status, label, issues, members, onCardClick, onAd
                         className={`flex-1 overflow-y-auto p-3 space-y-2 min-h-32 transition-colors ${snapshot.isDraggingOver ? 'bg-white/[0.04]' : ''}`}
                     >
                         {issues.map((issue, index) => (
-                            <IssueCard key={issue.id} issue={issue} index={index} members={members} onClick={onCardClick} />
+                            <IssueCard key={issue.id} draggable={canWrite} issue={issue} index={index} members={members} onClick={onCardClick} />
                         ))}
                         {provided.placeholder}
                         {issues.length === 0 && !snapshot.isDraggingOver && (

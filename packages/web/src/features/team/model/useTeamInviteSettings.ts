@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { authApi, teamApi } from '@/lib/api-client';
 import { publicAppUrl } from '@/lib/runtime-config';
+import { resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
 import type { TeamInviteLink, TeamMemberSummary } from '@/src/entities/team/types';
 
 const EMPTY_FORM = { label: '', defaultRole: 'member' as const, maxUses: '', expiresInDays: '7' };
@@ -20,7 +21,7 @@ export function useTeamInviteSettings(teamId: string) {
         const [meRes, memberRes] = await Promise.all([authApi.getMe(), teamApi.getMembers(teamId)]);
         const nextUserId = (meRes.data as { id: string } | undefined)?.id ?? '';
         const nextMembers = (memberRes.data ?? []) as TeamMemberSummary[];
-        const me = nextMembers.find((member) => member.userId === nextUserId) ?? null;
+        const me = resolveCurrentTeamMember(nextMembers, nextUserId);
         const allowed = !!me && (me.role === 'owner' || me.role === 'admin' || me.canManageInvites);
 
         setError('');
@@ -41,7 +42,7 @@ export function useTeamInviteSettings(teamId: string) {
         };
     }, [teamId]);
 
-    const me = useMemo(() => members.find((member) => member.userId === currentUserId) ?? null, [currentUserId, members]);
+    const me = useMemo(() => resolveCurrentTeamMember(members, currentUserId), [currentUserId, members]);
     const canManageInvites = !!me && (me.role === 'owner' || me.role === 'admin' || me.canManageInvites);
     const canManageMembers = me?.role === 'owner';
     const activeInvite = invites.find((invite) => invite.active) ?? invites[0] ?? null;
@@ -88,7 +89,7 @@ export function useTeamInviteSettings(teamId: string) {
         }
     };
 
-    const updateMemberAccess = async (memberId: string, data: { role?: 'admin' | 'member'; canManageInvites?: boolean }) => {
+    const updateMemberAccess = async (memberId: string, data: { role?: 'admin' | 'member' | 'guest'; canManageInvites?: boolean }) => {
         setError('');
         try {
             await teamApi.updateMemberAccess(teamId, memberId, data);

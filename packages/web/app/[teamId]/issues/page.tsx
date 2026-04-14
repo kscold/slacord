@@ -22,13 +22,13 @@ export default function IssuesPage({ params }: Props) {
 
     const handleDragEnd = async (result: DropResult) => {
         const { draggableId, destination, source } = result;
-        if (!destination || destination.droppableId === source.droppableId) return;
+        if (!board.canWrite || !destination || destination.droppableId === source.droppableId) return;
         await board.handleMove(draggableId, destination.droppableId as IssueStatus);
     };
 
     return (
         <div className="h-full flex flex-col">
-            <IssueBoardHeader onCreate={() => { board.setCreateStatus('todo'); board.setShowCreate(true); }} />
+            <IssueBoardHeader canWrite={board.canWrite} onCreate={() => { board.setCreateStatus('todo'); board.setShowCreate(true); }} />
             <IssueBoardFilters
                 query={board.query}
                 assigneeId={board.assigneeId}
@@ -48,6 +48,7 @@ export default function IssuesPage({ params }: Props) {
                 <div className="space-y-4 lg:hidden">
                     {COLUMNS.map((status) => (
                         <IssueMobileSection
+                            canWrite={board.canWrite}
                             key={status}
                             issues={board.issuesByStatus[status]}
                             members={board.members}
@@ -59,6 +60,7 @@ export default function IssuesPage({ params }: Props) {
                 </div>
                 <div className="hidden h-full lg:block lg:overflow-x-auto">
                     <IssueDesktopBoard
+                        canWrite={board.canWrite}
                         columns={COLUMNS}
                         issuesByStatus={board.issuesByStatus}
                         members={board.members}
@@ -72,6 +74,7 @@ export default function IssuesPage({ params }: Props) {
             {board.showCreate && (
                 <IssueModal
                     mode="create"
+                    readOnly={!board.canWrite}
                     teamId={teamId}
                     members={board.members}
                     onSubmit={board.handleCreate}
@@ -82,6 +85,7 @@ export default function IssuesPage({ params }: Props) {
                 <IssueModal
                     mode="edit"
                     issue={board.selectedIssue}
+                    readOnly={!board.canWrite}
                     members={board.members}
                     onSubmit={board.handleUpdate}
                     onClose={() => board.setSelectedIssue(null)}

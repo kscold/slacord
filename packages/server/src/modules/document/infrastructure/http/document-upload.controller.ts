@@ -1,12 +1,11 @@
-import { BadRequestException, Controller, ForbiddenException, Inject, Param, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, ForbiddenException, Param, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { UploadDocumentFileUseCase } from '../../application/use-cases/upload-document-file.use-case';
 import { GetDocumentsUseCase } from '../../application/use-cases/get-documents.use-case';
-import type { ITeamRepository } from '../../../team/domain/team.port';
-import { TEAM_REPOSITORY } from '../../../team/domain/team.port';
+import { TeamAccessService } from '../../../team/application/services/team-access.service';
 
 @ApiTags('document')
 @ApiBearerAuth()
@@ -16,13 +15,12 @@ export class DocumentUploadController {
     constructor(
         private readonly uploadUseCase: UploadDocumentFileUseCase,
         private readonly getDocumentsUseCase: GetDocumentsUseCase,
-        @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
+        private readonly teamAccessService: TeamAccessService,
     ) {}
 
     private async getMemberRole(teamId: string, userId: string) {
-        const team = await this.teamRepo.findById(teamId);
-        const member = team?.members.find((item) => item.userId === userId);
-        return member?.role ?? null;
+        const access = await this.teamAccessService.requireMember(teamId, userId);
+        return access.role;
     }
 
     @Post(':documentId/file')
@@ -57,8 +55,7 @@ export class DocumentUploadController {
     ) {
         if (!file?.buffer) throw new BadRequestException('업로드할 파일이 필요합니다.');
         if (!file.mimetype?.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드할 수 있습니다.');
-        const role = await this.getMemberRole(teamId, user.userId);
-        if (!role) throw new ForbiddenException('문서 이미지 업로드 권한이 없습니다.');
+        await this.teamAccessService.requireWritableMember(teamId, user.userId);
         return { success: true, data: await this.uploadUseCase.execute({ teamId, file }) };
     }
 }

@@ -23,7 +23,12 @@ export const useChatStore = create<ChatState>((set) => ({
 
     setMessages: (messages) => set({ messages }),
     prependMessages: (msgs) => set((s) => ({ messages: [...msgs, ...s.messages] })),
-    addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
+    addMessage: (msg) =>
+        set((s) => ({
+            messages: s.messages.some((message) => message.id === msg.id)
+                ? s.messages.map((message) => (message.id === msg.id ? { ...message, ...msg } : message))
+                : [...s.messages, msg],
+        })),
     updateMessage: (id, patch) =>
         set((s) => ({ messages: s.messages.map((m) => (m.id === id ? { ...m, ...patch } : m)) })),
     removeMessage: (id) => set((s) => ({ messages: s.messages.filter((m) => m.id !== id) })),

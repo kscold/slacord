@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, teamApi } from '@/lib/api-client';
+import { hasTeamWriteAccess, resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
 import type { TeamMemberSummary } from '@/src/entities/team/types';
 
 export function useWorkspaceSidebarState(teamId: string) {
@@ -32,5 +33,14 @@ export function useWorkspaceSidebarState(teamId: string) {
         router.push('/auth/login');
     };
 
-    return { currentUserId, currentUsername, logout, members };
+    const currentMember = resolveCurrentTeamMember(members, currentUserId);
+
+    return {
+        currentMember,
+        currentUserId,
+        currentUsername,
+        canWrite: hasTeamWriteAccess(currentMember?.role),
+        logout,
+        members,
+    };
 }

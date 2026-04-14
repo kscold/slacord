@@ -39,6 +39,7 @@ export class MessageEntity {
     toPublic() {
         return {
             id: this.id,
+            teamId: this.teamId,
             channelId: this.channelId,
             authorId: this.authorId,
             authorName: this.authorName,

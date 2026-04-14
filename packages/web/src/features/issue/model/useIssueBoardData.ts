@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { issueApi, teamApi } from '@/lib/api-client';
+import { authApi, issueApi, teamApi } from '@/lib/api-client';
+import { hasTeamWriteAccess, resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
 import type { TeamMemberSummary } from '@/src/entities/team/types';
 import { useIssueStore } from './issue.store';
 import { getIssuesByStatus } from './getIssuesByStatus';
@@ -22,6 +23,7 @@ interface Props {
 export function useIssueBoardData({ teamId, filters }: Props) {
     const searchParams = useSearchParams();
     const { issues, setIssues } = useIssueStore();
+    const [currentUserId, setCurrentUserId] = useState('');
     const [members, setMembers] = useState<TeamMemberSummary[]>([]);
     const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
 
@@ -38,9 +40,12 @@ export function useIssueBoardData({ teamId, filters }: Props) {
     }, [filters.assigneeId, filters.query, filters.statusFilter, setIssues, teamId]);
 
     useEffect(() => {
-        teamApi.getMembers(teamId).then((response) => {
-            if (response.success && Array.isArray(response.data)) {
-                setMembers(response.data as TeamMemberSummary[]);
+        Promise.all([authApi.getMe().catch(() => null), teamApi.getMembers(teamId).catch(() => null)]).then(([meResponse, memberResponse]) => {
+            if (meResponse?.success && meResponse.data) {
+                setCurrentUserId((meResponse.data as { id: string }).id ?? '');
+            }
+            if (memberResponse?.success && Array.isArray(memberResponse.data)) {
+                setMembers(memberResponse.data as TeamMemberSummary[]);
             }
         });
     }, [teamId]);
@@ -62,8 +67,10 @@ export function useIssueBoardData({ teamId, filters }: Props) {
         () => issues.find((issue) => issue.id === selectedIssueId) ?? null,
         [issues, selectedIssueId],
     );
+    const currentMember = useMemo(() => resolveCurrentTeamMember(members, currentUserId), [currentUserId, members]);
 
     return {
+        canWrite: hasTeamWriteAccess(currentMember?.role),
         issues,
         issuesByStatus: getIssuesByStatus(issues),
         loadIssues,

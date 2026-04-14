@@ -3,7 +3,7 @@ import { MessageGateway } from './message.gateway';
 describe('MessageGateway', () => {
     const mockSendMessageUseCase = { execute: jest.fn() };
     const mockReactMessageUseCase = { execute: jest.fn() };
-    const mockMessageAccessService = { ensureChannelMember: jest.fn(), ensureMessageInChannel: jest.fn() };
+    const mockMessageAccessService = { ensureChannelMember: jest.fn(), ensureChannelWriter: jest.fn(), ensureMessageInChannel: jest.fn() };
     const mockJwtService = { verify: jest.fn() };
 
     let gateway: MessageGateway;
@@ -26,7 +26,7 @@ describe('MessageGateway', () => {
             ['user-2', { audio: true, video: false }],
             ['user-3', { audio: true, video: false }],
         ]));
-        mockMessageAccessService.ensureChannelMember.mockResolvedValue({
+        mockMessageAccessService.ensureChannelWriter.mockResolvedValue({
             channel: { id: 'channel-1', teamId: 'team-1' },
         });
     });
@@ -43,7 +43,7 @@ describe('MessageGateway', () => {
             offer: { type: 'offer', sdp: 'test-offer' },
         }, client);
 
-        expect(mockMessageAccessService.ensureChannelMember).toHaveBeenCalledWith('channel-1', 'user-1');
+        expect(mockMessageAccessService.ensureChannelWriter).toHaveBeenCalledWith('channel-1', 'user-1');
         expect(gateway.server.to).toHaveBeenCalledWith('user:user-2');
         expect(emitMock).toHaveBeenCalledWith('huddle:offer', {
             channelId: 'channel-1',

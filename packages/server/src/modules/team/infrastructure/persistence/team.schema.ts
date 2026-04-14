@@ -8,7 +8,7 @@ class TeamMemberSchema {
     @Prop({ required: true })
     userId: string;
 
-    @Prop({ required: true, enum: ['owner', 'admin', 'member'], default: 'member' })
+    @Prop({ required: true, enum: ['owner', 'admin', 'member', 'guest'], default: 'member' })
     role: string;
 
     @Prop({ default: () => new Date() })
@@ -46,7 +46,7 @@ class TeamInviteLinkSchema {
     @Prop({ required: true })
     createdBy: string;
 
-    @Prop({ required: true, enum: ['admin', 'member'], default: 'member' })
+    @Prop({ required: true, enum: ['admin', 'member', 'guest'], default: 'member' })
     defaultRole: string;
 
     @Prop({ type: Date, default: null })

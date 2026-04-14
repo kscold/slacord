@@ -1,18 +1,15 @@
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
-import type { ITeamRepository } from '../../../team/domain/team.port';
-import { TEAM_REPOSITORY } from '../../../team/domain/team.port';
+import { Injectable } from '@nestjs/common';
+import { TeamAccessService } from '../../../team/application/services/team-access.service';
 
 @Injectable()
 export class IssueAccessService {
-    constructor(@Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository) {}
+    constructor(private readonly teamAccessService: TeamAccessService) {}
 
     async ensureMember(teamId: string, userId: string) {
-        const team = await this.teamRepo.findById(teamId);
-        if (!team) {
-            throw new ForbiddenException('워크스페이스를 찾을 수 없습니다.');
-        }
-        if (!team.isMember(userId)) {
-            throw new ForbiddenException('이 워크스페이스의 멤버가 아닙니다.');
-        }
+        await this.teamAccessService.requireMember(teamId, userId);
+    }
+
+    async ensureWritableMember(teamId: string, userId: string) {
+        await this.teamAccessService.requireWritableMember(teamId, userId);
     }
 }

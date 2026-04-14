@@ -55,7 +55,7 @@ export class IssueController {
         @CurrentUser() user: { userId: string },
         @Body() dto: CreateIssueDto,
     ) {
-        await this.issueAccessService.ensureMember(teamId, user.userId);
+        await this.issueAccessService.ensureWritableMember(teamId, user.userId);
         const issue = await this.createIssueUseCase.execute({ ...dto, teamId, createdBy: user.userId });
         void this.issueNotificationService.notifyAssignees({
             teamId,
@@ -75,7 +75,7 @@ export class IssueController {
         @CurrentUser() user: { userId: string },
         @Body() dto: UpdateIssueDto,
     ) {
-        await this.issueAccessService.ensureMember(teamId, user.userId);
+        await this.issueAccessService.ensureWritableMember(teamId, user.userId);
         const issue = await this.updateIssueUseCase.execute({ id: issueId, ...dto });
         void this.issueNotificationService.notifyAssignees({
             teamId,
@@ -94,7 +94,7 @@ export class IssueController {
         @Param('issueId') issueId: string,
         @CurrentUser() user: { userId: string },
     ) {
-        await this.issueAccessService.ensureMember(teamId, user.userId);
+        await this.issueAccessService.ensureWritableMember(teamId, user.userId);
         await this.deleteIssueUseCase.execute(issueId);
         return { success: true };
     }

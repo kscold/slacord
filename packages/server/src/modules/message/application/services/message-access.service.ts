@@ -21,7 +21,8 @@ export class MessageAccessService {
         if (!team) {
             throw new ForbiddenException('워크스페이스를 찾을 수 없습니다.');
         }
-        if (!team.isMember(userId)) {
+        const member = team.getMember(userId);
+        if (!member) {
             throw new ForbiddenException('이 워크스페이스의 멤버가 아닙니다.');
         }
 
@@ -29,7 +30,15 @@ export class MessageAccessService {
             throw new ForbiddenException('이 채널에 접근할 권한이 없습니다.');
         }
 
-        return { channel, team };
+        return { channel, member, team };
+    }
+
+    async ensureChannelWriter(channelId: string, userId: string) {
+        const access = await this.ensureChannelMember(channelId, userId);
+        if (!access.team.hasWriteAccess(userId)) {
+            throw new ForbiddenException('게스트는 읽기 전용입니다.');
+        }
+        return access;
     }
 
     async ensureMessageInChannel(channelId: string, messageId: string, userId: string) {
@@ -39,5 +48,13 @@ export class MessageAccessService {
             throw new BadRequestException('존재하지 않는 메시지입니다.');
         }
         return { ...access, message };
+    }
+
+    async ensureMessageWriter(channelId: string, messageId: string, userId: string) {
+        const access = await this.ensureMessageInChannel(channelId, messageId, userId);
+        if (!access.team.hasWriteAccess(userId)) {
+            throw new ForbiddenException('게스트는 읽기 전용입니다.');
+        }
+        return access;
     }
 }
