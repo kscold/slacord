@@ -16,12 +16,14 @@ import { MessageController } from './infrastructure/http/message.controller';
 import { MessageUploadController } from './infrastructure/http/message-upload.controller';
 import { MessageGateway } from './infrastructure/websocket/message.gateway';
 import { AuthModule } from '../auth/auth.module';
+import { ChannelModule } from '../channel/channel.module';
 import { TeamModule } from '../team/team.module';
 import { NotificationModule } from '../notification/notification.module';
 import { StorageModule } from '../../shared/storage/storage.module';
+import { MessageAccessService } from './application/services/message-access.service';
 
 @Module({
-    imports: [AuthModule, TeamModule, NotificationModule, StorageModule, MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }])],
+    imports: [AuthModule, ChannelModule, TeamModule, NotificationModule, StorageModule, MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }])],
     controllers: [MessageController, MessageUploadController],
     providers: [
         { provide: MESSAGE_REPOSITORY, useClass: MessageRepository },
@@ -34,6 +36,7 @@ import { StorageModule } from '../../shared/storage/storage.module';
         PinMessageUseCase,
         ReactMessageUseCase,
         UploadMessageAttachmentUseCase,
+        MessageAccessService,
         MessageGateway,
     ],
     exports: [MESSAGE_REPOSITORY, SendMessageUseCase, MessageGateway],

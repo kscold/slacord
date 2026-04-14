@@ -8,6 +8,7 @@ import { GetThreadMessagesUseCase } from '../../application/use-cases/get-thread
 import { EditMessageUseCase } from '../../application/use-cases/edit-message.use-case';
 import { DeleteMessageUseCase } from '../../application/use-cases/delete-message.use-case';
 import { PinMessageUseCase } from '../../application/use-cases/pin-message.use-case';
+import { MessageAccessService } from '../../application/services/message-access.service';
 import { EditMessageDto } from './dto/edit-message.dto';
 import { PinMessageDto } from './dto/pin-message.dto';
 import { MessageGateway } from '../websocket/message.gateway';
@@ -25,6 +26,7 @@ export class MessageController {
         private readonly editMessageUseCase: EditMessageUseCase,
         private readonly pinMessageUseCase: PinMessageUseCase,
         private readonly deleteMessageUseCase: DeleteMessageUseCase,
+        private readonly messageAccessService: MessageAccessService,
         private readonly messageGateway: MessageGateway,
     ) {}
 
@@ -34,9 +36,11 @@ export class MessageController {
     @ApiQuery({ name: 'before', required: false, type: String, description: 'ISO 8601 날짜' })
     async getMessages(
         @Param('channelId') channelId: string,
+        @CurrentUser() user: { userId: string },
         @Query('limit') limit?: string,
         @Query('before') before?: string,
     ) {
+        await this.messageAccessService.ensureChannelMember(channelId, user.userId);
         const messages = await this.getMessagesUseCase.execute({
             channelId,
             limit: limit ? parseInt(limit, 10) : 50,
@@ -47,14 +51,20 @@ export class MessageController {
 
     @Get('pinned')
     @ApiOperation({ summary: '채널 고정 메시지 목록 조회' })
-    async getPinnedMessages(@Param('channelId') channelId: string) {
+    async getPinnedMessages(@Param('channelId') channelId: string, @CurrentUser() user: { userId: string }) {
+        await this.messageAccessService.ensureChannelMember(channelId, user.userId);
         const messages = await this.getPinnedMessagesUseCase.execute(channelId);
         return { success: true, data: messages.map((message) => message.toPublic()) };
     }
 
     @Get(':messageId/thread')
     @ApiOperation({ summary: '메시지 스레드 답글 조회' })
-    async getThreadMessages(@Param('messageId') messageId: string) {
+    async getThreadMessages(
+        @Param('channelId') channelId: string,
+        @Param('messageId') messageId: string,
+        @CurrentUser() user: { userId: string },
+    ) {
+        await this.messageAccessService.ensureMessageInChannel(channelId, messageId, user.userId);
         const messages = await this.getThreadMessagesUseCase.execute(messageId);
         return { success: true, data: messages.map((message) => message.toPublic()) };
     }
@@ -67,6 +77,7 @@ export class MessageController {
         @CurrentUser() user: { userId: string },
         @Body() dto: EditMessageDto,
     ) {
+        await this.messageAccessService.ensureMessageInChannel(_channelId, messageId, user.userId);
         const message = await this.editMessageUseCase.execute(messageId, user.userId, dto.content);
         return { success: true, data: message.toPublic() };
     }
@@ -76,8 +87,10 @@ export class MessageController {
     async pinMessage(
         @Param('channelId') channelId: string,
         @Param('messageId') messageId: string,
+        @CurrentUser() user: { userId: string },
         @Body() dto: PinMessageDto,
     ) {
+        await this.messageAccessService.ensureMessageInChannel(channelId, messageId, user.userId);
         const message = await this.pinMessageUseCase.execute(messageId, dto.isPinned);
         this.messageGateway.emitPinnedUpdated(channelId, message.toPublic());
         return { success: true, data: message.toPublic() };
@@ -90,6 +103,7 @@ export class MessageController {
         @Param('messageId') messageId: string,
         @CurrentUser() user: { userId: string },
     ) {
+        await this.messageAccessService.ensureMessageInChannel(channelId, messageId, user.userId);
         await this.deleteMessageUseCase.execute(messageId, user.userId);
         this.messageGateway.emitMessageDeleted(channelId, messageId);
         return { success: true };

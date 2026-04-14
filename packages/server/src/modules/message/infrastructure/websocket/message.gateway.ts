@@ -6,12 +6,14 @@ import {
     ConnectedSocket,
     OnGatewayConnection,
     OnGatewayDisconnect,
+    WsException,
 } from '@nestjs/websockets';
 import { JwtService } from '@nestjs/jwt';
-import { Logger } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { SendMessageUseCase } from '../../application/use-cases/send-message.use-case';
 import { ReactMessageUseCase } from '../../application/use-cases/react-message.use-case';
+import { MessageAccessService } from '../../application/services/message-access.service';
 import { Attachment } from '../../domain/message.entity';
 import { authenticateSocketUser, type SocketUser } from '../../../../shared/lib/socket-auth';
 
@@ -40,6 +42,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     constructor(
         private readonly sendMessageUseCase: SendMessageUseCase,
         private readonly reactMessageUseCase: ReactMessageUseCase,
+        private readonly messageAccessService: MessageAccessService,
         private readonly jwtService: JwtService,
     ) {}
 
@@ -52,18 +55,37 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
             client.disconnect();
             return;
         }
-        this.logger.log(`Client connected: ${client.id}`);
+        const user = this.getUser(client);
+        client.join(this.getUserRoomKey(user.userId));
+        this.logger.log(`Client connected: ${client.id} userId=${user.userId}`);
     }
 
     handleDisconnect(client: Socket) {
+        const user = client.data.user as SocketUser | undefined;
+        if (user) {
+            for (const [channelId, participants] of this.huddleRooms.entries()) {
+                if (!participants.delete(user.userId)) continue;
+                if (participants.size === 0) {
+                    this.huddleRooms.delete(channelId);
+                }
+                this.server.to(`huddle:${channelId}`).emit('huddle:user-left', { userId: user.userId });
+                this.broadcastHuddleParticipants(channelId);
+            }
+        }
         this.logger.log(`Client disconnected: ${client.id}`);
     }
 
     /** 채널 입장 - Socket Room으로 채널 격리 */
     @SubscribeMessage('join_channel')
-    handleJoinChannel(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
-        client.join(`channel:${data.channelId}`);
-        client.emit('joined_channel', { channelId: data.channelId });
+    async handleJoinChannel(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
+        try {
+            const user = this.getUser(client);
+            await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            client.join(`channel:${data.channelId}`);
+            client.emit('joined_channel', { channelId: data.channelId });
+        } catch (error) {
+            this.emitSocketError(client, error, '채널에 참여할 수 없습니다.');
+        }
     }
 
     /** 채널 퇴장 */
@@ -77,8 +99,11 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     async handleSendMessage(@MessageBody() payload: SendMessagePayload, @ConnectedSocket() client: Socket) {
         try {
             const user = this.getUser(client);
+            const { channel } = await this.messageAccessService.ensureChannelMember(payload.channelId, user.userId);
             const message = await this.sendMessageUseCase.execute({
                 ...payload,
+                teamId: channel.teamId,
+                channelId: channel.id,
                 authorId: user.userId,
                 authorName: user.username ?? null,
             });
@@ -96,6 +121,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     async handleReaction(@MessageBody() payload: ReactionPayload, @ConnectedSocket() client: Socket) {
         try {
             const user = this.getUser(client);
+            await this.messageAccessService.ensureMessageInChannel(payload.channelId, payload.messageId, user.userId);
             const message = await this.reactMessageUseCase.execute(payload.messageId, payload.emoji, user.userId);
             this.server.to(`channel:${payload.channelId}`).emit('reaction_updated', message.toPublic());
             return { success: true };
@@ -107,15 +133,20 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
     /** 타이핑 표시 - DB 저장 없이 브로드캐스트만 */
     @SubscribeMessage('typing')
-    handleTyping(
+    async handleTyping(
         @MessageBody() data: { channelId: string },
         @ConnectedSocket() client: Socket,
     ) {
-        const user = this.getUser(client);
-        client.to(`channel:${data.channelId}`).emit('user_typing', {
-            userId: user.userId,
-            username: user.username ?? '동료',
-        });
+        try {
+            const user = this.getUser(client);
+            await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            client.to(`channel:${data.channelId}`).emit('user_typing', {
+                userId: user.userId,
+                username: user.username ?? '동료',
+            });
+        } catch (error) {
+            this.emitSocketError(client, error, '타이핑 상태를 전송할 수 없습니다.');
+        }
     }
 
     private getUser(client: Socket): SocketUser {
@@ -140,21 +171,23 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     private huddleRooms = new Map<string, Map<string, { audio: boolean; video: boolean }>>();
 
     @SubscribeMessage('huddle:join')
-    handleHuddleJoin(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
-        const user = this.getUser(client);
-        const roomKey = `huddle:${data.channelId}`;
-        client.join(roomKey);
+    async handleHuddleJoin(@MessageBody() data: { channelId: string }, @ConnectedSocket() client: Socket) {
+        try {
+            const user = this.getUser(client);
+            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            const roomKey = `huddle:${channel.id}`;
+            client.join(roomKey);
 
-        if (!this.huddleRooms.has(data.channelId)) {
-            this.huddleRooms.set(data.channelId, new Map());
+            if (!this.huddleRooms.has(channel.id)) {
+                this.huddleRooms.set(channel.id, new Map());
+            }
+            this.huddleRooms.get(channel.id)!.set(user.userId, { audio: true, video: false });
+
+            client.to(roomKey).emit('huddle:user-joined', { channelId: channel.id, userId: user.userId });
+            this.broadcastHuddleParticipants(channel.id);
+        } catch (error) {
+            this.emitSocketError(client, error, '허들에 참여할 수 없습니다.');
         }
-        this.huddleRooms.get(data.channelId)!.set(user.userId, { audio: true, video: false });
-
-        // 기존 참여자들에게 새 유저 알림
-        client.to(roomKey).emit('huddle:user-joined', { channelId: data.channelId, userId: user.userId });
-
-        // 참여자 목록 전체 브로드캐스트
-        this.broadcastHuddleParticipants(data.channelId);
     }
 
     @SubscribeMessage('huddle:leave')
@@ -173,54 +206,79 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     }
 
     @SubscribeMessage('huddle:offer')
-    handleHuddleOffer(
+    async handleHuddleOffer(
         @MessageBody() data: { channelId: string; targetUserId: string; offer: RTCSessionDescriptionInit },
         @ConnectedSocket() client: Socket,
     ) {
-        const user = this.getUser(client);
-        // targetUserId의 소켓을 찾아서 offer 전달
-        const roomKey = `huddle:${data.channelId}`;
-        client.to(roomKey).emit('huddle:offer', {
-            channelId: data.channelId,
-            fromUserId: user.userId,
-            offer: data.offer,
-        });
+        try {
+            const user = this.getUser(client);
+            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            this.ensureHuddleParticipant(channel.id, user.userId);
+            this.ensureHuddleParticipant(channel.id, data.targetUserId);
+            this.server.to(this.getUserRoomKey(data.targetUserId)).emit('huddle:offer', {
+                channelId: channel.id,
+                fromUserId: user.userId,
+                offer: data.offer,
+            });
+        } catch (error) {
+            this.emitSocketError(client, error, '허들 연결 요청을 전달할 수 없습니다.');
+        }
     }
 
     @SubscribeMessage('huddle:answer')
-    handleHuddleAnswer(
+    async handleHuddleAnswer(
         @MessageBody() data: { channelId: string; targetUserId: string; answer: RTCSessionDescriptionInit },
         @ConnectedSocket() client: Socket,
     ) {
-        const user = this.getUser(client);
-        const roomKey = `huddle:${data.channelId}`;
-        client.to(roomKey).emit('huddle:answer', {
-            fromUserId: user.userId,
-            answer: data.answer,
-        });
+        try {
+            const user = this.getUser(client);
+            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            this.ensureHuddleParticipant(channel.id, user.userId);
+            this.ensureHuddleParticipant(channel.id, data.targetUserId);
+            this.server.to(this.getUserRoomKey(data.targetUserId)).emit('huddle:answer', {
+                channelId: channel.id,
+                fromUserId: user.userId,
+                answer: data.answer,
+            });
+        } catch (error) {
+            this.emitSocketError(client, error, '허들 응답을 전달할 수 없습니다.');
+        }
     }
 
     @SubscribeMessage('huddle:ice-candidate')
-    handleHuddleIceCandidate(
+    async handleHuddleIceCandidate(
         @MessageBody() data: { channelId: string; targetUserId: string; candidate: RTCIceCandidateInit },
         @ConnectedSocket() client: Socket,
     ) {
-        const user = this.getUser(client);
-        const roomKey = `huddle:${data.channelId}`;
-        client.to(roomKey).emit('huddle:ice-candidate', {
-            fromUserId: user.userId,
-            candidate: data.candidate,
-        });
+        try {
+            const user = this.getUser(client);
+            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            this.ensureHuddleParticipant(channel.id, user.userId);
+            this.ensureHuddleParticipant(channel.id, data.targetUserId);
+            this.server.to(this.getUserRoomKey(data.targetUserId)).emit('huddle:ice-candidate', {
+                channelId: channel.id,
+                fromUserId: user.userId,
+                candidate: data.candidate,
+            });
+        } catch (error) {
+            this.emitSocketError(client, error, '허들 네트워크 정보를 전달할 수 없습니다.');
+        }
     }
 
     @SubscribeMessage('huddle:toggle-media')
-    handleHuddleToggleMedia(
+    async handleHuddleToggleMedia(
         @MessageBody() data: { channelId: string; audio: boolean; video: boolean },
         @ConnectedSocket() client: Socket,
     ) {
-        const user = this.getUser(client);
-        this.huddleRooms.get(data.channelId)?.set(user.userId, { audio: data.audio, video: data.video });
-        this.broadcastHuddleParticipants(data.channelId);
+        try {
+            const user = this.getUser(client);
+            const { channel } = await this.messageAccessService.ensureChannelMember(data.channelId, user.userId);
+            this.ensureHuddleParticipant(channel.id, user.userId);
+            this.huddleRooms.get(channel.id)?.set(user.userId, { audio: data.audio, video: data.video });
+            this.broadcastHuddleParticipants(channel.id);
+        } catch (error) {
+            this.emitSocketError(client, error, '허들 미디어 상태를 변경할 수 없습니다.');
+        }
     }
 
     private broadcastHuddleParticipants(channelId: string) {
@@ -229,5 +287,24 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
             ? [...room.entries()].map(([userId, media]) => ({ userId, ...media }))
             : [];
         this.server.to(`huddle:${channelId}`).emit('huddle:participants', { channelId, participants });
+    }
+
+    private ensureHuddleParticipant(channelId: string, userId: string) {
+        if (!this.huddleRooms.get(channelId)?.has(userId)) {
+            throw new BadRequestException('허들 참여자를 찾을 수 없습니다.');
+        }
+    }
+
+    private getUserRoomKey(userId: string) {
+        return `user:${userId}`;
+    }
+
+    private emitSocketError(client: Socket, error: unknown, fallbackMessage: string) {
+        const message = error instanceof Error ? error.message : fallbackMessage;
+        this.logger.warn(message);
+        client.emit('error', { message });
+        if (error instanceof WsException) {
+            throw error;
+        }
     }
 }

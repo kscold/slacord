@@ -45,7 +45,7 @@ export class CreateChannelUseCase {
                 return existing;
             }
         }
-        if (type === 'public' || type === 'private') {
+        if (type === 'public' || type === 'private' || type === 'voice') {
             const exists = await this.channelRepo.existsByNameInTeam(input.teamId, input.name);
             if (exists) {
                 throw new BadRequestException('같은 이름의 채널이 이미 존재합니다.');
@@ -58,7 +58,7 @@ export class CreateChannelUseCase {
             description: input.description ?? null,
             type,
             createdBy: input.createdBy,
-            memberIds: type === 'public' ? [input.createdBy] : memberIds,
+            memberIds: type === 'public' || type === 'voice' ? [input.createdBy] : memberIds,
         });
     }
 }

@@ -19,7 +19,7 @@ export class DeleteMessageUseCase {
         if (message.authorId !== userId) {
             // 작성자가 아니면 팀 오너/어드민인지 확인
             const team = message.teamId ? await this.teamRepo.findById(message.teamId) : null;
-            const isTeamAdmin = team?.isOwner(userId) ?? false;
+            const isTeamAdmin = team?.hasAdminAccess(userId) ?? false;
             if (!isTeamAdmin) {
                 throw new BadRequestException('메시지 작성자 또는 팀 관리자만 삭제할 수 있습니다.');
             }

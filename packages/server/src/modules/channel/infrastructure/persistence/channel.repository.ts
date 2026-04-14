@@ -49,7 +49,7 @@ export class ChannelRepository implements IChannelRepository {
     }
 
     async existsByNameInTeam(teamId: string, name: string): Promise<boolean> {
-        return !!(await this.channelModel.exists({ teamId, name }));
+        return !!(await this.channelModel.exists({ teamId, name, type: { $in: ['public', 'private', 'voice'] } }));
     }
 
     async findByExternalRef(teamId: string, source: string, externalId: string): Promise<ChannelEntity | null> {

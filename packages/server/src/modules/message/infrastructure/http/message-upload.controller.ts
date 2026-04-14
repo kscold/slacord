@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { UploadMessageAttachmentUseCase } from '../../application/use-cases/upload-message-attachment.use-case';
+import { MessageAccessService } from '../../application/services/message-access.service';
 import { UploadMessageAttachmentDto } from './dto/upload-message-attachment.dto';
 
 @ApiTags('message')
@@ -20,7 +21,10 @@ import { UploadMessageAttachmentDto } from './dto/upload-message-attachment.dto'
 @UseGuards(JwtAuthGuard)
 @Controller('channel/:channelId/message')
 export class MessageUploadController {
-    constructor(private readonly uploadMessageAttachmentUseCase: UploadMessageAttachmentUseCase) {}
+    constructor(
+        private readonly uploadMessageAttachmentUseCase: UploadMessageAttachmentUseCase,
+        private readonly messageAccessService: MessageAccessService,
+    ) {}
 
     @Post('attachment')
     @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
@@ -38,17 +42,18 @@ export class MessageUploadController {
     @ApiOperation({ summary: '메시지 첨부 파일 업로드' })
     async upload(
         @Param('channelId') channelId: string,
-        @Body() dto: UploadMessageAttachmentDto,
+        @Body() _dto: UploadMessageAttachmentDto,
         @CurrentUser() user: { userId: string },
         @UploadedFile() file?: any,
     ) {
         if (!file?.buffer) {
             throw new BadRequestException('업로드할 파일이 필요합니다.');
         }
+        const { channel } = await this.messageAccessService.ensureChannelMember(channelId, user.userId);
         return {
             success: true,
             data: await this.uploadMessageAttachmentUseCase.execute({
-                teamId: dto.teamId,
+                teamId: channel.teamId,
                 channelId,
                 userId: user.userId,
                 file,

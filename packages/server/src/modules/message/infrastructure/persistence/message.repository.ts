@@ -110,6 +110,31 @@ export class MessageRepository implements IMessageRepository {
         return this.toEntity(created.toObject());
     }
 
+    async updateImported(id: string, data: {
+        authorId: string; authorName: string | null; content: string; type: MessageType;
+        attachments: Attachment[]; replyToId: string | null; mentions: string[];
+        createdAt: Date; updatedAt: Date; isPinned: boolean; pinnedAt: Date | null;
+    }): Promise<MessageEntity | null> {
+        const updated = await this.messageModel.findByIdAndUpdate(
+            id,
+            {
+                authorId: data.authorId,
+                authorName: data.authorName,
+                content: data.content,
+                type: data.type,
+                attachments: data.attachments,
+                replyToId: data.replyToId,
+                mentions: data.mentions,
+                createdAt: data.createdAt,
+                updatedAt: data.updatedAt,
+                isPinned: data.isPinned,
+                pinnedAt: data.pinnedAt,
+            },
+            { new: true, timestamps: false },
+        ).lean();
+        return updated ? this.toEntity(updated) : null;
+    }
+
     private toEntity(doc: any): MessageEntity {
         return new MessageEntity(
             doc._id.toString(),

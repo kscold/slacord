@@ -45,9 +45,7 @@ export class ImportDiscordGuildUseCase {
             const messages = await this.discordClient.getAllChannelMessages(input.botToken, remoteChannel.id);
             for (const remoteMessage of messages) {
                 const existed = await this.messageRepo.findByExternalRef(localChannel.id, 'discord', remoteMessage.id);
-                const saved = await this.messageRepo.saveImported({
-                    teamId: input.teamId,
-                    channelId: localChannel.id,
+                const importedMessage = {
                     authorId: toImportedAuthorId(remoteMessage.author?.id),
                     authorName: getAuthorName(remoteMessage),
                     content: buildImportedContent(remoteMessage),
@@ -60,13 +58,23 @@ export class ImportDiscordGuildUseCase {
                     })),
                     replyToId: await this.resolveReplyId(localChannel.id, localMessageIds, remoteMessage),
                     mentions: (remoteMessage.mentions ?? []).map((user) => toImportedAuthorId(user.id)),
-                    externalSource: 'discord',
-                    externalId: remoteMessage.id,
                     createdAt: new Date(remoteMessage.timestamp),
                     updatedAt: new Date(remoteMessage.edited_timestamp ?? remoteMessage.timestamp),
                     isPinned: Boolean(remoteMessage.pinned),
                     pinnedAt: remoteMessage.pinned ? new Date(remoteMessage.timestamp) : null,
-                });
+                };
+                const saved = existed
+                    ? await this.messageRepo.updateImported(existed.id, importedMessage)
+                    : await this.messageRepo.saveImported({
+                          teamId: input.teamId,
+                          channelId: localChannel.id,
+                          ...importedMessage,
+                          externalSource: 'discord',
+                          externalId: remoteMessage.id,
+                      });
+                if (!saved) {
+                    throw new BadRequestException('Discord 메시지를 저장하지 못했습니다.');
+                }
                 localMessageIds.set(remoteMessage.id, saved.id);
                 if (existed) updatedMessages += 1;
                 else importedMessages += 1;
@@ -90,7 +98,11 @@ export class ImportDiscordGuildUseCase {
         occupiedNames: Set<string>,
     ) {
         const existing = await this.channelRepo.findByExternalRef(input.teamId, 'discord', remoteChannel.id);
-        const name = existing?.name ?? createUniqueChannelName(remoteChannel.name || `discord-${remoteChannel.id.slice(-6)}`, occupiedNames);
+        if (existing) {
+            occupiedNames.add(existing.name.toLowerCase());
+            return existing;
+        }
+        const name = createUniqueChannelName(remoteChannel.name || `discord-${remoteChannel.id.slice(-6)}`, occupiedNames);
         occupiedNames.add(name.toLowerCase());
         return this.channelRepo.saveImported({
             teamId: input.teamId,

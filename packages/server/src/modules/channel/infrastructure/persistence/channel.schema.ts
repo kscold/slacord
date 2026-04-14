@@ -15,7 +15,7 @@ export class Channel {
     @Prop({ type: String, default: null })
     description: string | null;
 
-    @Prop({ required: true, enum: ['public', 'private', 'dm', 'group'], default: 'public' })
+    @Prop({ required: true, enum: ['public', 'private', 'dm', 'group', 'voice'], default: 'public' })
     type: string;
 
     @Prop({ required: true })
@@ -24,6 +24,12 @@ export class Channel {
     @Prop({ type: [String], default: [] })
     memberIds: string[];
 
+    @Prop({ type: String, default: null })
+    externalSource: string | null;
+
+    @Prop({ type: String, default: null })
+    externalId: string | null;
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -31,5 +37,15 @@ export class Channel {
 export const ChannelSchema = SchemaFactory.createForClass(Channel);
 ChannelSchema.index(
     { teamId: 1, name: 1 },
-    { unique: true, partialFilterExpression: { type: { $in: ['public', 'private'] } } },
+    { unique: true, partialFilterExpression: { type: { $in: ['public', 'private', 'voice'] } } },
+);
+ChannelSchema.index(
+    { teamId: 1, externalSource: 1, externalId: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            externalSource: { $type: 'string' },
+            externalId: { $type: 'string' },
+        },
+    },
 );

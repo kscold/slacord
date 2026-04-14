@@ -53,9 +53,17 @@ export class TeamEntity {
         return this.members.some((m) => m.userId === userId && m.role === 'owner');
     }
 
+    isAdmin(userId: string): boolean {
+        return this.members.some((m) => m.userId === userId && m.role === 'admin');
+    }
+
+    hasAdminAccess(userId: string): boolean {
+        return this.isOwner(userId) || this.isAdmin(userId);
+    }
+
     canManageInvites(userId: string): boolean {
         const member = this.getMember(userId);
-        return !!member && (member.role === 'owner' || member.role === 'admin' || member.canManageInvites);
+        return !!member && (this.hasAdminAccess(userId) || member.canManageInvites);
     }
 
     getInvite(code: string): TeamInviteLink | undefined {

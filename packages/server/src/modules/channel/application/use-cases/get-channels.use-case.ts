@@ -19,6 +19,6 @@ export class GetChannelsUseCase {
             return [];
         }
         const channels = await this.channelRepo.findByTeam(teamId);
-        return channels.filter((channel) => channel.type === 'public' || channel.isMember(userId));
+        return channels.filter((channel) => channel.type === 'public' || channel.type === 'voice' || channel.isMember(userId));
     }
 }

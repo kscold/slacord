@@ -13,9 +13,9 @@ export class CreateChannelDto {
     @IsString()
     description?: string;
 
-    @ApiPropertyOptional({ enum: ['public', 'private', 'dm', 'group'], default: 'public' })
+    @ApiPropertyOptional({ enum: ['public', 'private', 'dm', 'group', 'voice'], default: 'public' })
     @IsOptional()
-    @IsEnum(['public', 'private', 'dm', 'group'])
+    @IsEnum(['public', 'private', 'dm', 'group', 'voice'])
     type?: ChannelType;
 
     @ApiPropertyOptional({ type: [String], example: ['67f9e7d4d1498b3ce286b77a'] })

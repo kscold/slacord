@@ -81,9 +81,11 @@ export class TeamController {
     @ApiOperation({ summary: 'GitHub Webhook 설정 (repoUrl, webhookSecret, notifyChannelId)' })
     async updateGithubConfig(
         @Param('teamId') teamId: string,
+        @CurrentUser() user: { userId: string },
         @Body() dto: UpdateGithubConfigDto,
     ) {
-        const team = await this.updateGithubConfigUseCase.execute(teamId, dto);
+        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
+        const team = await this.updateGithubConfigUseCase.execute(teamId, user.userId, dto);
         return { success: true, data: team.toPublic() };
     }
 

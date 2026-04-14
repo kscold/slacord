@@ -26,6 +26,11 @@ export interface IMessageRepository {
         mentions: string[]; externalSource: string; externalId: string;
         createdAt: Date; updatedAt: Date; isPinned: boolean; pinnedAt: Date | null;
     }): Promise<MessageEntity>;
+    updateImported(id: string, data: {
+        authorId: string; authorName: string | null; content: string; type: MessageType;
+        attachments: Attachment[]; replyToId: string | null; mentions: string[];
+        createdAt: Date; updatedAt: Date; isPinned: boolean; pinnedAt: Date | null;
+    }): Promise<MessageEntity | null>;
     /** emoji 반응 토글: 이미 추가한 경우 제거, 없으면 추가 */
     toggleReaction(id: string, emoji: string, userId: string): Promise<MessageEntity | null>;
 }

@@ -73,9 +73,25 @@ export class Message {
     @Prop({ type: Date, default: null })
     pinnedAt: Date | null;
 
+    @Prop({ type: String, default: null })
+    externalSource: string | null;
+
+    @Prop({ type: String, default: null })
+    externalId: string | null;
+
     createdAt: Date;
     updatedAt: Date;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
 MessageSchema.index({ channelId: 1, createdAt: -1 });
+MessageSchema.index(
+    { channelId: 1, externalSource: 1, externalId: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            externalSource: { $type: 'string' },
+            externalId: { $type: 'string' },
+        },
+    },
+);
