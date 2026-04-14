@@ -85,7 +85,7 @@ export default function ChannelPage({ params }: Props) {
             </div>
             {/* 허들 패널 - 하단 고정 (슬랙처럼) */}
             {room.currentUserId && (
-                <HuddlePanel currentUserId={room.currentUserId} currentUsername={room.channelLabel} channelName={room.channelLabel} />
+                <HuddlePanel currentUserId={room.currentUserId} currentUsername={room.currentUsername || room.channelLabel} channelName={room.channelLabel} />
             )}
         </div>
     );

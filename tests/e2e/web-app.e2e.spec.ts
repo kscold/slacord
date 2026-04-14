@@ -1,6 +1,55 @@
-import { expect, test } from 'playwright/test';
+import { expect, test, type Page } from 'playwright/test';
 import { createAssignedIssue, createWorkspaceFixture, type WorkspaceFixture } from './support/slacord-api';
 import { loginWithSession } from './support/slacord-session';
+
+async function mockHuddleMedia(page: Page) {
+    await page.addInitScript(() => {
+        const mediaStore: Array<{ canvas?: HTMLCanvasElement; context?: AudioContext; stream: MediaStream }> = [];
+
+        const makeVideoStream = (label: string) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 360;
+            const context = canvas.getContext('2d');
+            context?.fillRect(0, 0, canvas.width, canvas.height);
+            context?.fillText(label, 24, 48);
+            const stream = canvas.captureStream(5);
+            mediaStore.push({ canvas, stream });
+            return stream;
+        };
+
+        const makeAudioTrack = () => {
+            const context = new AudioContext();
+            const destination = context.createMediaStreamDestination();
+            mediaStore.push({ context, stream: destination.stream });
+            return destination.stream.getAudioTracks()[0] ?? null;
+        };
+
+        Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+            configurable: true,
+            value: async (constraints: MediaStreamConstraints) => {
+                const stream = new MediaStream();
+                if (constraints.audio) {
+                    const audioTrack = makeAudioTrack();
+                    if (audioTrack) stream.addTrack(audioTrack);
+                }
+                if (constraints.video) {
+                    const videoStream = makeVideoStream('camera');
+                    const videoTrack = videoStream.getVideoTracks()[0];
+                    if (videoTrack) stream.addTrack(videoTrack);
+                }
+                return stream;
+            },
+        });
+
+        Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', {
+            configurable: true,
+            value: async () => makeVideoStream('screen'),
+        });
+
+        (window as typeof window & { __slacordTestMedia?: typeof mediaStore }).__slacordTestMedia = mediaStore;
+    });
+}
 
 test.describe.serial('slacord web e2e', () => {
     let fixture: WorkspaceFixture;
@@ -80,5 +129,22 @@ test.describe.serial('slacord web e2e', () => {
         await page.getByRole('button', { name: new RegExp(issueTitle) }).click();
         await page.waitForURL(`**/${fixture.teamId}/issues?issue=${issueId}`);
         await expect(page.getByRole('heading', { name: '이슈 수정' })).toBeVisible();
+    });
+
+    test('허들을 시작하고 화면 공유를 토글함', async ({ page }) => {
+        await mockHuddleMedia(page);
+        await loginWithSession(page, fixture.owner);
+        await page.goto(`/${fixture.teamId}/channel/${fixture.channelId}`);
+
+        await page.getByRole('button', { name: '허들' }).click();
+        await expect(page.getByText('허들')).toBeVisible();
+
+        const shareButton = page.getByRole('button', { name: '화면 공유 시작' });
+        await expect(shareButton).toBeVisible();
+        await shareButton.click();
+
+        await expect(page.getByText('화면 공유 중')).toBeVisible();
+        await page.getByRole('button', { name: '화면 공유 중지' }).click();
+        await expect(page.getByText('화면 공유 중')).toHaveCount(0);
     });
 });

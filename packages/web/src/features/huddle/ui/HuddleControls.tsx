@@ -3,17 +3,20 @@
 interface Props {
     audio: boolean;
     video: boolean;
+    sharingScreen: boolean;
     onToggleAudio: () => void;
     onToggleVideo: () => void;
+    onToggleScreenShare: () => void;
     onLeave: () => void;
 }
 
-export function HuddleControls({ audio, video, onToggleAudio, onToggleVideo, onLeave }: Props) {
+export function HuddleControls({ audio, video, sharingScreen, onToggleAudio, onToggleVideo, onToggleScreenShare, onLeave }: Props) {
     return (
         <div className="flex items-center gap-1">
             <button
                 onClick={onToggleAudio}
                 className={`rounded-full p-2 transition ${audio ? 'text-white hover:bg-white/10' : 'bg-red-500/20 text-red-400'}`}
+                aria-label={audio ? '음소거' : '음소거 해제'}
                 title={audio ? '음소거' : '음소거 해제'}
             >
                 {audio ? (
@@ -29,6 +32,7 @@ export function HuddleControls({ audio, video, onToggleAudio, onToggleVideo, onL
             <button
                 onClick={onToggleVideo}
                 className={`rounded-full p-2 transition ${video ? 'text-white hover:bg-white/10' : 'text-text-tertiary hover:bg-white/10'}`}
+                aria-label={video ? '카메라 끄기' : '카메라 켜기'}
                 title={video ? '카메라 끄기' : '카메라 켜기'}
             >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,8 +40,19 @@ export function HuddleControls({ audio, video, onToggleAudio, onToggleVideo, onL
                 </svg>
             </button>
             <button
+                onClick={onToggleScreenShare}
+                className={`rounded-full p-2 transition ${sharingScreen ? 'bg-green-500/15 text-green-400 hover:bg-green-500/20' : 'text-text-tertiary hover:bg-white/10'}`}
+                aria-label={sharingScreen ? '화면 공유 중지' : '화면 공유 시작'}
+                title={sharingScreen ? '화면 공유 중지' : '화면 공유 시작'}
+            >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2h-5l1.5 3h-7L10 16H5a2 2 0 01-2-2V5z" />
+                </svg>
+            </button>
+            <button
                 onClick={onLeave}
                 className="ml-1 rounded-full bg-red-600 p-2 text-white transition hover:bg-red-700"
+                aria-label="나가기"
                 title="나가기"
             >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -30,17 +30,19 @@ interface Props {
     localStream: MediaStream | null;
     participants: HuddleParticipant[];
     currentUsername: string;
+    localVisualLabel?: string | null;
 }
 
-export function HuddleVideoGrid({ localStream, participants, currentUsername }: Props) {
+export function HuddleVideoGrid({ localStream, participants, currentUsername, localVisualLabel }: Props) {
     const total = participants.length + 1;
     const cols = total <= 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2';
+    const localStreamForTile = localVisualLabel ? localStream : null;
 
     return (
         <div className={`grid gap-2 ${cols}`}>
-            <VideoTile stream={localStream} label={`${currentUsername} (나)`} muted />
+            <VideoTile stream={localStreamForTile} label={`${currentUsername} (나${localVisualLabel ? ` · ${localVisualLabel}` : ''})`} muted />
             {participants.map((p) => (
-                <VideoTile key={p.userId} stream={p.stream} label={p.userId} />
+                <VideoTile key={p.userId} stream={p.video ? p.stream : null} label={p.userId} />
             ))}
         </div>
     );

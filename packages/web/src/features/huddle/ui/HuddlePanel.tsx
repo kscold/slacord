@@ -1,5 +1,6 @@
 'use client';
 
+import { shouldShowHuddleVideoGrid } from '../model/mediaTracks';
 import { useHuddle } from '../model/useHuddle';
 import { HuddleControls } from './HuddleControls';
 import { HuddleVideoGrid } from './HuddleVideoGrid';
@@ -12,8 +13,10 @@ interface Props {
 
 /** 허들 패널 — 슬랙처럼 하단 고정 바 */
 export function HuddlePanel({ currentUserId, currentUsername, channelName }: Props) {
-    const { activeChannelId, participants, localStream, localAudio, localVideo, error, clearError, leaveHuddle, toggleAudio, toggleVideo } = useHuddle(currentUserId);
+    const { activeChannelId, participants, localStream, localAudio, localVideo, sharingScreen, error, clearError, leaveHuddle, toggleAudio, toggleVideo, toggleScreenShare } = useHuddle(currentUserId);
     const isActive = !!activeChannelId;
+    const showVideoGrid = shouldShowHuddleVideoGrid({ localVideo, sharingScreen, participants });
+    const localVisualLabel = sharingScreen ? '화면 공유' : localVideo ? '카메라' : null;
 
     // 에러 배너
     if (error) {
@@ -34,10 +37,15 @@ export function HuddlePanel({ currentUserId, currentUsername, channelName }: Pro
 
     return (
         <div className="border-t border-border-primary bg-[#1a1d21]">
-            {/* 비디오 그리드 (카메라 켰을 때만) */}
-            {localVideo && (
+            {/* 비디오 그리드 */}
+            {showVideoGrid && (
                 <div className="px-4 pt-3">
-                    <HuddleVideoGrid localStream={localStream} participants={participants} currentUsername={currentUsername} />
+                    <HuddleVideoGrid
+                        localStream={localStream}
+                        participants={participants}
+                        currentUsername={currentUsername}
+                        localVisualLabel={localVisualLabel}
+                    />
                 </div>
             )}
 
@@ -50,14 +58,16 @@ export function HuddlePanel({ currentUserId, currentUsername, channelName }: Pro
                     </div>
                     <div className="min-w-0">
                         <p className="text-[13px] font-medium text-white truncate">허들</p>
-                        <p className="text-[11px] text-text-tertiary truncate">#{channelName} · {participants.length + 1}명</p>
+                        <p className="text-[11px] text-text-tertiary truncate">#{channelName} · {participants.length + 1}명{sharingScreen ? ' · 화면 공유 중' : ''}</p>
                     </div>
                 </div>
                 <HuddleControls
                     audio={localAudio}
                     video={localVideo}
+                    sharingScreen={sharingScreen}
                     onToggleAudio={toggleAudio}
                     onToggleVideo={toggleVideo}
+                    onToggleScreenShare={toggleScreenShare}
                     onLeave={leaveHuddle}
                 />
             </div>

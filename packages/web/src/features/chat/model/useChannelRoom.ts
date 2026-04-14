@@ -25,6 +25,7 @@ export function useChannelRoom(teamId: string, channelId: string) {
         channelLabel: room.channelLabel,
         members: room.members,
         currentUserId: room.currentUser?.id ?? '',
+        currentUsername: room.currentUser?.username ?? '',
         ...actions,
     };
 }
