@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './modules/auth/auth.module';
 import { TeamModule } from './modules/team/team.module';
+import { BridgeModule } from './modules/bridge/bridge.module';
 import { ChannelModule } from './modules/channel/channel.module';
 import { MessageModule } from './modules/message/message.module';
 import { PresenceModule } from './modules/presence/presence.module';
@@ -16,7 +17,7 @@ import { HealthController } from './shared/http/health.controller';
 
 /**
  * Slacord 앱 루트 모듈
- * - 순수 팀 협업 툴 (Slack/Discord relay 없음)
+ * - 팀 협업 툴 + 외부 브리지 worker
  * - 모든 데이터는 MongoDB에 직접 저장
  * - 실시간 채팅은 Socket.IO WebSocket으로 처리
  */
@@ -34,6 +35,7 @@ import { HealthController } from './shared/http/health.controller';
         DiscordModule,
         AuthModule,
         TeamModule,
+        BridgeModule,
         ChannelModule,
         MessageModule,
         PresenceModule,

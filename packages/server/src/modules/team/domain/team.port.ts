@@ -1,4 +1,4 @@
-import { TeamEntity, TeamInviteLink, TeamMember, GitHubConfig } from './team.entity';
+import { TeamEntity, TeamInviteLink, TeamMember, GitHubConfig, BridgeWorkerConfig } from './team.entity';
 
 export interface ITeamRepository {
     findById(id: string): Promise<TeamEntity | null>;
@@ -18,6 +18,7 @@ export interface ITeamRepository {
     replaceAccess(teamId: string, members: TeamMember[], inviteLinks: TeamInviteLink[]): Promise<TeamEntity | null>;
     existsBySlug(slug: string): Promise<boolean>;
     updateGithubConfig(teamId: string, config: GitHubConfig): Promise<TeamEntity | null>;
+    updateBridgeConfig(teamId: string, config: BridgeWorkerConfig): Promise<TeamEntity | null>;
 }
 
 export const TEAM_REPOSITORY = Symbol('ITeamRepository');

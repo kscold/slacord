@@ -2,7 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { ITeamRepository } from '../../domain/team.port';
-import { TeamEntity, TeamInviteLink, TeamMember, type GitHubConfig } from '../../domain/team.entity';
+import {
+    TeamEntity,
+    TeamInviteLink,
+    TeamMember,
+    createDefaultBridgeWorkerConfig,
+    type BridgeWorkerConfig,
+    type GitHubConfig,
+} from '../../domain/team.entity';
 import { Team, TeamDocument } from './team.schema';
 import { normalizeGitHubRepo } from '../../../../shared/lib/normalize-github-repo';
 
@@ -77,6 +84,13 @@ export class TeamRepository implements ITeamRepository {
         return doc ? this.toEntity(doc) : null;
     }
 
+    async updateBridgeConfig(teamId: string, config: BridgeWorkerConfig): Promise<TeamEntity | null> {
+        const doc = await this.teamModel
+            .findByIdAndUpdate(teamId, { $set: { bridgeConfig: config } }, { new: true })
+            .lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
     private toEntity(doc: any): TeamEntity {
         return new TeamEntity(
             doc._id.toString(),
@@ -102,6 +116,18 @@ export class TeamRepository implements ITeamRepository {
                 createdAt: invite.createdAt,
             })),
             doc.githubConfig ?? null,
+            {
+                ...createDefaultBridgeWorkerConfig(),
+                ...(doc.bridgeConfig ?? {}),
+                slack: {
+                    ...createDefaultBridgeWorkerConfig().slack,
+                    ...(doc.bridgeConfig?.slack ?? {}),
+                },
+                discord: {
+                    ...createDefaultBridgeWorkerConfig().discord,
+                    ...(doc.bridgeConfig?.discord ?? {}),
+                },
+            },
             doc.createdAt,
         );
     }

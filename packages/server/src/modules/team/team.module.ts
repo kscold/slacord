@@ -15,6 +15,7 @@ import { JoinTeamUseCase } from './application/use-cases/join-team.use-case';
 import { RevokeInviteLinkUseCase } from './application/use-cases/revoke-invite-link.use-case';
 import { DeleteInviteLinkUseCase } from './application/use-cases/delete-invite-link.use-case';
 import { UpdateGithubConfigUseCase } from './application/use-cases/update-github-config.use-case';
+import { UpdateBridgeConfigUseCase } from './application/use-cases/update-bridge-config.use-case';
 import { UpdateMemberAccessUseCase } from './application/use-cases/update-member-access.use-case';
 import { TeamAccessService } from './application/services/team-access.service';
 import { TeamInviteController } from './infrastructure/http/team-invite.controller';
@@ -32,6 +33,7 @@ import { AuthModule } from '../auth/auth.module';
         GetTeamMembersUseCase,
         JoinTeamUseCase,
         UpdateGithubConfigUseCase,
+        UpdateBridgeConfigUseCase,
         GetInviteLinksUseCase,
         CreateInviteLinkUseCase,
         RevokeInviteLinkUseCase,

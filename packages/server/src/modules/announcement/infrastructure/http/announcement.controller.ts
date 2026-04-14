@@ -5,6 +5,7 @@ import { CurrentUser } from '../../../../shared/decorators/current-user.decorato
 import { CreateAnnouncementUseCase } from '../../application/use-cases/create-announcement.use-case';
 import { GetAnnouncementsUseCase } from '../../application/use-cases/get-announcements.use-case';
 import { PinAnnouncementUseCase } from '../../application/use-cases/pin-announcement.use-case';
+import { BridgeEnqueueService } from '../../../bridge/application/services/bridge-enqueue.service';
 import { TeamAccessService } from '../../../team/application/services/team-access.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { PinAnnouncementDto } from './dto/pin-announcement.dto';
@@ -19,6 +20,7 @@ export class AnnouncementController {
         private readonly createUseCase: CreateAnnouncementUseCase,
         private readonly getUseCase: GetAnnouncementsUseCase,
         private readonly pinUseCase: PinAnnouncementUseCase,
+        private readonly bridgeEnqueueService: BridgeEnqueueService,
         private readonly teamAccessService: TeamAccessService,
     ) {}
 
@@ -39,6 +41,7 @@ export class AnnouncementController {
     ) {
         await this.teamAccessService.requireWritableMember(teamId, user.userId);
         const announcement = await this.createUseCase.execute({ ...dto, teamId, createdBy: user.userId });
+        await this.bridgeEnqueueService.enqueueAnnouncement(announcement);
         return { success: true, data: announcement.toPublic() };
     }
 

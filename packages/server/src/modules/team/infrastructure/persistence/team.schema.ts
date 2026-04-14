@@ -36,6 +36,40 @@ class GitHubConfigSchema {
 const GitHubConfigSchemaFactory = SchemaFactory.createForClass(GitHubConfigSchema);
 
 @Schema({ _id: false })
+class BridgeWorkerTargetConfigSchema {
+    @Prop({ required: true, default: false })
+    enabled: boolean;
+
+    @Prop({ required: true, default: '' })
+    webhookUrl: string;
+
+    @Prop({ required: true, default: false })
+    relayAnnouncements: boolean;
+
+    @Prop({ required: true, default: false })
+    relayGithub: boolean;
+}
+
+const BridgeWorkerTargetConfigSchemaFactory = SchemaFactory.createForClass(BridgeWorkerTargetConfigSchema);
+
+@Schema({ _id: false })
+class BridgeWorkerConfigSchema {
+    @Prop({
+        type: BridgeWorkerTargetConfigSchemaFactory,
+        default: () => ({ enabled: false, webhookUrl: '', relayAnnouncements: false, relayGithub: false }),
+    })
+    slack: BridgeWorkerTargetConfigSchema;
+
+    @Prop({
+        type: BridgeWorkerTargetConfigSchemaFactory,
+        default: () => ({ enabled: false, webhookUrl: '', relayAnnouncements: false, relayGithub: false }),
+    })
+    discord: BridgeWorkerTargetConfigSchema;
+}
+
+const BridgeWorkerConfigSchemaFactory = SchemaFactory.createForClass(BridgeWorkerConfigSchema);
+
+@Schema({ _id: false })
 class TeamInviteLinkSchema {
     @Prop({ required: true })
     code: string;
@@ -90,6 +124,15 @@ export class Team {
 
     @Prop({ type: GitHubConfigSchemaFactory, default: null })
     githubConfig: GitHubConfigSchema | null;
+
+    @Prop({
+        type: BridgeWorkerConfigSchemaFactory,
+        default: () => ({
+            slack: { enabled: false, webhookUrl: '', relayAnnouncements: false, relayGithub: false },
+            discord: { enabled: false, webhookUrl: '', relayAnnouncements: false, relayGithub: false },
+        }),
+    })
+    bridgeConfig: BridgeWorkerConfigSchema;
 
     createdAt: Date;
     updatedAt: Date;

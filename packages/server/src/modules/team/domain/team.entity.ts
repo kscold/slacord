@@ -35,6 +35,34 @@ export interface GitHubConfig {
     notifyChannelId: string;
 }
 
+export interface BridgeWorkerTargetConfig {
+    enabled: boolean;
+    webhookUrl: string;
+    relayAnnouncements: boolean;
+    relayGithub: boolean;
+}
+
+export interface BridgeWorkerConfig {
+    slack: BridgeWorkerTargetConfig;
+    discord: BridgeWorkerTargetConfig;
+}
+
+export function createDefaultBridgeWorkerTargetConfig(): BridgeWorkerTargetConfig {
+    return {
+        enabled: false,
+        webhookUrl: '',
+        relayAnnouncements: false,
+        relayGithub: false,
+    };
+}
+
+export function createDefaultBridgeWorkerConfig(): BridgeWorkerConfig {
+    return {
+        slack: createDefaultBridgeWorkerTargetConfig(),
+        discord: createDefaultBridgeWorkerTargetConfig(),
+    };
+}
+
 /** 팀(워크스페이스) 도메인 엔티티 */
 export class TeamEntity {
     constructor(
@@ -46,6 +74,7 @@ export class TeamEntity {
         public readonly members: TeamMember[],
         public readonly inviteLinks: TeamInviteLink[],
         public readonly githubConfig: GitHubConfig | null,
+        public readonly bridgeConfig: BridgeWorkerConfig,
         public readonly createdAt: Date,
     ) {}
 
@@ -101,6 +130,7 @@ export class TeamEntity {
             memberCount: this.members.length,
             activeInviteCount: this.inviteLinks.filter((invite) => this.isInviteActive(invite.code)).length,
             githubConfig: this.githubConfig,
+            bridgeConfig: this.bridgeConfig,
             createdAt: this.createdAt,
         };
     }

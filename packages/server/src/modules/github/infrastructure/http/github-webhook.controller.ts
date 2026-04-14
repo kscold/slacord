@@ -5,6 +5,7 @@ import { Request } from 'express';
 import { ProcessGitHubEventUseCase } from '../../application/use-cases/process-github-event.use-case';
 import { GitHubEventEntity } from '../../domain/github-event.entity';
 import { GithubConfigService } from '../service/github-config.service';
+import { BridgeEnqueueService } from '../../../bridge/application/services/bridge-enqueue.service';
 import { MessageGateway } from '../../../message/infrastructure/websocket/message.gateway';
 
 /** GitHub Webhook 수신 컨트롤러 */
@@ -14,6 +15,7 @@ export class GithubWebhookController {
     constructor(
         private readonly processEventUseCase: ProcessGitHubEventUseCase,
         private readonly githubConfigService: GithubConfigService,
+        private readonly bridgeEnqueueService: BridgeEnqueueService,
         private readonly messageGateway: MessageGateway,
     ) {}
 
@@ -44,6 +46,7 @@ export class GithubWebhookController {
         if (!parsed) return { success: true, message: 'Event ignored.' };
 
         const message = await this.processEventUseCase.execute(parsed, config.channelId, config.teamId);
+        await this.bridgeEnqueueService.enqueueGithubEvent(config.teamId, parsed);
         this.messageGateway.emitNewMessage(config.channelId, message.toPublic());
         return { success: true };
     }

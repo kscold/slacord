@@ -12,9 +12,11 @@ import { JoinTeamUseCase } from '../../application/use-cases/join-team.use-case'
 import { RevokeInviteLinkUseCase } from '../../application/use-cases/revoke-invite-link.use-case';
 import { DeleteInviteLinkUseCase } from '../../application/use-cases/delete-invite-link.use-case';
 import { UpdateGithubConfigUseCase } from '../../application/use-cases/update-github-config.use-case';
+import { UpdateBridgeConfigUseCase } from '../../application/use-cases/update-bridge-config.use-case';
 import { UpdateMemberAccessUseCase } from '../../application/use-cases/update-member-access.use-case';
 import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
 import { CreateTeamDto } from './dto/create-team.dto';
+import { UpdateBridgeConfigDto } from './dto/update-bridge-config.dto';
 import { UpdateGithubConfigDto } from './dto/update-github-config.dto';
 import { UpdateMemberAccessDto } from './dto/update-member-access.dto';
 
@@ -31,6 +33,7 @@ export class TeamController {
         private readonly getTeamMembersUseCase: GetTeamMembersUseCase,
         private readonly joinTeamUseCase: JoinTeamUseCase,
         private readonly updateGithubConfigUseCase: UpdateGithubConfigUseCase,
+        private readonly updateBridgeConfigUseCase: UpdateBridgeConfigUseCase,
         private readonly getInviteLinksUseCase: GetInviteLinksUseCase,
         private readonly createInviteLinkUseCase: CreateInviteLinkUseCase,
         private readonly revokeInviteLinkUseCase: RevokeInviteLinkUseCase,
@@ -86,6 +89,18 @@ export class TeamController {
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.updateGithubConfigUseCase.execute(teamId, user.userId, dto);
+        return { success: true, data: team.toPublic() };
+    }
+
+    @Patch(':teamId/bridge')
+    @ApiOperation({ summary: 'Slack/Discord bridge worker 설정' })
+    async updateBridgeConfig(
+        @Param('teamId') teamId: string,
+        @CurrentUser() user: { userId: string },
+        @Body() dto: UpdateBridgeConfigDto,
+    ) {
+        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
+        const team = await this.updateBridgeConfigUseCase.execute(teamId, user.userId, dto);
         return { success: true, data: team.toPublic() };
     }
 
