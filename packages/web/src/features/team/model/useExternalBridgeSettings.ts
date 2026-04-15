@@ -3,7 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { authApi, teamApi } from '@/lib/api-client';
 import { resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
-import type { BridgeConfig, BridgeJobSummary, BridgeTargetConfig, TeamMemberSummary, TeamSummary } from '@/src/entities/team/types';
+import type {
+    BridgeConfig,
+    BridgeJobPlatform,
+    BridgeJobStatus,
+    BridgeJobSummary,
+    BridgeTargetConfig,
+    TeamMemberSummary,
+    TeamSummary,
+} from '@/src/entities/team/types';
+
+type JobStatusFilter = 'all' | BridgeJobStatus;
+type JobPlatformFilter = 'all' | BridgeJobPlatform;
 
 function createDefaultTargetConfig(): BridgeTargetConfig {
     return {
@@ -32,11 +43,17 @@ export function useExternalBridgeSettings(teamId: string) {
     const [retryingJobId, setRetryingJobId] = useState<string | null>(null);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
+    const [statusFilter, setStatusFilter] = useState<JobStatusFilter>('all');
+    const [platformFilter, setPlatformFilter] = useState<JobPlatformFilter>('all');
     const mountedRef = useRef(true);
     const retryRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const fetchJobs = async () => {
-        const jobsRes = await teamApi.getBridgeJobs(teamId);
+    const fetchJobs = async (filters: { status: JobStatusFilter; platform: JobPlatformFilter } = { status: statusFilter, platform: platformFilter }) => {
+        const jobsRes = await teamApi.getBridgeJobs(teamId, {
+            limit: 12,
+            status: filters.status === 'all' ? undefined : filters.status,
+            platform: filters.platform === 'all' ? undefined : filters.platform,
+        });
         return (jobsRes.data ?? []) as BridgeJobSummary[];
     };
 
@@ -55,7 +72,6 @@ export function useExternalBridgeSettings(teamId: string) {
         let active = true;
         const load = async () => {
             setLoading(true);
-            setJobsLoading(true);
             setError('');
             try {
                 const [meRes, membersRes, teamRes] = await Promise.all([authApi.getMe(), teamApi.getMembers(teamId), teamApi.getTeam(teamId)]);
@@ -74,11 +90,6 @@ export function useExternalBridgeSettings(teamId: string) {
                     setJobsLoading(false);
                     return;
                 }
-
-                if (!active) return;
-                const nextJobs = await fetchJobs();
-                if (!active) return;
-                setJobs(nextJobs);
             } catch (err: any) {
                 if (!active) return;
                 setError(err.message || '외부 브리지 설정을 불러오지 못했습니다.');
@@ -95,6 +106,32 @@ export function useExternalBridgeSettings(teamId: string) {
             active = false;
         };
     }, [teamId]);
+
+    useEffect(() => {
+        if (!canManageBridge) return;
+        let active = true;
+
+        const loadJobs = async () => {
+            setJobsLoading(true);
+            try {
+                const nextJobs = await fetchJobs();
+                if (!active) return;
+                setJobs(nextJobs);
+            } catch (err: any) {
+                if (!active) return;
+                setError(err.message || '브리지 relay 이력을 불러오지 못했습니다.');
+            } finally {
+                if (!active) return;
+                setJobsLoading(false);
+            }
+        };
+
+        void loadJobs();
+
+        return () => {
+            active = false;
+        };
+    }, [canManageBridge, platformFilter, statusFilter, teamId]);
 
     const updateTargetField = <K extends keyof BridgeTargetConfig>(
         target: keyof BridgeConfig,
@@ -158,5 +195,23 @@ export function useExternalBridgeSettings(teamId: string) {
         }
     };
 
-    return { canManageBridge, error, form, jobs, jobsLoading, loading, retryJob, retryingJobId, save, saved, saving, updateTargetField, viewerRole };
+    return {
+        canManageBridge,
+        error,
+        form,
+        jobs,
+        jobsLoading,
+        loading,
+        platformFilter,
+        retryJob,
+        retryingJobId,
+        save,
+        saved,
+        saving,
+        setPlatformFilter,
+        setStatusFilter,
+        statusFilter,
+        updateTargetField,
+        viewerRole,
+    };
 }

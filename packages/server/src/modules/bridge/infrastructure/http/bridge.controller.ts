@@ -21,9 +21,17 @@ export class BridgeController {
         @Param('teamId') teamId: string,
         @CurrentUser() user: { userId: string },
         @Query('limit') limit?: string,
+        @Query('status') status?: string,
+        @Query('platform') platform?: string,
+        @Query('eventType') eventType?: string,
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        const jobs = await this.getBridgeJobsUseCase.execute(teamId, user.userId, Number(limit ?? 12));
+        const jobs = await this.getBridgeJobsUseCase.execute(teamId, user.userId, {
+            limit: Number(limit ?? 12),
+            status,
+            platform,
+            eventType,
+        });
         return { success: true, data: jobs.map((job) => job.toPublic()) };
     }
 

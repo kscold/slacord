@@ -6,7 +6,7 @@
 
 import { toApiUrl } from './runtime-config';
 import type { ChannelType } from '@/src/entities/channel/types';
-import type { BridgeConfig, TeamInvitePreview } from '@/src/entities/team/types';
+import type { BridgeConfig, BridgeJobEventType, BridgeJobPlatform, BridgeJobStatus, TeamInvitePreview } from '@/src/entities/team/types';
 
 interface ApiResponse<T = any> {
     success: boolean;
@@ -102,8 +102,16 @@ export const teamApi = {
     async updateBridgeConfig(teamId: string, data: BridgeConfig) {
         return apiFetch(`/api/team/${teamId}/bridge`, { method: 'PATCH', body: JSON.stringify(data) });
     },
-    async getBridgeJobs(teamId: string, limit = 12) {
-        return apiFetch(`/api/team/${teamId}/bridge/jobs?limit=${limit}`);
+    async getBridgeJobs(
+        teamId: string,
+        options: { limit?: number; status?: BridgeJobStatus; platform?: BridgeJobPlatform; eventType?: BridgeJobEventType } = {},
+    ) {
+        const params = new URLSearchParams();
+        params.set('limit', String(options.limit ?? 12));
+        if (options.status) params.set('status', options.status);
+        if (options.platform) params.set('platform', options.platform);
+        if (options.eventType) params.set('eventType', options.eventType);
+        return apiFetch(`/api/team/${teamId}/bridge/jobs?${params.toString()}`);
     },
     async retryBridgeJob(teamId: string, jobId: string) {
         return apiFetch(`/api/team/${teamId}/bridge/jobs/${jobId}/retry`, { method: 'POST' });

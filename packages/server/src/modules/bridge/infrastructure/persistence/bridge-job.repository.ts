@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { type IBridgeJobRepository } from '../../domain/bridge-job.port';
+import { type BridgeJobListOptions, type IBridgeJobRepository } from '../../domain/bridge-job.port';
 import { BridgeJob, type BridgeJobDocument } from './bridge-job.schema';
 import { BridgeJobEntity, type CreateBridgeJobInput } from '../../domain/bridge-job.entity';
 
@@ -64,11 +64,16 @@ export class BridgeJobRepository implements IBridgeJobRepository {
         return doc ? this.toEntity(doc) : null;
     }
 
-    async listRecent(teamId: string, limit: number) {
+    async listRecent(teamId: string, options: BridgeJobListOptions) {
+        const query: Record<string, string> = { teamId };
+        if (options.status) query.status = options.status;
+        if (options.platform) query.platform = options.platform;
+        if (options.eventType) query.eventType = options.eventType;
+
         const docs = await this.bridgeJobModel
-            .find({ teamId })
+            .find(query)
             .sort({ updatedAt: -1, createdAt: -1 })
-            .limit(limit)
+            .limit(options.limit)
             .lean();
         return docs.map((doc) => this.toEntity(doc));
     }

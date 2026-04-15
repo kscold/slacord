@@ -19,6 +19,20 @@ const TARGETS: Array<{ key: keyof BridgeConfig; label: string; description: stri
     },
 ];
 
+const STATUS_FILTERS = [
+    { key: 'all', label: '전체' },
+    { key: 'failed', label: '실패' },
+    { key: 'pending', label: '대기' },
+    { key: 'processing', label: '처리 중' },
+    { key: 'sent', label: '성공' },
+] as const;
+
+const PLATFORM_FILTERS = [
+    { key: 'all', label: '전체 플랫폼' },
+    { key: 'slack', label: 'Slack' },
+    { key: 'discord', label: 'Discord' },
+] as const;
+
 interface Props {
     teamId: string;
 }
@@ -70,7 +84,43 @@ export function ExternalBridgeSettingsPanel({ teamId }: Props) {
                 </div>
 
                 {isReadonly ? <p className="mt-4 text-sm text-text-secondary">relay 이력은 owner/admin만 볼 수 있습니다.</p> : null}
-                {!isReadonly && !settings.jobsLoading && settings.jobs.length === 0 ? <p className="mt-4 text-sm text-text-secondary">아직 relay 이력이 없습니다. 공지 작성이나 GitHub webhook 수신 후 여기에 성공/실패가 쌓입니다.</p> : null}
+                {!isReadonly ? (
+                    <div className="mt-4 flex flex-wrap gap-4">
+                        <div className="space-y-2">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-text-tertiary">Status</p>
+                            <div className="flex flex-wrap gap-2">
+                                {STATUS_FILTERS.map((filter) => (
+                                    <FilterChip
+                                        key={filter.key}
+                                        active={settings.statusFilter === filter.key}
+                                        label={filter.label}
+                                        onClick={() => settings.setStatusFilter(filter.key)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-text-tertiary">Platform</p>
+                            <div className="flex flex-wrap gap-2">
+                                {PLATFORM_FILTERS.map((filter) => (
+                                    <FilterChip
+                                        key={filter.key}
+                                        active={settings.platformFilter === filter.key}
+                                        label={filter.label}
+                                        onClick={() => settings.setPlatformFilter(filter.key)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
+                {!isReadonly && !settings.jobsLoading && settings.jobs.length === 0 ? (
+                    <p className="mt-4 text-sm text-text-secondary">
+                        {settings.statusFilter === 'all' && settings.platformFilter === 'all'
+                            ? '아직 relay 이력이 없습니다. 공지 작성이나 GitHub webhook 수신 후 여기에 성공/실패가 쌓입니다.'
+                            : '현재 필터에 맞는 relay 이력이 없습니다.'}
+                    </p>
+                ) : null}
                 {!isReadonly && settings.jobs.length > 0 ? (
                     <div className="mt-4 space-y-3">
                         <p className="text-xs text-text-tertiary">실패한 relay는 현재 브리지 설정으로 새 job을 만들어 다시 시도합니다.</p>
@@ -173,6 +223,18 @@ function ToggleChip({ checked, disabled = false, label, onChange }: { checked: b
             <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
             {label}
         </label>
+    );
+}
+
+function FilterChip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`rounded-full border px-3 py-2 text-xs transition ${active ? 'border-brand-400/40 bg-brand-500/12 text-white' : 'border-white/10 bg-white/4 text-text-secondary hover:bg-white/8'}`}
+        >
+            {label}
+        </button>
     );
 }
 

@@ -560,6 +560,7 @@ async function main() {
   let oneTimeInvite = null;
   let relayAnnouncementTitle = "";
   let relayGithubTitlePrefix = "";
+  let failedBridgeJobId = "";
   await check("team", "1회용 초대 링크 생성", async () => {
     const response = await api(`/team/${context.teamId}/invite-links`, {
       method: "POST",
@@ -2203,6 +2204,7 @@ async function main() {
           12000,
         );
         const failedJob = failedJobResult.job;
+        failedBridgeJobId = failedJob.id;
         assert(
           failedJob.attemptCount >= 3,
           "실패한 bridge job의 attemptCount가 기대보다 작습니다.",
@@ -2260,6 +2262,43 @@ async function main() {
           failedJobId: failedJob.id,
           retryJobId: sentJobResult.job.id,
           retryStatus: sentJobResult.job.status,
+        };
+      });
+
+      await check("integration", "브리지 relay 이력 필터가 상태와 플랫폼별로 동작함", async () => {
+        const failedResponse = await api(
+          `/team/${context.teamId}/bridge/jobs?limit=12&status=failed`,
+          {
+            token: context.users.owner.token,
+          },
+        );
+        const failedJobs = failedResponse.payload?.data || [];
+        assert(failedJobs.length >= 1, "failed 필터 결과가 비어 있습니다.");
+        assert(
+          failedJobs.every((job) => job.status === "failed"),
+          "failed 필터 결과에 failed가 아닌 상태가 섞여 있습니다.",
+        );
+        assert(
+          failedJobs.some((job) => job.id === failedBridgeJobId),
+          "failed 필터 결과에 강제 실패 job이 없습니다.",
+        );
+
+        const discordResponse = await api(
+          `/team/${context.teamId}/bridge/jobs?limit=12&platform=discord`,
+          {
+            token: context.users.owner.token,
+          },
+        );
+        const discordJobs = discordResponse.payload?.data || [];
+        assert(discordJobs.length >= 1, "discord 필터 결과가 비어 있습니다.");
+        assert(
+          discordJobs.every((job) => job.platform === "discord"),
+          "discord 필터 결과에 다른 플랫폼이 섞여 있습니다.",
+        );
+
+        return {
+          failed: failedJobs.length,
+          discord: discordJobs.length,
         };
       });
     } finally {

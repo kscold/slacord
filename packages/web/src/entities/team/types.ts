@@ -10,15 +10,19 @@ export interface BridgeConfig {
     discord: BridgeTargetConfig;
 }
 
+export type BridgeJobStatus = 'pending' | 'processing' | 'sent' | 'failed';
+export type BridgeJobPlatform = 'slack' | 'discord';
+export type BridgeJobEventType = 'announcement' | 'github';
+
 export interface BridgeJobSummary {
     id: string;
     teamId: string;
-    platform: 'slack' | 'discord';
-    eventType: 'announcement' | 'github';
+    platform: BridgeJobPlatform;
+    eventType: BridgeJobEventType;
     title: string;
     content: string;
     url: string | null;
-    status: 'pending' | 'processing' | 'sent' | 'failed';
+    status: BridgeJobStatus;
     attemptCount: number;
     availableAt: string;
     claimedAt: string | null;
