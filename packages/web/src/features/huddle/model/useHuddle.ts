@@ -3,19 +3,25 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { getChatSocket } from '@/lib/socket';
 import { syncPeerVideoTrackSenders } from './mediaTracks';
+import {
+    HUDDLE_RECOVERY_FAILED_MESSAGE,
+    HUDDLE_RECOVERY_MESSAGE,
+    MAX_HUDDLE_RECOVERY_ATTEMPTS,
+    isHuddleRecoveryMessage,
+    nextHuddleRecoveryDelay,
+    shouldInitiateHuddleRecovery,
+} from './recovery';
+import { resolveHuddleRtcConfig } from './rtcConfig';
 import { useHuddleStore } from './huddle.store';
-
-const RTC_CONFIG: RTCConfiguration = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-    ],
-};
 
 export function useHuddle(currentUserId: string) {
     const store = useHuddleStore();
+    const rtcConfigRef = useRef<RTCConfiguration>(resolveHuddleRtcConfig());
     const peers = useRef<Map<string, RTCPeerConnection>>(new Map());
     const videoSenders = useRef<Map<string, RTCRtpSender>>(new Map());
+    const reconnectTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const reconnectAttempts = useRef<Map<string, number>>(new Map());
+    const recoverySchedulerRef = useRef<(targetUserId: string, channelId: string) => void>(() => undefined);
     const audioTrackRef = useRef<MediaStreamTrack | null>(null);
     const cameraTrackRef = useRef<MediaStreamTrack | null>(null);
     const screenTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -47,10 +53,41 @@ export function useHuddle(currentUserId: string) {
         await syncPeerVideoTrackSenders(peers.current.entries(), videoSenders.current, stream, nextTrack);
     }, [refreshLocalStream]);
 
-    const createPeer = useCallback((targetUserId: string, channelId: string, initiator: boolean) => {
-        if (peers.current.has(targetUserId)) return peers.current.get(targetUserId)!;
+    const clearRecoveryErrorIfIdle = useCallback(() => {
+        if (reconnectTimers.current.size > 0) return;
+        if (isHuddleRecoveryMessage(useHuddleStore.getState().error)) {
+            useHuddleStore.getState().setError(null);
+        }
+    }, []);
 
-        const pc = new RTCPeerConnection(RTC_CONFIG);
+    const clearPeerRecovery = useCallback((targetUserId: string) => {
+        const timer = reconnectTimers.current.get(targetUserId);
+        if (timer) clearTimeout(timer);
+        reconnectTimers.current.delete(targetUserId);
+        reconnectAttempts.current.delete(targetUserId);
+        clearRecoveryErrorIfIdle();
+    }, [clearRecoveryErrorIfIdle]);
+
+    const closePeer = useCallback((userId: string) => {
+        const pc = peers.current.get(userId);
+        if (pc) {
+            pc.onconnectionstatechange = null;
+            pc.oniceconnectionstatechange = null;
+            pc.onicecandidate = null;
+            pc.ontrack = null;
+            pc.close();
+            peers.current.delete(userId);
+        }
+        videoSenders.current.delete(userId);
+        clearPeerRecovery(userId);
+    }, [clearPeerRecovery]);
+
+    const createPeer = useCallback((targetUserId: string, channelId: string, initiator: boolean) => {
+        const existingPeer = peers.current.get(targetUserId);
+        if (existingPeer && existingPeer.connectionState !== 'closed') return existingPeer;
+        if (existingPeer) closePeer(targetUserId);
+
+        const pc = new RTCPeerConnection(rtcConfigRef.current);
         peers.current.set(targetUserId, pc);
 
         if (localStreamRef.current) {
@@ -63,47 +100,125 @@ export function useHuddle(currentUserId: string) {
             }
         }
 
-        pc.onicecandidate = (e) => {
-            if (e.candidate) {
-                getChatSocket().emit('huddle:ice-candidate', { channelId, targetUserId, candidate: e.candidate });
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                getChatSocket().emit('huddle:ice-candidate', { channelId, targetUserId, candidate: event.candidate });
             }
         };
 
-        pc.ontrack = (e) => {
-            if (e.streams[0]) {
-                store.setParticipantStream(targetUserId, e.streams[0]);
+        pc.ontrack = (event) => {
+            if (event.streams[0]) {
+                store.setParticipantStream(targetUserId, event.streams[0]);
             }
+        };
+
+        const handleHealthyState = () => {
+            clearPeerRecovery(targetUserId);
+        };
+
+        const handleUnstableState = () => {
+            recoverySchedulerRef.current(targetUserId, channelId);
         };
 
         pc.onconnectionstatechange = () => {
-            if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-                closePeer(targetUserId);
+            if (pc.connectionState === 'connected') {
+                handleHealthyState();
+                return;
+            }
+            if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                handleUnstableState();
+            }
+        };
+
+        pc.oniceconnectionstatechange = () => {
+            if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+                handleHealthyState();
+                return;
+            }
+            if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+                handleUnstableState();
             }
         };
 
         if (initiator) {
-            pc.createOffer().then((offer) => pc.setLocalDescription(offer)).then(() => {
-                getChatSocket().emit('huddle:offer', { channelId, targetUserId, offer: pc.localDescription });
-            });
+            pc.createOffer()
+                .then((offer) => pc.setLocalDescription(offer))
+                .then(() => {
+                    getChatSocket().emit('huddle:offer', { channelId, targetUserId, offer: pc.localDescription });
+                })
+                .catch(() => {
+                    recoverySchedulerRef.current(targetUserId, channelId);
+                });
         }
 
         return pc;
-    }, [getActiveVideoTrack, store]);
+    }, [clearPeerRecovery, closePeer, getActiveVideoTrack, store]);
 
-    const closePeer = useCallback((userId: string) => {
-        const pc = peers.current.get(userId);
-        if (pc) {
-            pc.close();
-            peers.current.delete(userId);
+    const schedulePeerRecovery = useCallback((targetUserId: string, channelId: string) => {
+        if (useHuddleStore.getState().activeChannelId !== channelId) return;
+        if (reconnectTimers.current.has(targetUserId)) return;
+
+        useHuddleStore.getState().setError(HUDDLE_RECOVERY_MESSAGE);
+
+        if (!shouldInitiateHuddleRecovery(currentUserId, targetUserId)) {
+            return;
         }
-        videoSenders.current.delete(userId);
-    }, []);
+
+        const attempt = (reconnectAttempts.current.get(targetUserId) ?? 0) + 1;
+        reconnectAttempts.current.set(targetUserId, attempt);
+
+        if (attempt > MAX_HUDDLE_RECOVERY_ATTEMPTS) {
+            useHuddleStore.getState().setError(HUDDLE_RECOVERY_FAILED_MESSAGE);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            reconnectTimers.current.delete(targetUserId);
+
+            if (useHuddleStore.getState().activeChannelId !== channelId) return;
+
+            const existingPeer = peers.current.get(targetUserId);
+            if (!existingPeer || existingPeer.connectionState === 'closed') {
+                createPeer(targetUserId, channelId, true);
+                return;
+            }
+
+            void (async () => {
+                try {
+                    if (typeof existingPeer.restartIce === 'function') {
+                        existingPeer.restartIce();
+                    }
+                    const offer = await existingPeer.createOffer({ iceRestart: true });
+                    await existingPeer.setLocalDescription(offer);
+                    getChatSocket().emit('huddle:offer', { channelId, targetUserId, offer: existingPeer.localDescription });
+                } catch {
+                    closePeer(targetUserId);
+                    createPeer(targetUserId, channelId, true);
+                }
+            })();
+        }, nextHuddleRecoveryDelay(attempt));
+
+        reconnectTimers.current.set(targetUserId, timer);
+    }, [closePeer, createPeer, currentUserId]);
+
+    recoverySchedulerRef.current = schedulePeerRecovery;
 
     const closeAllPeers = useCallback(() => {
-        for (const [, pc] of peers.current) pc.close();
+        for (const userId of peers.current.keys()) {
+            closePeer(userId);
+        }
         peers.current.clear();
         videoSenders.current.clear();
-    }, []);
+    }, [closePeer]);
+
+    const clearAllRecovery = useCallback(() => {
+        for (const timer of reconnectTimers.current.values()) {
+            clearTimeout(timer);
+        }
+        reconnectTimers.current.clear();
+        reconnectAttempts.current.clear();
+        clearRecoveryErrorIfIdle();
+    }, [clearRecoveryErrorIfIdle]);
 
     const stopTrack = useCallback((track: MediaStreamTrack | null) => {
         if (!track) return;
@@ -128,7 +243,6 @@ export function useHuddle(currentUserId: string) {
     }, [emitMediaState, store, syncLocalVideoTrack]);
 
     const joinHuddle = useCallback(async (channelId: string) => {
-        // 데스크톱 앱: macOS 시스템 권한 먼저 요청
         if (window.slacordDesktop?.isDesktop) {
             const access = await window.slacordDesktop.requestMediaAccess();
             if (!access.microphone) {
@@ -136,6 +250,7 @@ export function useHuddle(currentUserId: string) {
                 return;
             }
         }
+
         let stream: MediaStream;
         try {
             stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -143,6 +258,7 @@ export function useHuddle(currentUserId: string) {
             store.setError('마이크에 접근할 수 없습니다. 시스템 설정에서 마이크 권한을 허용해주세요.');
             return;
         }
+
         audioTrackRef.current = stream.getAudioTracks()[0] ?? null;
         cameraTrackRef.current = null;
         screenTrackRef.current = null;
@@ -155,10 +271,12 @@ export function useHuddle(currentUserId: string) {
     }, [refreshLocalStream, store]);
 
     const leaveHuddle = useCallback(() => {
-        const channelId = store.activeChannelId;
+        const channelId = useHuddleStore.getState().activeChannelId;
         if (!channelId) return;
+
         getChatSocket().emit('huddle:leave', { channelId });
         closeAllPeers();
+        clearAllRecovery();
         stopTrack(screenTrackRef.current);
         stopTrack(cameraTrackRef.current);
         stopTrack(audioTrackRef.current);
@@ -167,21 +285,21 @@ export function useHuddle(currentUserId: string) {
         audioTrackRef.current = null;
         localStreamRef.current = null;
         store.leave();
-    }, [store, closeAllPeers, stopTrack]);
+    }, [clearAllRecovery, closeAllPeers, stopTrack, store]);
 
     const toggleAudio = useCallback(() => {
         const audioTrack = audioTrackRef.current;
-        if (audioTrack) {
-            audioTrack.enabled = !audioTrack.enabled;
-            store.setLocalAudio(audioTrack.enabled);
-            if (store.activeChannelId) {
-                emitMediaState(store.activeChannelId);
-            }
+        if (!audioTrack) return;
+
+        audioTrack.enabled = !audioTrack.enabled;
+        store.setLocalAudio(audioTrack.enabled);
+        if (store.activeChannelId) {
+            emitMediaState(store.activeChannelId);
         }
     }, [emitMediaState, store]);
 
     const toggleVideo = useCallback(async () => {
-        const channelId = store.activeChannelId;
+        const channelId = useHuddleStore.getState().activeChannelId;
         if (!channelId) return;
 
         if (cameraTrackRef.current) {
@@ -199,6 +317,7 @@ export function useHuddle(currentUserId: string) {
                     return;
                 }
             }
+
             let videoStream: MediaStream;
             try {
                 videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -206,11 +325,13 @@ export function useHuddle(currentUserId: string) {
                 store.setError('카메라에 접근할 수 없습니다. 시스템 설정에서 카메라 권한을 허용해주세요.');
                 return;
             }
+
             const newTrack = videoStream.getVideoTracks()[0];
             if (!newTrack) {
                 store.setError('카메라 영상을 불러오지 못했습니다.');
                 return;
             }
+
             cameraTrackRef.current = newTrack;
             newTrack.onended = () => {
                 cameraTrackRef.current = null;
@@ -224,11 +345,12 @@ export function useHuddle(currentUserId: string) {
                 await syncLocalVideoTrack(newTrack);
             }
         }
+
         emitMediaState(channelId);
     }, [emitMediaState, stopTrack, store, syncLocalVideoTrack]);
 
     const toggleScreenShare = useCallback(async () => {
-        const channelId = store.activeChannelId;
+        const channelId = useHuddleStore.getState().activeChannelId;
         if (!channelId) return;
 
         if (screenTrackRef.current) {
@@ -270,34 +392,57 @@ export function useHuddle(currentUserId: string) {
     useEffect(() => {
         const socket = getChatSocket();
 
+        const onConnect = () => {
+            const channelId = useHuddleStore.getState().activeChannelId;
+            if (!channelId) return;
+            socket.emit('huddle:join', { channelId });
+            emitMediaState(channelId);
+        };
+
         const onUserJoined = (data: { channelId: string; userId: string }) => {
-            if (data.userId === currentUserId || !store.activeChannelId || data.channelId !== store.activeChannelId) return;
+            if (data.userId === currentUserId || useHuddleStore.getState().activeChannelId !== data.channelId) return;
             createPeer(data.userId, data.channelId, true);
         };
+
         const onUserLeft = (data: { userId: string }) => {
             closePeer(data.userId);
             store.removeParticipant(data.userId);
         };
+
         const onOffer = async (data: { channelId: string; fromUserId: string; offer: RTCSessionDescriptionInit }) => {
-            const pc = createPeer(data.fromUserId, data.channelId, false);
-            await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            socket.emit('huddle:answer', { channelId: data.channelId, targetUserId: data.fromUserId, answer: pc.localDescription });
-        };
-        const onAnswer = async (data: { fromUserId: string; answer: RTCSessionDescriptionInit }) => {
-            const pc = peers.current.get(data.fromUserId);
-            if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-        };
-        const onIceCandidate = async (data: { fromUserId: string; candidate: RTCIceCandidateInit }) => {
-            const pc = peers.current.get(data.fromUserId);
-            if (pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-        };
-        const onParticipants = (data: { channelId: string; participants: { userId: string; audio: boolean; video: boolean }[] }) => {
-            if (data.channelId !== store.activeChannelId) return;
-            store.setParticipants(data.participants.filter((p) => p.userId !== currentUserId));
+            let pc = peers.current.get(data.fromUserId);
+            if (pc && pc.signalingState !== 'stable') {
+                closePeer(data.fromUserId);
+                pc = undefined;
+            }
+
+            const nextPeer = pc ?? createPeer(data.fromUserId, data.channelId, false);
+            await nextPeer.setRemoteDescription(new RTCSessionDescription(data.offer));
+            const answer = await nextPeer.createAnswer();
+            await nextPeer.setLocalDescription(answer);
+            socket.emit('huddle:answer', { channelId: data.channelId, targetUserId: data.fromUserId, answer: nextPeer.localDescription });
         };
 
+        const onAnswer = async (data: { fromUserId: string; answer: RTCSessionDescriptionInit }) => {
+            const pc = peers.current.get(data.fromUserId);
+            if (pc) {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+        };
+
+        const onIceCandidate = async (data: { fromUserId: string; candidate: RTCIceCandidateInit }) => {
+            const pc = peers.current.get(data.fromUserId);
+            if (pc) {
+                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        };
+
+        const onParticipants = (data: { channelId: string; participants: { userId: string; audio: boolean; video: boolean }[] }) => {
+            if (data.channelId !== useHuddleStore.getState().activeChannelId) return;
+            store.setParticipants(data.participants.filter((participant) => participant.userId !== currentUserId));
+        };
+
+        socket.on('connect', onConnect);
         socket.on('huddle:user-joined', onUserJoined);
         socket.on('huddle:user-left', onUserLeft);
         socket.on('huddle:offer', onOffer);
@@ -306,14 +451,17 @@ export function useHuddle(currentUserId: string) {
         socket.on('huddle:participants', onParticipants);
 
         return () => {
+            socket.off('connect', onConnect);
             socket.off('huddle:user-joined', onUserJoined);
             socket.off('huddle:user-left', onUserLeft);
             socket.off('huddle:offer', onOffer);
             socket.off('huddle:answer', onAnswer);
             socket.off('huddle:ice-candidate', onIceCandidate);
             socket.off('huddle:participants', onParticipants);
+            clearAllRecovery();
+            closeAllPeers();
         };
-    }, [currentUserId, store, createPeer, closePeer]);
+    }, [clearAllRecovery, closeAllPeers, closePeer, createPeer, currentUserId, emitMediaState, store]);
 
     return {
         activeChannelId: store.activeChannelId,
