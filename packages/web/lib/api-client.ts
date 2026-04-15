@@ -105,6 +105,9 @@ export const teamApi = {
     async getBridgeJobs(teamId: string, limit = 12) {
         return apiFetch(`/api/team/${teamId}/bridge/jobs?limit=${limit}`);
     },
+    async retryBridgeJob(teamId: string, jobId: string) {
+        return apiFetch(`/api/team/${teamId}/bridge/jobs/${jobId}/retry`, { method: 'POST' });
+    },
     async getInviteLinks(teamId: string) {
         return apiFetch(`/api/team/${teamId}/invite-links`);
     },

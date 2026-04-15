@@ -397,6 +397,15 @@ async function startBridgeStub() {
       return;
     }
 
+    if (
+      req.method === "POST" &&
+      (url.pathname === "/slack-fail" || url.pathname === "/discord-fail")
+    ) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ ok: false, message: "forced failure" }));
+      return;
+    }
+
     res.statusCode = 404;
     res.end(JSON.stringify({ message: "not found" }));
   });
@@ -435,6 +444,35 @@ async function waitForBridgeDelivery(
   throw new Error(
     `${platform} bridge delivery를 ${timeoutMs}ms 안에 받지 못했습니다.`,
   );
+}
+
+async function waitForBridgeJob(
+  token,
+  teamId,
+  predicate,
+  timeoutMs = 10000,
+) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    const response = await api(`/team/${teamId}/bridge/jobs?limit=20`, {
+      token,
+    });
+    const jobs = response.payload?.data || [];
+    const match = jobs.find((job) => {
+      try {
+        return predicate(job);
+      } catch {
+        return false;
+      }
+    });
+    if (match) {
+      return { job: match, jobs };
+    }
+    await delay(200);
+  }
+
+  throw new Error(`bridge job 상태를 ${timeoutMs}ms 안에 찾지 못했습니다.`);
 }
 
 async function writeReport() {
@@ -2124,6 +2162,105 @@ async function main() {
           "github bridge job 상태가 sent가 아닙니다.",
         );
         return `${jobs.length} jobs`;
+      });
+
+      await check("integration", "실패한 브리지 relay를 현재 설정으로 다시 시도할 수 있음", async () => {
+        const retryTitle = `bridge retry ${Date.now().toString().slice(-6)}`;
+
+        await api(`/team/${context.teamId}/bridge`, {
+          method: "PATCH",
+          token: context.users.owner.token,
+          body: {
+            slack: {
+              enabled: true,
+              webhookUrl: `http://127.0.0.1:${bridgeStub.port}/slack-fail`,
+              relayAnnouncements: true,
+              relayGithub: false,
+            },
+            discord: {
+              enabled: false,
+              webhookUrl: "",
+              relayAnnouncements: false,
+              relayGithub: false,
+            },
+          },
+        });
+
+        await api(`/team/${context.teamId}/announcement`, {
+          method: "POST",
+          token: context.users.owner.token,
+          body: { title: retryTitle, content: "bridge retry body" },
+        });
+
+        const failedJobResult = await waitForBridgeJob(
+          context.users.owner.token,
+          context.teamId,
+          (job) =>
+            job.platform === "slack" &&
+            job.eventType === "announcement" &&
+            job.title === retryTitle &&
+            job.status === "failed",
+          12000,
+        );
+        const failedJob = failedJobResult.job;
+        assert(
+          failedJob.attemptCount >= 3,
+          "실패한 bridge job의 attemptCount가 기대보다 작습니다.",
+        );
+
+        await api(`/team/${context.teamId}/bridge`, {
+          method: "PATCH",
+          token: context.users.owner.token,
+          body: {
+            slack: {
+              enabled: true,
+              webhookUrl: `http://127.0.0.1:${bridgeStub.port}/slack`,
+              relayAnnouncements: true,
+              relayGithub: false,
+            },
+            discord: {
+              enabled: false,
+              webhookUrl: "",
+              relayAnnouncements: false,
+              relayGithub: false,
+            },
+          },
+        });
+
+        const retryResponse = await api(
+          `/team/${context.teamId}/bridge/jobs/${failedJob.id}/retry`,
+          {
+            method: "POST",
+            token: context.users.owner.token,
+          },
+        );
+        const retryJob = retryResponse.payload?.data;
+        assert(retryJob?.id, "재시도 bridge job이 생성되지 않았습니다.");
+        assert(
+          retryJob?.id !== failedJob.id,
+          "재시도 bridge job은 새 이력으로 생성되어야 합니다.",
+        );
+
+        await waitForBridgeDelivery(
+          bridgeStub.deliveries,
+          "slack",
+          (payload) =>
+            payload?.blocks?.[0]?.text?.text === retryTitle &&
+            payload?.text?.includes("bridge retry body"),
+        );
+
+        const sentJobResult = await waitForBridgeJob(
+          context.users.owner.token,
+          context.teamId,
+          (job) => job.id === retryJob.id && job.status === "sent",
+          10000,
+        );
+
+        return {
+          failedJobId: failedJob.id,
+          retryJobId: sentJobResult.job.id,
+          retryStatus: sentJobResult.job.status,
+        };
       });
     } finally {
       await new Promise((resolve) => bridgeStub.server.close(resolve));

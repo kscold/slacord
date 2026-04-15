@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { authApi, teamApi } from '@/lib/api-client';
 import { resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
 import type { BridgeConfig, BridgeJobSummary, BridgeTargetConfig, TeamMemberSummary, TeamSummary } from '@/src/entities/team/types';
@@ -29,8 +29,27 @@ export function useExternalBridgeSettings(teamId: string) {
     const [loading, setLoading] = useState(true);
     const [jobsLoading, setJobsLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [retryingJobId, setRetryingJobId] = useState<string | null>(null);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
+    const mountedRef = useRef(true);
+    const retryRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const fetchJobs = async () => {
+        const jobsRes = await teamApi.getBridgeJobs(teamId);
+        return (jobsRes.data ?? []) as BridgeJobSummary[];
+    };
+
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+            if (retryRefreshTimerRef.current) {
+                clearTimeout(retryRefreshTimerRef.current);
+                retryRefreshTimerRef.current = null;
+            }
+        };
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -56,9 +75,10 @@ export function useExternalBridgeSettings(teamId: string) {
                     return;
                 }
 
-                const jobsRes = await teamApi.getBridgeJobs(teamId);
                 if (!active) return;
-                setJobs((jobsRes.data ?? []) as BridgeJobSummary[]);
+                const nextJobs = await fetchJobs();
+                if (!active) return;
+                setJobs(nextJobs);
             } catch (err: any) {
                 if (!active) return;
                 setError(err.message || '외부 브리지 설정을 불러오지 못했습니다.');
@@ -102,8 +122,7 @@ export function useExternalBridgeSettings(teamId: string) {
             const response = await teamApi.updateBridgeConfig(teamId, form);
             const nextTeam = (response.data ?? null) as TeamSummary | null;
             setForm(nextTeam?.bridgeConfig ?? form);
-            const jobsRes = await teamApi.getBridgeJobs(teamId);
-            setJobs((jobsRes.data ?? []) as BridgeJobSummary[]);
+            setJobs(await fetchJobs());
             setSaved(true);
             setTimeout(() => setSaved(false), 2500);
         } catch (err: any) {
@@ -113,5 +132,31 @@ export function useExternalBridgeSettings(teamId: string) {
         }
     };
 
-    return { canManageBridge, error, form, jobs, jobsLoading, loading, save, saved, saving, updateTargetField, viewerRole };
+    const retryJob = async (jobId: string) => {
+        if (!canManageBridge) {
+            setError('owner/admin만 실패한 브리지 relay를 다시 시도할 수 있습니다.');
+            return;
+        }
+
+        setRetryingJobId(jobId);
+        setError('');
+        try {
+            await teamApi.retryBridgeJob(teamId, jobId);
+            setJobs(await fetchJobs());
+            if (retryRefreshTimerRef.current) clearTimeout(retryRefreshTimerRef.current);
+            retryRefreshTimerRef.current = setTimeout(() => {
+                void fetchJobs()
+                    .then((nextJobs) => {
+                        if (mountedRef.current) setJobs(nextJobs);
+                    })
+                    .catch(() => {});
+            }, 1800);
+        } catch (err: any) {
+            setError(err.message ?? '브리지 relay 재시도 실패');
+        } finally {
+            setRetryingJobId(null);
+        }
+    };
+
+    return { canManageBridge, error, form, jobs, jobsLoading, loading, retryJob, retryingJobId, save, saved, saving, updateTargetField, viewerRole };
 }

@@ -8,6 +8,7 @@ import { BridgeWebhookClient } from './infrastructure/external/bridge-webhook.cl
 import { BridgeEnqueueService } from './application/services/bridge-enqueue.service';
 import { BridgeWorkerService } from './application/services/bridge-worker.service';
 import { GetBridgeJobsUseCase } from './application/use-cases/get-bridge-jobs.use-case';
+import { RetryBridgeJobUseCase } from './application/use-cases/retry-bridge-job.use-case';
 import { BridgeController } from './infrastructure/http/bridge.controller';
 
 @Module({
@@ -19,6 +20,7 @@ import { BridgeController } from './infrastructure/http/bridge.controller';
         BridgeEnqueueService,
         BridgeWorkerService,
         GetBridgeJobsUseCase,
+        RetryBridgeJobUseCase,
     ],
     exports: [BridgeEnqueueService, BridgeWorkerService],
 })

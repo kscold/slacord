@@ -59,6 +59,11 @@ export class BridgeJobRepository implements IBridgeJobRepository {
         return claimed;
     }
 
+    async findById(id: string) {
+        const doc = await this.bridgeJobModel.findById(id).lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
     async listRecent(teamId: string, limit: number) {
         const docs = await this.bridgeJobModel
             .find({ teamId })

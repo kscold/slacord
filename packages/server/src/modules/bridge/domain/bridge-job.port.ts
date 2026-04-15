@@ -3,6 +3,7 @@ import type { BridgeJobEntity, CreateBridgeJobInput } from './bridge-job.entity'
 export interface IBridgeJobRepository {
     enqueueMany(inputs: CreateBridgeJobInput[]): Promise<BridgeJobEntity[]>;
     claimDueJobs(limit: number, now?: Date): Promise<BridgeJobEntity[]>;
+    findById(id: string): Promise<BridgeJobEntity | null>;
     listRecent(teamId: string, limit: number): Promise<BridgeJobEntity[]>;
     markSent(id: string, deliveredAt?: Date): Promise<void>;
     markRetry(id: string, errorMessage: string, attemptCount: number, availableAt: Date): Promise<void>;
