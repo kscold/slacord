@@ -10,6 +10,24 @@ export interface BridgeConfig {
     discord: BridgeTargetConfig;
 }
 
+export interface BridgeJobSummary {
+    id: string;
+    teamId: string;
+    platform: 'slack' | 'discord';
+    eventType: 'announcement' | 'github';
+    title: string;
+    content: string;
+    url: string | null;
+    status: 'pending' | 'processing' | 'sent' | 'failed';
+    attemptCount: number;
+    availableAt: string;
+    claimedAt: string | null;
+    deliveredAt: string | null;
+    lastError: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface TeamSummary {
     id: string;
     name: string;

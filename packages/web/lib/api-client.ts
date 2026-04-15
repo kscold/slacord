@@ -102,6 +102,9 @@ export const teamApi = {
     async updateBridgeConfig(teamId: string, data: BridgeConfig) {
         return apiFetch(`/api/team/${teamId}/bridge`, { method: 'PATCH', body: JSON.stringify(data) });
     },
+    async getBridgeJobs(teamId: string, limit = 12) {
+        return apiFetch(`/api/team/${teamId}/bridge/jobs?limit=${limit}`);
+    },
     async getInviteLinks(teamId: string) {
         return apiFetch(`/api/team/${teamId}/invite-links`);
     },

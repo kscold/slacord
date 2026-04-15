@@ -520,6 +520,8 @@ async function main() {
   });
 
   let oneTimeInvite = null;
+  let relayAnnouncementTitle = "";
+  let relayGithubTitlePrefix = "";
   await check("team", "1회용 초대 링크 생성", async () => {
     const response = await api(`/team/${context.teamId}/invite-links`, {
       method: "POST",
@@ -1997,6 +1999,7 @@ async function main() {
 
       await check("integration", "공지 relay가 Slack/Discord로 전달됨", async () => {
         const title = `bridge notice ${Date.now().toString().slice(-6)}`;
+        relayAnnouncementTitle = title;
         await api(`/team/${context.teamId}/announcement`, {
           method: "POST",
           token: context.users.owner.token,
@@ -2069,6 +2072,7 @@ async function main() {
         assert(payload?.success === true, "GitHub bridge webhook 처리에 실패했습니다.");
 
         const expectedTitle = `[PR #${prNumber}] ${prTitle}`;
+        relayGithubTitlePrefix = expectedTitle;
         const slackPayload = await waitForBridgeDelivery(
           bridgeStub.deliveries,
           "slack",
@@ -2088,6 +2092,38 @@ async function main() {
           discordUrl: discordPayload.embeds?.[0]?.url,
           slackLink: slackPayload.blocks?.[2]?.text?.text,
         };
+      });
+
+      await check("integration", "브리지 relay 이력이 최근 job 목록에 반영됨", async () => {
+        const response = await api(
+          `/team/${context.teamId}/bridge/jobs?limit=12`,
+          {
+            token: context.users.owner.token,
+          },
+        );
+        const jobs = response.payload?.data || [];
+        const announcementJob = jobs.find(
+          (job) =>
+            job.platform === "slack" &&
+            job.eventType === "announcement" &&
+            job.title === relayAnnouncementTitle,
+        );
+        const githubJob = jobs.find(
+          (job) =>
+            job.platform === "slack" &&
+            job.eventType === "github" &&
+            typeof job.title === "string" &&
+            job.title.startsWith(relayGithubTitlePrefix),
+        );
+        assert(
+          announcementJob?.status === "sent",
+          "announcement bridge job 상태가 sent가 아닙니다.",
+        );
+        assert(
+          githubJob?.status === "sent",
+          "github bridge job 상태가 sent가 아닙니다.",
+        );
+        return `${jobs.length} jobs`;
       });
     } finally {
       await new Promise((resolve) => bridgeStub.server.close(resolve));

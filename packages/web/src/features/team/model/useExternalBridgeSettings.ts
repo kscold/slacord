@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { authApi, teamApi } from '@/lib/api-client';
 import { resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
-import type { BridgeConfig, BridgeTargetConfig, TeamMemberSummary, TeamSummary } from '@/src/entities/team/types';
+import type { BridgeConfig, BridgeJobSummary, BridgeTargetConfig, TeamMemberSummary, TeamSummary } from '@/src/entities/team/types';
 
 function createDefaultTargetConfig(): BridgeTargetConfig {
     return {
@@ -23,30 +23,53 @@ function createDefaultBridgeConfig(): BridgeConfig {
 
 export function useExternalBridgeSettings(teamId: string) {
     const [form, setForm] = useState<BridgeConfig>(createDefaultBridgeConfig());
+    const [jobs, setJobs] = useState<BridgeJobSummary[]>([]);
     const [canManageBridge, setCanManageBridge] = useState(false);
     const [viewerRole, setViewerRole] = useState<TeamMemberSummary['role'] | null>(null);
     const [loading, setLoading] = useState(true);
+    const [jobsLoading, setJobsLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
         let active = true;
-        setLoading(true);
-        setError('');
-        Promise.all([authApi.getMe(), teamApi.getMembers(teamId), teamApi.getTeam(teamId)])
-            .then(([meRes, membersRes, teamRes]) => {
+        const load = async () => {
+            setLoading(true);
+            setJobsLoading(true);
+            setError('');
+            try {
+                const [meRes, membersRes, teamRes] = await Promise.all([authApi.getMe(), teamApi.getMembers(teamId), teamApi.getTeam(teamId)]);
                 if (!active) return;
                 const currentUserId = (meRes.data as { id: string } | undefined)?.id ?? '';
                 const members = (membersRes.data ?? []) as TeamMemberSummary[];
                 const me = resolveCurrentTeamMember(members, currentUserId);
+                const allowed = me?.role === 'owner' || me?.role === 'admin';
                 const nextTeam = (teamRes.data ?? null) as TeamSummary | null;
-                setCanManageBridge(me?.role === 'owner' || me?.role === 'admin');
+                setCanManageBridge(allowed);
                 setViewerRole(me?.role ?? null);
                 setForm(nextTeam?.bridgeConfig ?? createDefaultBridgeConfig());
-            })
-            .catch((err: Error) => active && setError(err.message || '외부 브리지 설정을 불러오지 못했습니다.'))
-            .finally(() => active && setLoading(false));
+
+                if (!allowed) {
+                    setJobs([]);
+                    setJobsLoading(false);
+                    return;
+                }
+
+                const jobsRes = await teamApi.getBridgeJobs(teamId);
+                if (!active) return;
+                setJobs((jobsRes.data ?? []) as BridgeJobSummary[]);
+            } catch (err: any) {
+                if (!active) return;
+                setError(err.message || '외부 브리지 설정을 불러오지 못했습니다.');
+            } finally {
+                if (!active) return;
+                setLoading(false);
+                setJobsLoading(false);
+            }
+        };
+
+        void load();
 
         return () => {
             active = false;
@@ -76,7 +99,11 @@ export function useExternalBridgeSettings(teamId: string) {
         setSaved(false);
         setError('');
         try {
-            await teamApi.updateBridgeConfig(teamId, form);
+            const response = await teamApi.updateBridgeConfig(teamId, form);
+            const nextTeam = (response.data ?? null) as TeamSummary | null;
+            setForm(nextTeam?.bridgeConfig ?? form);
+            const jobsRes = await teamApi.getBridgeJobs(teamId);
+            setJobs((jobsRes.data ?? []) as BridgeJobSummary[]);
             setSaved(true);
             setTimeout(() => setSaved(false), 2500);
         } catch (err: any) {
@@ -86,5 +113,5 @@ export function useExternalBridgeSettings(teamId: string) {
         }
     };
 
-    return { canManageBridge, error, form, loading, save, saved, saving, updateTargetField, viewerRole };
+    return { canManageBridge, error, form, jobs, jobsLoading, loading, save, saved, saving, updateTargetField, viewerRole };
 }

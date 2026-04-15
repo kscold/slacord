@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { BridgeConfig, BridgeTargetConfig } from '@/src/entities/team/types';
 import { useExternalBridgeSettings } from '../model/useExternalBridgeSettings';
 
@@ -58,6 +59,40 @@ export function ExternalBridgeSettingsPanel({ teamId }: Props) {
             <button type="button" onClick={settings.save} disabled={settings.saving || isReadonly} className="mt-6 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 font-medium text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50">
                 {settings.saving ? '저장 중...' : '브리지 설정 저장'}
             </button>
+
+            <div className="mt-6 rounded-[24px] border border-white/8 bg-black/20 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 className="text-lg font-semibold text-white">최근 relay 이력</h3>
+                        <p className="mt-1 text-sm text-text-secondary">최근 브리지 worker가 처리한 공지와 GitHub 전달 결과를 바로 확인할 수 있습니다.</p>
+                    </div>
+                    {settings.jobsLoading ? <span className="text-xs uppercase tracking-[0.22em] text-text-tertiary">loading</span> : null}
+                </div>
+
+                {isReadonly ? <p className="mt-4 text-sm text-text-secondary">relay 이력은 owner/admin만 볼 수 있습니다.</p> : null}
+                {!isReadonly && !settings.jobsLoading && settings.jobs.length === 0 ? <p className="mt-4 text-sm text-text-secondary">아직 relay 이력이 없습니다. 공지 작성이나 GitHub webhook 수신 후 여기에 성공/실패가 쌓입니다.</p> : null}
+                {!isReadonly && settings.jobs.length > 0 ? (
+                    <div className="mt-4 space-y-3">
+                        {settings.jobs.map((job) => (
+                            <article key={job.id} className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge tone={job.platform === 'slack' ? 'slack' : 'discord'}>{job.platform}</Badge>
+                                    <Badge tone={job.status}>{job.status}</Badge>
+                                    <Badge tone="event">{job.eventType}</Badge>
+                                </div>
+                                <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold text-white">{job.title}</p>
+                                        <p className="mt-1 text-xs text-text-tertiary">시도 {job.attemptCount}회 · 업데이트 {formatTimestamp(job.updatedAt)}</p>
+                                        {job.lastError ? <p className="mt-2 text-sm text-red-300">{job.lastError}</p> : null}
+                                    </div>
+                                    {job.url ? <a href={job.url} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-3 py-2 text-xs text-white transition hover:bg-white/6">원본 열기</a> : null}
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                ) : null}
+            </div>
         </section>
     );
 }
@@ -126,4 +161,26 @@ function ToggleChip({ checked, disabled = false, label, onChange }: { checked: b
             {label}
         </label>
     );
+}
+
+function Badge({ children, tone }: { children: ReactNode; tone: 'discord' | 'event' | 'failed' | 'pending' | 'processing' | 'sent' | 'slack' }) {
+    const toneClass =
+        tone === 'slack' ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' :
+        tone === 'discord' ? 'border-sky-400/30 bg-sky-500/10 text-sky-200' :
+        tone === 'sent' ? 'border-brand-400/30 bg-brand-500/10 text-brand-100' :
+        tone === 'failed' ? 'border-red-400/30 bg-red-500/10 text-red-200' :
+        tone === 'processing' ? 'border-amber-400/30 bg-amber-500/10 text-amber-200' :
+        tone === 'pending' ? 'border-white/10 bg-white/6 text-text-secondary' :
+        'border-white/10 bg-white/6 text-white';
+
+    return <span className={`rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] ${toneClass}`}>{children}</span>;
+}
+
+function formatTimestamp(value: string) {
+    return new Intl.DateTimeFormat('ko-KR', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(new Date(value));
 }

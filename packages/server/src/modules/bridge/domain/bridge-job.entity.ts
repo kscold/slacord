@@ -31,4 +31,24 @@ export class BridgeJobEntity {
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
     ) {}
+
+    toPublic() {
+        return {
+            id: this.id,
+            teamId: this.teamId,
+            platform: this.platform,
+            eventType: this.eventType,
+            title: this.title,
+            content: this.content,
+            url: this.url,
+            status: this.status,
+            attemptCount: this.attemptCount,
+            availableAt: this.availableAt,
+            claimedAt: this.claimedAt,
+            deliveredAt: this.deliveredAt,
+            lastError: this.lastError,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
 }

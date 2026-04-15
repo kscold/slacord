@@ -361,6 +361,12 @@ test.describe.serial("slacord web e2e", () => {
 
     await page.getByRole("button", { name: "브리지 설정 저장" }).click();
     await expect(page.getByText("브리지 설정 저장 완료됨")).toBeVisible();
+    await expect(page.getByText("최근 relay 이력")).toBeVisible();
+    await expect(
+      page.getByText(
+        "아직 relay 이력이 없습니다. 공지 작성이나 GitHub webhook 수신 후 여기에 성공/실패가 쌓입니다.",
+      ),
+    ).toBeVisible();
 
     const team = await jsonFetch<{
       bridgeConfig: {

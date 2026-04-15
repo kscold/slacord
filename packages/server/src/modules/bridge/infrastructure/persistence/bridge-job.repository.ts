@@ -59,6 +59,15 @@ export class BridgeJobRepository implements IBridgeJobRepository {
         return claimed;
     }
 
+    async listRecent(teamId: string, limit: number) {
+        const docs = await this.bridgeJobModel
+            .find({ teamId })
+            .sort({ updatedAt: -1, createdAt: -1 })
+            .limit(limit)
+            .lean();
+        return docs.map((doc) => this.toEntity(doc));
+    }
+
     async markSent(id: string, deliveredAt = new Date()) {
         await this.bridgeJobModel.findByIdAndUpdate(id, {
             $set: {
