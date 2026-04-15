@@ -370,7 +370,39 @@ test.describe.serial("slacord web e2e", () => {
       ),
     ).toBeVisible();
 
-    const team = await jsonFetch<{
+    const publicTeam = await jsonFetch<{
+      bridgeConfig: {
+        slack: {
+          enabled: boolean;
+          hasWebhookUrl: boolean;
+          relayAnnouncements: boolean;
+          relayGithub: boolean;
+        };
+        discord: {
+          enabled: boolean;
+          hasWebhookUrl: boolean;
+          relayAnnouncements: boolean;
+          relayGithub: boolean;
+        };
+      };
+    }>(`/team/${fixture.teamId}`, {
+      token: fixture.owner.token,
+    });
+
+    expect(publicTeam.data?.bridgeConfig.slack).toMatchObject({
+      enabled: true,
+      hasWebhookUrl: true,
+      relayAnnouncements: true,
+      relayGithub: true,
+    });
+    expect(publicTeam.data?.bridgeConfig.discord).toMatchObject({
+      enabled: true,
+      hasWebhookUrl: true,
+      relayAnnouncements: true,
+      relayGithub: false,
+    });
+
+    const settingsTeam = await jsonFetch<{
       bridgeConfig: {
         slack: {
           enabled: boolean;
@@ -385,17 +417,17 @@ test.describe.serial("slacord web e2e", () => {
           relayGithub: boolean;
         };
       };
-    }>(`/team/${fixture.teamId}`, {
+    }>(`/team/${fixture.teamId}/settings`, {
       token: fixture.owner.token,
     });
 
-    expect(team.data?.bridgeConfig.slack).toMatchObject({
+    expect(settingsTeam.data?.bridgeConfig.slack).toMatchObject({
       enabled: true,
       webhookUrl: "https://hooks.slack.com/services/test/e2e/path",
       relayAnnouncements: true,
       relayGithub: true,
     });
-    expect(team.data?.bridgeConfig.discord).toMatchObject({
+    expect(settingsTeam.data?.bridgeConfig.discord).toMatchObject({
       enabled: true,
       webhookUrl: "https://discord.com/api/webhooks/test/e2e-path",
       relayAnnouncements: true,

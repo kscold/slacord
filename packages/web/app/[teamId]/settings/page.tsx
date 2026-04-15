@@ -34,14 +34,17 @@ export default function SettingsPage({ params }: Props) {
                     <div className="grid gap-5 lg:grid-cols-[0.92fr,1.08fr]">
                         <GitHubWebhookGuide channelName={channelName} repoUrl={settings.form.repoUrl} webhookUrl={webhookUrl} />
                         <GitHubSettingsForm
+                            canManageGithub={settings.canManageGithub}
                             channels={settings.channels}
                             error={settings.error}
                             form={settings.form}
+                            hasStoredSecret={settings.hasStoredSecret}
                             onGenerateSecret={settings.generateSecret}
                             onSave={settings.save}
                             onUpdateField={settings.updateField}
                             saved={settings.saved}
                             saving={settings.saving}
+                            viewerRole={settings.viewerRole}
                         />
                     </div>
                     <ExternalBridgeSettingsPanel teamId={teamId} />

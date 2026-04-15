@@ -8,6 +8,7 @@ import { CreateTeamUseCase } from './application/use-cases/create-team.use-case'
 import { GetInviteLinksUseCase } from './application/use-cases/get-invite-links.use-case';
 import { GetInvitePreviewUseCase } from './application/use-cases/get-invite-preview.use-case';
 import { GetTeamUseCase } from './application/use-cases/get-team.use-case';
+import { GetTeamSettingsUseCase } from './application/use-cases/get-team-settings.use-case';
 import { GetTeamsUseCase } from './application/use-cases/get-teams.use-case';
 import { GetTeamMembersUseCase } from './application/use-cases/get-team-members.use-case';
 import { JoinTeamByInviteUseCase } from './application/use-cases/join-team-by-invite.use-case';
@@ -29,6 +30,7 @@ import { AuthModule } from '../auth/auth.module';
         { provide: TEAM_REPOSITORY, useClass: TeamRepository },
         CreateTeamUseCase,
         GetTeamUseCase,
+        GetTeamSettingsUseCase,
         GetTeamsUseCase,
         GetTeamMembersUseCase,
         JoinTeamUseCase,

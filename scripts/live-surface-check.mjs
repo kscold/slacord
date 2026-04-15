@@ -2036,6 +2036,63 @@ async function main() {
         },
       );
 
+      await check("security", "팀 상세 조회는 secret과 webhook url을 숨겨야 함", async () => {
+        const response = await api(`/team/${context.teamId}`, {
+          token: context.users.deniedMember.token,
+        });
+        const team = response.payload?.data;
+        assert(
+          team?.githubConfig?.hasWebhookSecret === true,
+          "public team 응답에 GitHub secret 존재 여부가 반영되지 않았습니다.",
+        );
+        assert(
+          team?.githubConfig?.webhookSecret === undefined,
+          "public team 응답에 GitHub secret이 노출되었습니다.",
+        );
+        assert(
+          team?.bridgeConfig?.slack?.hasWebhookUrl === true,
+          "public team 응답에 Slack webhook 존재 여부가 반영되지 않았습니다.",
+        );
+        assert(
+          team?.bridgeConfig?.slack?.webhookUrl === undefined,
+          "public team 응답에 Slack webhook url이 노출되었습니다.",
+        );
+        return {
+          github: team.githubConfig,
+          slack: team.bridgeConfig?.slack,
+        };
+      });
+
+      await check("security", "일반 멤버는 민감한 팀 설정 endpoint를 볼 수 없어야 함", async () => {
+        await expectFailure(`/team/${context.teamId}/settings`, {
+          token: context.users.deniedMember.token,
+        });
+        return "member denied";
+      });
+
+      await check("integration", "관리자는 민감한 팀 설정 endpoint에서 원본 값을 본다", async () => {
+        const response = await api(`/team/${context.teamId}/settings`, {
+          token: context.users.owner.token,
+        });
+        const team = response.payload?.data;
+        assert(
+          team?.githubConfig?.webhookSecret === "topsecret",
+          "admin settings 응답에 GitHub secret이 없습니다.",
+        );
+        assert(
+          team?.bridgeConfig?.slack?.webhookUrl === `http://127.0.0.1:${bridgeStub.port}/slack`,
+          "admin settings 응답에 Slack webhook url이 없습니다.",
+        );
+        assert(
+          team?.bridgeConfig?.discord?.webhookUrl === `http://127.0.0.1:${bridgeStub.port}/discord`,
+          "admin settings 응답에 Discord webhook url이 없습니다.",
+        );
+        return {
+          githubRepo: team.githubConfig?.repoUrl,
+          slackWebhook: team.bridgeConfig?.slack?.webhookUrl,
+        };
+      });
+
       await check("integration", "공지 relay가 Slack/Discord로 전달됨", async () => {
         const title = `bridge notice ${Date.now().toString().slice(-6)}`;
         relayAnnouncementTitle = title;

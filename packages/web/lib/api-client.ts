@@ -155,6 +155,9 @@ export const teamApi = {
     async getTeam(teamId: string) {
         return apiFetch(`/api/team/${teamId}`);
     },
+    async getTeamSettings(teamId: string) {
+        return apiFetch(`/api/team/${teamId}/settings`);
+    },
     async importDiscordGuild(teamId: string, data: { botToken: string; guildId: string; channelIds: string[] }) {
         return apiFetch(`/api/team/${teamId}/discord/import`, { method: 'POST', body: JSON.stringify(data) });
     },

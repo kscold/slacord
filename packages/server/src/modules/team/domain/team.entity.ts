@@ -35,6 +35,12 @@ export interface GitHubConfig {
     notifyChannelId: string;
 }
 
+export interface PublicGitHubConfig {
+    repoUrl: string;
+    notifyChannelId: string;
+    hasWebhookSecret: boolean;
+}
+
 export interface BridgeWorkerTargetConfig {
     enabled: boolean;
     webhookUrl: string;
@@ -45,6 +51,18 @@ export interface BridgeWorkerTargetConfig {
 export interface BridgeWorkerConfig {
     slack: BridgeWorkerTargetConfig;
     discord: BridgeWorkerTargetConfig;
+}
+
+export interface PublicBridgeWorkerTargetConfig {
+    enabled: boolean;
+    relayAnnouncements: boolean;
+    relayGithub: boolean;
+    hasWebhookUrl: boolean;
+}
+
+export interface PublicBridgeWorkerConfig {
+    slack: PublicBridgeWorkerTargetConfig;
+    discord: PublicBridgeWorkerTargetConfig;
 }
 
 export function createDefaultBridgeWorkerTargetConfig(): BridgeWorkerTargetConfig {
@@ -129,9 +147,48 @@ export class TeamEntity {
             iconUrl: this.iconUrl,
             memberCount: this.members.length,
             activeInviteCount: this.inviteLinks.filter((invite) => this.isInviteActive(invite.code)).length,
+            githubConfig: this.githubConfig ? toPublicGithubConfig(this.githubConfig) : null,
+            bridgeConfig: toPublicBridgeConfig(this.bridgeConfig),
+            createdAt: this.createdAt,
+        };
+    }
+
+    toSettings() {
+        return {
+            id: this.id,
+            name: this.name,
+            slug: this.slug,
+            description: this.description,
+            iconUrl: this.iconUrl,
+            memberCount: this.members.length,
+            activeInviteCount: this.inviteLinks.filter((invite) => this.isInviteActive(invite.code)).length,
             githubConfig: this.githubConfig,
             bridgeConfig: this.bridgeConfig,
             createdAt: this.createdAt,
         };
     }
+}
+
+function toPublicGithubConfig(config: GitHubConfig): PublicGitHubConfig {
+    return {
+        repoUrl: config.repoUrl,
+        notifyChannelId: config.notifyChannelId,
+        hasWebhookSecret: Boolean(config.webhookSecret.trim()),
+    };
+}
+
+function toPublicBridgeTargetConfig(config: BridgeWorkerTargetConfig): PublicBridgeWorkerTargetConfig {
+    return {
+        enabled: config.enabled,
+        relayAnnouncements: config.relayAnnouncements,
+        relayGithub: config.relayGithub,
+        hasWebhookUrl: Boolean(config.webhookUrl.trim()),
+    };
+}
+
+function toPublicBridgeConfig(config: BridgeWorkerConfig): PublicBridgeWorkerConfig {
+    return {
+        slack: toPublicBridgeTargetConfig(config.slack),
+        discord: toPublicBridgeTargetConfig(config.discord),
+    };
 }

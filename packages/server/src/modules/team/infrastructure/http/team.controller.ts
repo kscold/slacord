@@ -6,6 +6,7 @@ import { CreateInviteLinkUseCase } from '../../application/use-cases/create-invi
 import { CreateTeamUseCase } from '../../application/use-cases/create-team.use-case';
 import { GetInviteLinksUseCase } from '../../application/use-cases/get-invite-links.use-case';
 import { GetTeamUseCase } from '../../application/use-cases/get-team.use-case';
+import { GetTeamSettingsUseCase } from '../../application/use-cases/get-team-settings.use-case';
 import { GetTeamsUseCase } from '../../application/use-cases/get-teams.use-case';
 import { GetTeamMembersUseCase } from '../../application/use-cases/get-team-members.use-case';
 import { JoinTeamUseCase } from '../../application/use-cases/join-team.use-case';
@@ -29,6 +30,7 @@ export class TeamController {
     constructor(
         private readonly createTeamUseCase: CreateTeamUseCase,
         private readonly getTeamUseCase: GetTeamUseCase,
+        private readonly getTeamSettingsUseCase: GetTeamSettingsUseCase,
         private readonly getTeamsUseCase: GetTeamsUseCase,
         private readonly getTeamMembersUseCase: GetTeamMembersUseCase,
         private readonly joinTeamUseCase: JoinTeamUseCase,
@@ -55,6 +57,14 @@ export class TeamController {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.getTeamUseCase.execute(teamId, user.userId);
         return { success: true, data: team.toPublic() };
+    }
+
+    @Get(':teamId/settings')
+    @ApiOperation({ summary: '민감한 팀 설정 조회 (owner/admin)' })
+    async getTeamSettings(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
+        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
+        const team = await this.getTeamSettingsUseCase.execute(teamId, user.userId);
+        return { success: true, data: team.toSettings() };
     }
 
     @Get(':teamId/member')
@@ -89,7 +99,7 @@ export class TeamController {
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.updateGithubConfigUseCase.execute(teamId, user.userId, dto);
-        return { success: true, data: team.toPublic() };
+        return { success: true, data: team.toSettings() };
     }
 
     @Patch(':teamId/bridge')
@@ -101,7 +111,7 @@ export class TeamController {
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.updateBridgeConfigUseCase.execute(teamId, user.userId, dto);
-        return { success: true, data: team.toPublic() };
+        return { success: true, data: team.toSettings() };
     }
 
     @Get(':teamId/invite-links')

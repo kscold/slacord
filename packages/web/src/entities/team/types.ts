@@ -10,6 +10,24 @@ export interface BridgeConfig {
     discord: BridgeTargetConfig;
 }
 
+export interface PublicBridgeTargetConfig {
+    enabled: boolean;
+    relayAnnouncements: boolean;
+    relayGithub: boolean;
+    hasWebhookUrl: boolean;
+}
+
+export interface PublicBridgeConfig {
+    slack: PublicBridgeTargetConfig;
+    discord: PublicBridgeTargetConfig;
+}
+
+export interface PublicGitHubConfig {
+    repoUrl: string;
+    notifyChannelId: string;
+    hasWebhookSecret: boolean;
+}
+
 export type BridgeJobStatus = 'pending' | 'processing' | 'sent' | 'failed';
 export type BridgeJobPlatform = 'slack' | 'discord';
 export type BridgeJobEventType = 'announcement' | 'github';
@@ -33,6 +51,19 @@ export interface BridgeJobSummary {
 }
 
 export interface TeamSummary {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    iconUrl: string | null;
+    memberCount: number;
+    activeInviteCount: number;
+    githubConfig: PublicGitHubConfig | null;
+    bridgeConfig: PublicBridgeConfig;
+    createdAt: string;
+}
+
+export interface TeamSettingsSummary {
     id: string;
     name: string;
     slug: string;

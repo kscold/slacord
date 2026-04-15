@@ -8,8 +8,10 @@ import type {
     BridgeJobPlatform,
     BridgeJobStatus,
     BridgeJobSummary,
+    PublicBridgeConfig,
     BridgeTargetConfig,
     TeamMemberSummary,
+    TeamSettingsSummary,
     TeamSummary,
 } from '@/src/entities/team/types';
 
@@ -29,6 +31,24 @@ function createDefaultBridgeConfig(): BridgeConfig {
     return {
         slack: createDefaultTargetConfig(),
         discord: createDefaultTargetConfig(),
+    };
+}
+
+function toEditableBridgeConfig(config: PublicBridgeConfig | null | undefined): BridgeConfig {
+    if (!config) return createDefaultBridgeConfig();
+    return {
+        slack: {
+            enabled: config.slack.enabled,
+            webhookUrl: '',
+            relayAnnouncements: config.slack.relayAnnouncements,
+            relayGithub: config.slack.relayGithub,
+        },
+        discord: {
+            enabled: config.discord.enabled,
+            webhookUrl: '',
+            relayAnnouncements: config.discord.relayAnnouncements,
+            relayGithub: config.discord.relayGithub,
+        },
     };
 }
 
@@ -83,13 +103,18 @@ export function useExternalBridgeSettings(teamId: string) {
                 const nextTeam = (teamRes.data ?? null) as TeamSummary | null;
                 setCanManageBridge(allowed);
                 setViewerRole(me?.role ?? null);
-                setForm(nextTeam?.bridgeConfig ?? createDefaultBridgeConfig());
+                setForm(toEditableBridgeConfig(nextTeam?.bridgeConfig));
 
                 if (!allowed) {
                     setJobs([]);
                     setJobsLoading(false);
                     return;
                 }
+
+                const settingsRes = await teamApi.getTeamSettings(teamId);
+                if (!active) return;
+                const settings = (settingsRes.data ?? null) as TeamSettingsSummary | null;
+                setForm(settings?.bridgeConfig ?? createDefaultBridgeConfig());
             } catch (err: any) {
                 if (!active) return;
                 setError(err.message || '외부 브리지 설정을 불러오지 못했습니다.');
@@ -157,7 +182,7 @@ export function useExternalBridgeSettings(teamId: string) {
         setError('');
         try {
             const response = await teamApi.updateBridgeConfig(teamId, form);
-            const nextTeam = (response.data ?? null) as TeamSummary | null;
+            const nextTeam = (response.data ?? null) as TeamSettingsSummary | null;
             setForm(nextTeam?.bridgeConfig ?? form);
             setJobs(await fetchJobs());
             setSaved(true);
