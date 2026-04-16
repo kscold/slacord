@@ -6,10 +6,11 @@ import { DiscordImportHelpModal } from './DiscordImportHelpModal';
 
 interface Props {
     teamId: string;
+    onImported?: () => Promise<void> | void;
 }
 
-export function DiscordImportPanel({ teamId }: Props) {
-    const importer = useDiscordImportSettings(teamId);
+export function DiscordImportPanel({ teamId, onImported }: Props) {
+    const importer = useDiscordImportSettings(teamId, onImported);
     const [showHelp, setShowHelp] = useState(false);
 
     return (
@@ -26,10 +27,12 @@ export function DiscordImportPanel({ teamId }: Props) {
                             ?
                         </button>
                     </div>
-                    <h2 className="mt-3 text-lg font-semibold text-white sm:text-xl">Discord 채널과 대화 기록을 워크스페이스로 가져와요</h2>
+                    <h2 className="mt-3 text-lg font-semibold text-white sm:text-xl">
+                        Discord 채널과 대화 기록을 워크스페이스로 가져와요
+                    </h2>
                     <p className="mt-2 text-sm leading-7 text-text-secondary">
-                        이미 운영 중인 Discord 서버가 있으면, 채널과 메시지 기록을 한 번에 옮길 수 있어요.
-                        토큰은 저장하지 않고 가져오는 동안에만 사용해요.
+                        이미 운영 중인 Discord 서버가 있으면, 채널과 메시지 기록을 한 번에 옮길 수 있어요. 토큰은
+                        저장하지 않고 가져오는 동안에만 사용해요.
                     </p>
                 </div>
                 <button
@@ -65,8 +68,9 @@ export function DiscordImportPanel({ teamId }: Props) {
             </div>
             {importer.summary ? (
                 <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-                    {importer.summary.guildName}에서 채널 {importer.summary.importedChannels}개, 메시지 {importer.summary.importedMessages}개를 가져왔어요.
-                    이미 있던 메시지 {importer.summary.updatedMessages}개는 최신 상태로 맞췄어요.
+                    {importer.summary.guildName}에서 채널 {importer.summary.importedChannels}개, 메시지{' '}
+                    {importer.summary.importedMessages}개를 가져왔어요. 이미 있던 메시지{' '}
+                    {importer.summary.updatedMessages}개는 최신 상태로 맞췄어요.
                 </div>
             ) : null}
             {importer.error ? (

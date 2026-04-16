@@ -75,6 +75,8 @@ UX without growing accidental complexity.
   closes on outside click
 - message and thread panes no longer force-scroll readers away from older
   history and provide a jump-to-latest affordance
+- team settings now split into delivery, access, and import sections with a
+  workspace summary deck instead of a single long scroll page
 
 ## Phase 4: Collaboration Depth
 

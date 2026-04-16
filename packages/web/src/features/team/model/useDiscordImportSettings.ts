@@ -6,7 +6,7 @@ import type { DiscordImportSummary } from '@/src/entities/team/types';
 
 const EMPTY_FORM = { botToken: '', guildId: '', channelIds: '' };
 
-export function useDiscordImportSettings(teamId: string) {
+export function useDiscordImportSettings(teamId: string, onImported?: () => Promise<void> | void) {
     const [form, setForm] = useState(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
     const [summary, setSummary] = useState<DiscordImportSummary | null>(null);
@@ -51,10 +51,14 @@ export function useDiscordImportSettings(teamId: string) {
             const response = await teamApi.importDiscordGuild(teamId, {
                 botToken: form.botToken.trim(),
                 guildId: form.guildId.trim(),
-                channelIds: form.channelIds.split(',').map((item) => item.trim()).filter(Boolean),
+                channelIds: form.channelIds
+                    .split(',')
+                    .map((item) => item.trim())
+                    .filter(Boolean),
             });
             setSummary((response.data ?? null) as DiscordImportSummary | null);
             setForm((current) => ({ ...current, botToken: '' }));
+            await onImported?.();
         } catch (caught) {
             setError(caught instanceof Error ? caught.message : 'Discord 가져오기에 실패했습니다.');
         } finally {

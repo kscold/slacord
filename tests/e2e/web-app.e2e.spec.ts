@@ -410,7 +410,9 @@ test.describe.serial("slacord web e2e", () => {
     await expect(page.getByText("브리지 설정 저장 완료됨")).toBeVisible();
     await expect(page.getByText("최근 relay 이력")).toBeVisible();
     await expect(page.getByRole("button", { name: "실패" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Slack" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Slack", exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByText(
         "아직 relay 이력이 없습니다. 공지 작성이나 GitHub webhook 수신 후 여기에 성공/실패가 쌓입니다.",
@@ -480,5 +482,34 @@ test.describe.serial("slacord web e2e", () => {
       relayAnnouncements: true,
       relayGithub: false,
     });
+  });
+
+  test("설정 페이지에서 섹션을 전환하며 접근과 가져오기 패널을 연다", async ({
+    page,
+  }) => {
+    await loginWithSession(page, fixture.owner);
+    await page.goto(`/${fixture.teamId}/settings`);
+
+    await expect(
+      page.getByRole("heading", { name: /운영 설정을 흐름별로 정리함/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /전달과 연동/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    await page.getByRole("button", { name: /가져오기와 마이그레이션/ }).click();
+    await page.waitForURL(`**/${fixture.teamId}/settings?section=imports`);
+    await expect(
+      page.getByRole("button", { name: "Discord 전체 가져오기" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "전체 가져오기" }).first(),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: /초대와 권한/ }).click();
+    await page.waitForURL(`**/${fixture.teamId}/settings?section=access`);
+    await expect(
+      page.getByRole("button", { name: "초대 링크 만들기" }),
+    ).toBeVisible();
   });
 });
