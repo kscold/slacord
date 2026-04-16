@@ -6,7 +6,14 @@
 
 import { toApiUrl } from './runtime-config';
 import type { ChannelType } from '@/src/entities/channel/types';
-import type { BridgeConfig, BridgeJobEventType, BridgeJobPlatform, BridgeJobStatus, TeamInvitePreview } from '@/src/entities/team/types';
+import type { MessageSearchPayload } from '@/src/entities/message/search.types';
+import type {
+    BridgeConfig,
+    BridgeJobEventType,
+    BridgeJobPlatform,
+    BridgeJobStatus,
+    TeamInvitePreview,
+} from '@/src/entities/team/types';
 
 interface ApiResponse<T = any> {
     success: boolean;
@@ -104,7 +111,12 @@ export const teamApi = {
     },
     async getBridgeJobs(
         teamId: string,
-        options: { limit?: number; status?: BridgeJobStatus; platform?: BridgeJobPlatform; eventType?: BridgeJobEventType } = {},
+        options: {
+            limit?: number;
+            status?: BridgeJobStatus;
+            platform?: BridgeJobPlatform;
+            eventType?: BridgeJobEventType;
+        } = {},
     ) {
         const params = new URLSearchParams();
         params.set('limit', String(options.limit ?? 12));
@@ -219,6 +231,12 @@ export const messageApi = {
     },
     async deleteMessage(channelId: string, messageId: string) {
         return apiFetch(`/api/channel/${channelId}/message/${messageId}`, { method: 'DELETE' });
+    },
+    async searchMessages(query?: string, limit = 30) {
+        const params = new URLSearchParams();
+        params.set('limit', String(limit));
+        if (query?.trim()) params.set('q', query.trim());
+        return apiFetch<MessageSearchPayload>(`/api/message/search?${params.toString()}`);
     },
 };
 

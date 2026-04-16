@@ -28,6 +28,7 @@ export function useChannelRoomBootstrap({ teamId, channelId, reset, setLoading, 
     const [channel, setChannel] = useState<Channel | null>(null);
     const [channelLabel, setChannelLabel] = useState('general');
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [initialMessageCount, setInitialMessageCount] = useState(0);
     const [members, setMembers] = useState<TeamMemberSummary[]>([]);
     const [messagesLoaded, setMessagesLoaded] = useState(false);
     const channelLabelRef = useRef('general');
@@ -36,6 +37,7 @@ export function useChannelRoomBootstrap({ teamId, channelId, reset, setLoading, 
     useEffect(() => {
         let active = true;
         reset();
+        setInitialMessageCount(0);
         setMessagesLoaded(false);
 
         messageApi
@@ -44,7 +46,9 @@ export function useChannelRoomBootstrap({ teamId, channelId, reset, setLoading, 
                 if (!active) return;
 
                 if (messageRes.success && Array.isArray(messageRes.data)) {
-                    setMessages(messageRes.data as Message[]);
+                    const nextMessages = messageRes.data as Message[];
+                    setMessages(nextMessages);
+                    setInitialMessageCount(nextMessages.length);
                 }
                 setMessagesLoaded(true);
             })
@@ -82,6 +86,7 @@ export function useChannelRoomBootstrap({ teamId, channelId, reset, setLoading, 
         channelLabelRef,
         currentUser,
         currentUserIdRef,
+        initialMessageCount,
         members,
     };
 }

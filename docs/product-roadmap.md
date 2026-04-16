@@ -45,6 +45,14 @@ UX without growing accidental complexity.
 - channel message pagination and jump-to-context UX
 - unread anchor / recent position restore
 
+### Current Status
+
+- `in_progress`
+- dashboard message search is now backed by a server API instead of client-side
+  workspace scraping
+- channel pages can load older history on demand and deep-link to searched
+  messages outside the initial 50-message window
+
 ## Phase 3: Navigation And Accessibility
 
 ### Goals

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { MessageItem } from './MessageItem';
 import { TypingIndicator } from './TypingIndicator';
 import { useChatStore } from '../model/chat.store';
@@ -8,6 +8,10 @@ import { useStickyScroll } from '../model/stickyScroll';
 
 interface Props {
     currentUserId: string;
+    hasOlderMessages?: boolean;
+    highlightMessageId?: string | null;
+    isLoadingOlder?: boolean;
+    onLoadOlder?: () => void | Promise<unknown>;
     onReact: (messageId: string, emoji: string) => void;
     onDelete: (messageId: string) => void;
     onEdit: (messageId: string, content: string) => Promise<void>;
@@ -15,8 +19,20 @@ interface Props {
     onTogglePin: (message: import('@/src/entities/message/types').Message) => Promise<unknown>;
 }
 
-export function MessageList({ currentUserId, onReact, onDelete, onEdit, onOpenThread, onTogglePin }: Props) {
+export function MessageList({
+    currentUserId,
+    hasOlderMessages = false,
+    highlightMessageId = null,
+    isLoadingOlder = false,
+    onLoadOlder,
+    onReact,
+    onDelete,
+    onEdit,
+    onOpenThread,
+    onTogglePin,
+}: Props) {
     const { messages, typingUsers, isLoading } = useChatStore();
+    const lastScrolledHighlightRef = useRef<string | null>(null);
 
     // 스레드 답글 수를 로컬 store에서 실시간 계산
     const replyCountMap = useMemo(() => {
@@ -43,9 +59,24 @@ export function MessageList({ currentUserId, onReact, onDelete, onEdit, onOpenTh
         [messages, replyCountMap],
     );
     const mainMessageIds = useMemo(() => mainMessages.map((message) => message.id), [mainMessages]);
-    const { bottomRef, containerRef, handleScroll, scrollToBottom, showJumpToLatest } = useStickyScroll({
-        itemIds: mainMessageIds,
-    });
+    const { bottomRef, containerRef, handleScroll, prepareForPrepend, scrollToBottom, showJumpToLatest } =
+        useStickyScroll({
+            itemIds: mainMessageIds,
+        });
+
+    useEffect(() => {
+        if (!highlightMessageId) return;
+        if (lastScrolledHighlightRef.current === highlightMessageId) return;
+
+        const frame = window.requestAnimationFrame(() => {
+            const target = document.getElementById(`message-${highlightMessageId}`);
+            if (!target) return;
+            lastScrolledHighlightRef.current = highlightMessageId;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [highlightMessageId, mainMessageIds]);
 
     if (isLoading) {
         return (
@@ -58,6 +89,21 @@ export function MessageList({ currentUserId, onReact, onDelete, onEdit, onOpenTh
     return (
         <div className="relative flex-1">
             <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-auto py-2">
+                {hasOlderMessages && onLoadOlder ? (
+                    <div className="px-5 pb-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                prepareForPrepend();
+                                void onLoadOlder();
+                            }}
+                            disabled={isLoadingOlder}
+                            className="w-full rounded-2xl border border-white/10 bg-bg-secondary/90 px-4 py-3 text-sm text-text-secondary transition hover:border-brand-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {isLoadingOlder ? '이전 메시지 불러오는 중...' : '이전 메시지 더 보기'}
+                        </button>
+                    </div>
+                ) : null}
                 {mainMessages.length === 0 && (
                     <div className="flex items-center justify-center h-full text-text-tertiary text-sm">
                         아직 메시지가 없습니다. 첫 번째 메시지를 보내보세요!
@@ -66,6 +112,7 @@ export function MessageList({ currentUserId, onReact, onDelete, onEdit, onOpenTh
                 {mainMessages.map((msg) => (
                     <MessageItem
                         key={msg.id}
+                        highlighted={highlightMessageId === msg.id}
                         message={msg}
                         currentUserId={currentUserId}
                         onReact={onReact}

@@ -273,6 +273,56 @@ export async function sendSocketMessage(input: {
   }
 }
 
+export async function sendSocketMessages(input: {
+  session: AuthSession;
+  teamId: string;
+  channelId: string;
+  contents: string[];
+}) {
+  const { io } = await import("socket.io-client");
+  const socket = io(`${e2eSocketUrl}/chat`, {
+    path: "/socket.io",
+    transports: ["websocket"],
+    auth: { token: input.session.token },
+    forceNew: true,
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    socket.once("connect", () => resolve());
+    socket.once("connect_error", (error) => reject(error));
+  });
+
+  try {
+    const messageIds: string[] = [];
+
+    for (const content of input.contents) {
+      const ack = await new Promise<any>((resolve) => {
+        socket.emit(
+          "send_message",
+          {
+            teamId: input.teamId,
+            channelId: input.channelId,
+            content,
+          },
+          resolve,
+        );
+      });
+
+      if (ack?.success === false) {
+        throw new Error(`메시지 전송 실패: ${JSON.stringify(ack)}`);
+      }
+
+      if (ack?.data?.id) {
+        messageIds.push(ack.data.id);
+      }
+    }
+
+    return messageIds;
+  } finally {
+    socket.disconnect();
+  }
+}
+
 function ensureRemoteSeedAllowed() {
   const host = new URL(e2eBaseUrl).hostname;
   const isLocal = host === "127.0.0.1" || host === "localhost";

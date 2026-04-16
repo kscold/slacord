@@ -19,6 +19,47 @@ export class MessageRepository implements IMessageRepository {
         return docs.reverse().map((doc) => this.toEntity(doc));
     }
 
+    async findRecentByChannels(channelIds: string[], limit: number): Promise<MessageEntity[]> {
+        if (!channelIds.length) return [];
+        const docs = await this.messageModel
+            .find({ channelId: { $in: channelIds }, replyToId: null })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+        return docs.map((doc) => this.toEntity(doc));
+    }
+
+    async findPinnedByChannels(channelIds: string[], limit: number): Promise<MessageEntity[]> {
+        if (!channelIds.length) return [];
+        const docs = await this.messageModel
+            .find({ channelId: { $in: channelIds }, isPinned: true, replyToId: null })
+            .sort({ pinnedAt: -1, createdAt: -1 })
+            .limit(limit)
+            .lean();
+        return docs.map((doc) => this.toEntity(doc));
+    }
+
+    async searchByChannels(channelIds: string[], query: string, limit: number): Promise<MessageEntity[]> {
+        if (!channelIds.length || !query.trim()) return [];
+
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const docs = await this.messageModel
+            .find({
+                channelId: { $in: channelIds },
+                replyToId: null,
+                $or: [
+                    { content: { $regex: escapedQuery, $options: 'i' } },
+                    { authorName: { $regex: escapedQuery, $options: 'i' } },
+                    { 'attachments.name': { $regex: escapedQuery, $options: 'i' } },
+                ],
+            })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+
+        return docs.map((doc) => this.toEntity(doc));
+    }
+
     async findById(id: string): Promise<MessageEntity | null> {
         const doc = await this.messageModel.findById(id).lean();
         return doc ? this.toEntity(doc) : null;
@@ -50,19 +91,13 @@ export class MessageRepository implements IMessageRepository {
     }
 
     async updateContent(id: string, content: string): Promise<MessageEntity | null> {
-        const doc = await this.messageModel
-            .findByIdAndUpdate(id, { content, isEdited: true }, { new: true })
-            .lean();
+        const doc = await this.messageModel.findByIdAndUpdate(id, { content, isEdited: true }, { new: true }).lean();
         return doc ? this.toEntity(doc) : null;
     }
 
     async setPinned(id: string, isPinned: boolean): Promise<MessageEntity | null> {
         const doc = await this.messageModel
-            .findByIdAndUpdate(
-                id,
-                { isPinned, pinnedAt: isPinned ? new Date() : null },
-                { new: true },
-            )
+            .findByIdAndUpdate(id, { isPinned, pinnedAt: isPinned ? new Date() : null }, { new: true })
             .lean();
         return doc ? this.toEntity(doc) : null;
     }
@@ -101,37 +136,61 @@ export class MessageRepository implements IMessageRepository {
     }
 
     async saveImported(data: {
-        teamId: string; channelId: string; authorId: string; authorName: string | null;
-        content: string; type: MessageType; attachments: Attachment[]; replyToId: string | null;
-        mentions: string[]; externalSource: string; externalId: string;
-        createdAt: Date; updatedAt: Date; isPinned: boolean; pinnedAt: Date | null;
+        teamId: string;
+        channelId: string;
+        authorId: string;
+        authorName: string | null;
+        content: string;
+        type: MessageType;
+        attachments: Attachment[];
+        replyToId: string | null;
+        mentions: string[];
+        externalSource: string;
+        externalId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        isPinned: boolean;
+        pinnedAt: Date | null;
     }): Promise<MessageEntity> {
         const created = await this.messageModel.create(data);
         return this.toEntity(created.toObject());
     }
 
-    async updateImported(id: string, data: {
-        authorId: string; authorName: string | null; content: string; type: MessageType;
-        attachments: Attachment[]; replyToId: string | null; mentions: string[];
-        createdAt: Date; updatedAt: Date; isPinned: boolean; pinnedAt: Date | null;
-    }): Promise<MessageEntity | null> {
-        const updated = await this.messageModel.findByIdAndUpdate(
-            id,
-            {
-                authorId: data.authorId,
-                authorName: data.authorName,
-                content: data.content,
-                type: data.type,
-                attachments: data.attachments,
-                replyToId: data.replyToId,
-                mentions: data.mentions,
-                createdAt: data.createdAt,
-                updatedAt: data.updatedAt,
-                isPinned: data.isPinned,
-                pinnedAt: data.pinnedAt,
-            },
-            { new: true, timestamps: false },
-        ).lean();
+    async updateImported(
+        id: string,
+        data: {
+            authorId: string;
+            authorName: string | null;
+            content: string;
+            type: MessageType;
+            attachments: Attachment[];
+            replyToId: string | null;
+            mentions: string[];
+            createdAt: Date;
+            updatedAt: Date;
+            isPinned: boolean;
+            pinnedAt: Date | null;
+        },
+    ): Promise<MessageEntity | null> {
+        const updated = await this.messageModel
+            .findByIdAndUpdate(
+                id,
+                {
+                    authorId: data.authorId,
+                    authorName: data.authorName,
+                    content: data.content,
+                    type: data.type,
+                    attachments: data.attachments,
+                    replyToId: data.replyToId,
+                    mentions: data.mentions,
+                    createdAt: data.createdAt,
+                    updatedAt: data.updatedAt,
+                    isPinned: data.isPinned,
+                    pinnedAt: data.pinnedAt,
+                },
+                { new: true, timestamps: false },
+            )
+            .lean();
         return updated ? this.toEntity(updated) : null;
     }
 

@@ -1,102 +1,103 @@
 'use client';
 
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { authApi, channelApi, messageApi, teamApi } from '@/lib/api-client';
-import type { Message } from '@/src/entities/message/types';
-import type { TeamSummary } from '@/src/entities/team/types';
-
-interface SearchResult {
-    id: string;
-    teamId: string;
-    teamName: string;
-    channelId: string;
-    channelName: string;
-    authorName: string;
-    content: string;
-    createdAt: string;
-    type: Message['type'];
-    isPinned: boolean;
-    attachmentCount: number;
-}
+import { useDeferredValue, useEffect, useState } from 'react';
+import { authApi, messageApi } from '@/lib/api-client';
+import type { MessageSearchResult } from '@/src/entities/message/search.types';
 
 export function useDashboardMessages() {
     const [query, setQuery] = useState('');
     const [currentUserName, setCurrentUserName] = useState<string>();
-    const [teams, setTeams] = useState<TeamSummary[]>([]);
-    const [index, setIndex] = useState<SearchResult[]>([]);
+    const [teamCount, setTeamCount] = useState(0);
+    const [results, setResults] = useState<MessageSearchResult[]>([]);
+    const [recentResults, setRecentResults] = useState<MessageSearchResult[]>([]);
+    const [pinnedResults, setPinnedResults] = useState<MessageSearchResult[]>([]);
     const [booting, setBooting] = useState(true);
     const [indexing, setIndexing] = useState(false);
     const [error, setError] = useState('');
     const deferredQuery = useDeferredValue(query.trim());
 
     useEffect(() => {
-        Promise.all([authApi.getMe().catch(() => null), teamApi.getMyTeams().catch(() => null)]).then(([meRes, teamRes]) => {
-            if (meRes?.success && meRes.data) setCurrentUserName((meRes.data as { username?: string }).username);
-            if (teamRes?.success && Array.isArray(teamRes.data)) setTeams(teamRes.data as TeamSummary[]);
-            setBooting(false);
-        });
-    }, []);
-
-    useEffect(() => {
-        if (index.length || !teams.length) return;
         let active = true;
-        setIndexing(true);
-        buildSearchIndex(teams)
-            .then((items) => active && setIndex(items))
-            .catch((err: Error) => active && setError(err.message || '메시지 인덱스를 만들지 못했습니다.'))
-            .finally(() => active && setIndexing(false));
+
+        Promise.all([authApi.getMe().catch(() => null), messageApi.searchMessages(undefined).catch(() => null)])
+            .then(([meRes, searchRes]) => {
+                if (!active) return;
+                if (meRes?.success && meRes.data) setCurrentUserName((meRes.data as { username?: string }).username);
+                if (searchRes?.success && searchRes.data) {
+                    setPinnedResults(searchRes.data.pinnedResults ?? []);
+                    setRecentResults(searchRes.data.recentResults ?? []);
+                    setTeamCount(searchRes.data.teamCount ?? 0);
+                }
+                setBooting(false);
+            })
+            .catch((err: Error) => {
+                if (!active) return;
+                setError(err.message || '메시지 검색 개요를 불러오지 못했습니다.');
+                setBooting(false);
+            });
+
         return () => {
             active = false;
         };
-    }, [index.length, teams]);
+    }, []);
 
-    const results = useMemo(() => {
-        if (deferredQuery.length < 2) return [];
-        const keyword = deferredQuery.toLowerCase();
-        return index
-            .filter((item) => [item.content, item.authorName, item.teamName, item.channelName].some((value) => value.toLowerCase().includes(keyword)))
-            .slice(0, 30);
-    }, [deferredQuery, index]);
+    useEffect(() => {
+        let active = true;
 
-    const recentResults = useMemo(() => [...index].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 8), [index]);
-    const pinnedResults = useMemo(() => index.filter((item) => item.isPinned).slice(0, 6), [index]);
+        if (booting)
+            return () => {
+                active = false;
+            };
 
-    return { booting, currentUserName, error, indexing, pinnedResults, query, recentResults, results, setQuery, teamCount: teams.length };
-}
+        if (!deferredQuery) {
+            setResults([]);
+            setIndexing(false);
+            return () => {
+                active = false;
+            };
+        }
 
-async function buildSearchIndex(teams: TeamSummary[]) {
-    const channelsByTeam = await Promise.all(
-        teams.map(async (team) => ({ team, channels: ((await channelApi.getChannels(team.id)).data ?? []) as { id: string; name: string; type: string }[] })),
-    );
-    const messageBuckets = await Promise.all(
-        channelsByTeam.flatMap(({ team, channels }) =>
-            channels.filter((channel) => channel.type !== 'dm' && channel.type !== 'group').map(async (channel) => ({
-                team,
-                channel,
-                messages: ((await messageApi.getMessages(channel.id, undefined, 30)).data ?? []) as Message[],
-            })),
-        ),
-    );
-    return messageBuckets.flatMap(({ team, channel, messages }) =>
-        messages.map((message) => ({
-            id: message.id,
-            teamId: team.id,
-            teamName: team.name,
-            channelId: channel.id,
-            channelName: channel.name,
-            authorName: message.authorName || '알 수 없음',
-            content: normalizeMessageContent(message),
-            createdAt: message.createdAt,
-            type: message.type,
-            isPinned: message.isPinned,
-            attachmentCount: message.attachments.length,
-        })),
-    );
-}
+        if (deferredQuery.length < 2) {
+            setResults([]);
+            setIndexing(false);
+            return () => {
+                active = false;
+            };
+        }
 
-function normalizeMessageContent(message: Message) {
-    const stripped = message.content.replace(/<!--github:.+?-->/, '').trim();
-    if (stripped) return stripped;
-    if (message.attachments.length) return message.attachments.map((item) => item.name).join(', ');
-    return message.type === 'system' ? '시스템 메시지' : '내용 없음';
+        setIndexing(true);
+        setError('');
+
+        messageApi
+            .searchMessages(deferredQuery)
+            .then((response) => {
+                if (!active || !response.success || !response.data) return;
+                setResults(response.data.results ?? []);
+                setTeamCount(response.data.teamCount ?? 0);
+            })
+            .catch((err: Error) => {
+                if (!active) return;
+                setError(err.message || '메시지 검색 결과를 불러오지 못했습니다.');
+            })
+            .finally(() => {
+                if (active) setIndexing(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [booting, deferredQuery]);
+
+    return {
+        booting,
+        currentUserName,
+        error,
+        indexing,
+        pinnedResults,
+        query,
+        recentResults,
+        results,
+        setQuery,
+        teamCount,
+    };
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { use, useMemo, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useChannelRoom } from '@/src/features/chat/model/useChannelRoom';
 import { useChatStore } from '@/src/features/chat/model/chat.store';
 import { useHuddle } from '@/src/features/huddle/model/useHuddle';
@@ -17,11 +18,17 @@ interface Props {
 
 export default function ChannelPage({ params }: Props) {
     const { teamId, channelId } = use(params);
+    const searchParams = useSearchParams();
     const room = useChannelRoom(teamId, channelId);
     const messages = useChatStore((state) => state.messages);
     const [threadMessageId, setThreadMessageId] = useState<string | null>(null);
     const [showPins, setShowPins] = useState(false);
-    const threadMessage = useMemo(() => messages.find((message) => message.id === threadMessageId) ?? null, [messages, threadMessageId]);
+    const threadMessage = useMemo(
+        () => messages.find((message) => message.id === threadMessageId) ?? null,
+        [messages, threadMessageId],
+    );
+    const targetMessageId = searchParams.get('message');
+    const targetMessageAt = searchParams.get('at');
 
     const huddle = useHuddle(room.currentUserId);
     const huddleActive = huddle.activeChannelId === channelId;
@@ -33,6 +40,26 @@ export default function ChannelPage({ params }: Props) {
             huddle.joinHuddle(channelId);
         }
     };
+
+    useEffect(() => {
+        if (!targetMessageId || !targetMessageAt) return;
+        if (messages.some((message) => message.id === targetMessageId)) return;
+        if (room.isLoadingOlder || !room.hasOlderMessages) return;
+
+        const oldestMessage = messages[0];
+        if (!oldestMessage?.createdAt) return;
+
+        if (new Date(oldestMessage.createdAt).getTime() > new Date(targetMessageAt).getTime()) {
+            void room.loadOlderMessages();
+        }
+    }, [
+        messages,
+        room.hasOlderMessages,
+        room.isLoadingOlder,
+        room.loadOlderMessages,
+        targetMessageAt,
+        targetMessageId,
+    ]);
 
     return (
         <div className="flex flex-col h-full">
@@ -48,6 +75,10 @@ export default function ChannelPage({ params }: Props) {
                 <div className="flex min-h-0 flex-1 flex-col">
                     <MessageList
                         currentUserId={room.currentUserId}
+                        hasOlderMessages={room.hasOlderMessages}
+                        highlightMessageId={targetMessageId}
+                        isLoadingOlder={room.isLoadingOlder}
+                        onLoadOlder={room.loadOlderMessages}
                         onReact={room.reactToMessage}
                         onDelete={room.deleteMessage}
                         onEdit={room.editMessage}

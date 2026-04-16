@@ -8,7 +8,16 @@ import { useChannelReadSync } from './useChannelReadSync';
 import { useChannelRoomSocket } from './useChannelRoomSocket';
 
 export function useChannelRoom(teamId: string, channelId: string) {
-    const { setMessages, addMessage, updateMessage, removeMessage, setTypingUsers, setLoading, reset } = useChatStore();
+    const {
+        setMessages,
+        addMessage,
+        prependMessages,
+        updateMessage,
+        removeMessage,
+        setTypingUsers,
+        setLoading,
+        reset,
+    } = useChatStore();
     const messages = useChatStore((state) => state.messages);
     const isLoading = useChatStore((state) => state.isLoading);
     const room = useChannelRoomBootstrap({ teamId, channelId, reset, setLoading, setMessages });
@@ -16,7 +25,10 @@ export function useChannelRoom(teamId: string, channelId: string) {
         teamId,
         channelId,
         currentUserId: room.currentUser?.id ?? '',
+        initialMessageCount: room.initialMessageCount,
+        messages,
         addMessage,
+        prependMessages,
         updateMessage,
         removeMessage,
     });

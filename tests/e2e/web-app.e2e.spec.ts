@@ -7,6 +7,7 @@ import {
   e2eBaseUrl,
   jsonFetch,
   sendSocketMessage,
+  sendSocketMessages,
   type WorkspaceFixture,
 } from "./support/slacord-api";
 import { loginWithSession } from "./support/slacord-session";
@@ -231,9 +232,11 @@ test.describe.serial("slacord web e2e", () => {
     await ownerPage.bringToFront();
     await ownerPage.reload();
 
-    const unreadLink = ownerPage.getByRole("link", {
-      name: new RegExp(`# ${fixture.channelName}`),
-    }).first();
+    const unreadLink = ownerPage
+      .getByRole("link", {
+        name: new RegExp(`# ${fixture.channelName}`),
+      })
+      .first();
     await expect(unreadLink).toContainText("@1");
 
     const notificationButton = ownerPage
@@ -276,7 +279,10 @@ test.describe.serial("slacord web e2e", () => {
       {
         name: "teaser.mp4",
         mimeType: "video/mp4",
-        buffer: Buffer.from("00000020667479706d703432000000006d70343269736f6d", "hex"),
+        buffer: Buffer.from(
+          "00000020667479706d703432000000006d70343269736f6d",
+          "hex",
+        ),
       },
     ]);
 
@@ -289,7 +295,40 @@ test.describe.serial("slacord web e2e", () => {
 
     await expect(page.getByText("preview.png")).toBeVisible();
     await expect(page.locator('img[alt="preview.png"]').first()).toBeVisible();
-    await expect(page.locator('video[src*="teaser.mp4"]').first()).toBeVisible();
+    await expect(
+      page.locator('video[src*="teaser.mp4"]').first(),
+    ).toBeVisible();
+  });
+
+  test("메시지 검색 결과에서 오래된 대화까지 자동으로 불러와 이동한다", async ({
+    page,
+  }) => {
+    const targetContent = `search-target-${Date.now().toString().slice(-6)}`;
+    const fillerMessages = Array.from(
+      { length: 60 },
+      (_, index) => `search-filler-${index.toString().padStart(2, "0")}`,
+    );
+
+    await sendSocketMessages({
+      session: fixture.actor,
+      teamId: fixture.teamId,
+      channelId: fixture.channelId,
+      contents: [targetContent, ...fillerMessages],
+    });
+
+    await loginWithSession(page, fixture.owner);
+    await page.goto("/dashboard/messages");
+
+    await page
+      .getByPlaceholder("메시지, 작성자, 팀, 채널로 검색...")
+      .fill(targetContent);
+    await expect(page.getByText(targetContent)).toBeVisible();
+
+    await page.getByRole("link", { name: new RegExp(targetContent) }).click();
+    await page.waitForURL(
+      new RegExp(`/${fixture.teamId}/channel/${fixture.channelId}\\?`),
+    );
+    await expect(page.getByText(targetContent)).toBeVisible();
   });
 
   test("guest는 워크스페이스를 읽기 전용으로 사용한다", async ({ page }) => {
@@ -311,25 +350,33 @@ test.describe.serial("slacord web e2e", () => {
     ).toBeDisabled();
     await expect(page.getByRole("button", { name: "허들" })).toBeDisabled();
     await expect(
-      page.getByText("guest는 메시지 작성, 파일 업로드, 스레드 답글을 보낼 수 없습니다."),
+      page.getByText(
+        "guest는 메시지 작성, 파일 업로드, 스레드 답글을 보낼 수 없습니다.",
+      ),
     ).toBeVisible();
 
     await page.goto(`/${fixture.teamId}/docs`);
-    await expect(page.getByRole("button", { name: "문서 생성" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "문서 생성" })).toHaveCount(
+      0,
+    );
     await expect(
-      page.getByText("guest는 문서를 읽고 탐색할 수 있지만 새 문서를 만들 수는 없습니다."),
+      page.getByText(
+        "guest는 문서를 읽고 탐색할 수 있지만 새 문서를 만들 수는 없습니다.",
+      ),
     ).toBeVisible();
 
     await page.goto(`/${fixture.teamId}/issues`);
-    await expect(page.getByRole("button", { name: "이슈 생성" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "이슈 생성" })).toHaveCount(
+      0,
+    );
     await expect(
       page.getByText("guest는 이슈를 조회만 할 수 있습니다."),
     ).toBeVisible();
 
     await page.goto(`/${fixture.teamId}/announcements`);
-    await expect(
-      page.getByRole("button", { name: "공지 작성" }),
-    ).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "공지 작성" })).toHaveCount(
+      0,
+    );
     await expect(
       page.getByText("guest는 공지를 읽기만 할 수 있습니다."),
     ).toBeVisible();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { messageApi } from '@/lib/api-client';
 import type { Message } from '@/src/entities/message/types';
 import { getChatSocket } from './socket';
@@ -8,6 +8,7 @@ import { uploadChannelFiles } from './uploadChannelFiles';
 
 interface ChatActionStore {
     addMessage: (message: Message) => void;
+    prependMessages: (messages: Message[]) => void;
     updateMessage: (id: string, patch: Partial<Message>) => void;
     removeMessage: (id: string) => void;
 }
@@ -16,10 +17,15 @@ interface Props {
     teamId: string;
     channelId: string;
     currentUserId: string;
+    initialMessageCount: number;
+    messages: Message[];
     addMessage: ChatActionStore['addMessage'];
+    prependMessages: ChatActionStore['prependMessages'];
     updateMessage: ChatActionStore['updateMessage'];
     removeMessage: ChatActionStore['removeMessage'];
 }
+
+const HISTORY_PAGE_SIZE = 50;
 
 function matchesOutgoingMessage(
     message: Message,
@@ -32,7 +38,9 @@ function matchesOutgoingMessage(
     const outgoingAttachments = payload.attachments ?? [];
     if (outgoingAttachments.length > 0) {
         if (message.attachments.length !== outgoingAttachments.length) return false;
-        return outgoingAttachments.every((attachment) => message.attachments.some((item) => item.url === attachment.url));
+        return outgoingAttachments.every((attachment) =>
+            message.attachments.some((item) => item.url === attachment.url),
+        );
     }
 
     return message.content === (payload.content ?? '');
@@ -46,7 +54,9 @@ async function waitForPersistedMessage(
     for (let attempt = 0; attempt < 10; attempt += 1) {
         const response = await messageApi.getMessages(channelId, undefined, 20);
         if (response.success && Array.isArray(response.data)) {
-            const match = (response.data as Message[]).find((message) => matchesOutgoingMessage(message, payload, currentUserId));
+            const match = (response.data as Message[]).find((message) =>
+                matchesOutgoingMessage(message, payload, currentUserId),
+            );
             if (match) return match;
         }
         await new Promise((resolve) => setTimeout(resolve, 250));
@@ -83,10 +93,31 @@ async function waitForSocketConnection(socket: ReturnType<typeof getChatSocket>)
     });
 }
 
-export function useChannelRoomActions({ teamId, channelId, currentUserId, addMessage, updateMessage, removeMessage }: Props) {
+export function useChannelRoomActions({
+    teamId,
+    channelId,
+    currentUserId,
+    initialMessageCount,
+    messages,
+    addMessage,
+    prependMessages,
+    updateMessage,
+    removeMessage,
+}: Props) {
     const [isUploading, setIsUploading] = useState(false);
+    const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+    const [hasOlderMessages, setHasOlderMessages] = useState(initialMessageCount >= HISTORY_PAGE_SIZE);
 
-    const emitMessage = async (payload: { content?: string; attachments?: Message['attachments']; replyToId?: string }) => {
+    useEffect(() => {
+        setIsLoadingOlder(false);
+        setHasOlderMessages(initialMessageCount >= HISTORY_PAGE_SIZE);
+    }, [channelId, initialMessageCount]);
+
+    const emitMessage = async (payload: {
+        content?: string;
+        attachments?: Message['attachments'];
+        replyToId?: string;
+    }) => {
         const socket = getChatSocket();
         await waitForSocketConnection(socket);
         const nextMessage = new Promise<Message | null>((resolve) => {
@@ -108,7 +139,7 @@ export function useChannelRoomActions({ teamId, channelId, currentUserId, addMes
         socket.emit('send_message', { teamId, channelId, ...payload });
 
         const broadcastMessage = await nextMessage;
-        const persistedMessage = broadcastMessage ?? await waitForPersistedMessage(channelId, payload, currentUserId);
+        const persistedMessage = broadcastMessage ?? (await waitForPersistedMessage(channelId, payload, currentUserId));
 
         if (!persistedMessage) {
             throw new Error('메시지를 전송하지 못했습니다.');
@@ -117,8 +148,40 @@ export function useChannelRoomActions({ teamId, channelId, currentUserId, addMes
         return persistedMessage;
     };
 
+    const loadOlderMessages = async () => {
+        if (isLoadingOlder || !hasOlderMessages) return false;
+
+        const oldestMessage = messages[0];
+        if (!oldestMessage?.createdAt) {
+            setHasOlderMessages(false);
+            return false;
+        }
+
+        setIsLoadingOlder(true);
+
+        try {
+            const response = await messageApi.getMessages(channelId, oldestMessage.createdAt, HISTORY_PAGE_SIZE);
+            const existingMessageIds = new Set(messages.map((message) => message.id));
+            const olderMessages = ((response.data ?? []) as Message[]).filter(
+                (message) => !existingMessageIds.has(message.id),
+            );
+
+            if (olderMessages.length > 0) {
+                prependMessages(olderMessages);
+            }
+
+            setHasOlderMessages(((response.data ?? []) as Message[]).length >= HISTORY_PAGE_SIZE);
+            return olderMessages.length > 0;
+        } finally {
+            setIsLoadingOlder(false);
+        }
+    };
+
     return {
+        hasOlderMessages,
         isUploading,
+        isLoadingOlder,
+        loadOlderMessages,
         sendMessage: async (content: string, replyToId?: string) => {
             await emitMessage({ content, replyToId });
         },
@@ -132,7 +195,8 @@ export function useChannelRoomActions({ teamId, channelId, currentUserId, addMes
             }
         },
         sendTyping: () => getChatSocket().emit('typing', { channelId }),
-        reactToMessage: (messageId: string, emoji: string) => getChatSocket().emit('add_reaction', { messageId, channelId, emoji }),
+        reactToMessage: (messageId: string, emoji: string) =>
+            getChatSocket().emit('add_reaction', { messageId, channelId, emoji }),
         deleteMessage: (messageId: string) => {
             removeMessage(messageId);
             void messageApi.deleteMessage(channelId, messageId);
