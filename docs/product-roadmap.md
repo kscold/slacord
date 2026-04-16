@@ -1,0 +1,83 @@
+# Product Roadmap
+
+Slacord already covers the current large parity surface.
+The next phase is product hardening, navigation polish, and scaling the current
+UX without growing accidental complexity.
+
+## Phase 1: Product Polish Sprint
+
+### Goals
+
+- reduce duplicate team/workspace fetches
+- replace browser-native `confirm` / `alert` patterns
+- stabilize document actions and settings state flow
+- remove the most visible UX rough edges before new features land
+
+### Scope
+
+- introduce a shared team workspace data layer for client screens
+- migrate settings panels, sidebar state, issue board state, and channel room
+  bootstrap to the shared workspace snapshot
+- replace document archive / restore / delete confirms with in-app dialogs
+- replace document attachment upload alerts with inline error feedback
+
+### Current Status
+
+- `in_progress`
+- shared workspace hook/store introduced
+- document destructive actions moved to in-app confirmation dialogs
+- settings, sidebar, issue board, and channel bootstrap now read from the shared
+  workspace snapshot
+- background refresh no longer tears down the settings page during save flows
+
+## Phase 2: Search And History
+
+### Goals
+
+- move message search from dashboard-only helper flow to product-level search
+- support deeper message history browsing inside channels
+- stop treating recent-message sampling as a long-term search solution
+
+### Scope
+
+- workspace-level command palette / search entry
+- server-backed message search endpoint
+- channel message pagination and jump-to-context UX
+- unread anchor / recent position restore
+
+## Phase 3: Navigation And Accessibility
+
+### Goals
+
+- align desktop and mobile workspace navigation
+- improve overlay semantics and keyboard flow
+- reduce interaction friction for notifications and secondary panels
+
+### Scope
+
+- consolidate duplicated sidebar / mobile nav structures
+- add focus trap and keyboard handling to notification and modal overlays
+- refine message list auto-scroll behavior
+- improve empty, loading, and error states for workspace pages
+
+### Current Status
+
+- `in_progress`
+- notification overlay now closes with `Esc`, traps focus, restores focus, and
+  closes on outside click
+- message and thread panes no longer force-scroll readers away from older
+  history and provide a jump-to-latest affordance
+
+## Phase 4: Collaboration Depth
+
+### Goals
+
+- deepen the product after current parity features stabilize
+- build workflows that make documents, chat, and issues feel truly connected
+
+### Scope
+
+- audit log for admin actions and bridge operations
+- richer document collaboration flows such as comments and inline discussion
+- command-style quick actions across issues, docs, and channels
+- stronger bridge observability and replay tools

@@ -1,66 +1,69 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { authApi, channelApi, teamApi } from '@/lib/api-client';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { teamApi } from '@/lib/api-client';
 import type { Channel } from '@/src/entities/channel/types';
-import { resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
 import type { TeamMemberSummary, TeamSettingsSummary, TeamSummary } from '@/src/entities/team/types';
+import { useTeamWorkspaceData } from './useTeamWorkspaceData';
 
 const EMPTY_FORM = { repoUrl: '', webhookSecret: '', notifyChannelId: '' };
 
 export function useGitHubSettings(teamId: string) {
     const [form, setForm] = useState(EMPTY_FORM);
-    const [channels, setChannels] = useState<Channel[]>([]);
-    const [canManageGithub, setCanManageGithub] = useState(false);
     const [hasStoredSecret, setHasStoredSecret] = useState(false);
-    const [viewerRole, setViewerRole] = useState<TeamMemberSummary['role'] | null>(null);
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
-    const [error, setError] = useState('');
+    const [saveError, setSaveError] = useState('');
+    const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const syncKeyRef = useRef('');
+    const workspace = useTeamWorkspaceData(teamId, { includeSettings: true });
+
+    const channels = useMemo(
+        () => workspace.channels.filter((item) => !['dm', 'group'].includes(item.type)) as Channel[],
+        [workspace.channels],
+    );
+    const canManageGithub = workspace.currentMember?.role === 'owner' || workspace.currentMember?.role === 'admin';
+    const viewerRole = workspace.currentMember?.role ?? null;
+    const loading = workspace.isInitialLoading || (canManageGithub && workspace.isInitialSettingsLoading);
+    const error = saveError || workspace.error || (canManageGithub ? workspace.settingsError : '');
 
     useEffect(() => {
-        let active = true;
-        setLoading(true);
-        setError('');
-        Promise.all([authApi.getMe(), teamApi.getMembers(teamId), teamApi.getTeam(teamId), channelApi.getChannels(teamId)])
-            .then(async ([meRes, membersRes, teamRes, channelRes]) => {
-                if (!active) return;
-                const nextChannels = ((channelRes.data ?? []) as Channel[]).filter((item) => !['dm', 'group'].includes(item.type));
-                const currentUserId = (meRes.data as { id: string } | undefined)?.id ?? '';
-                const members = (membersRes.data ?? []) as TeamMemberSummary[];
-                const me = resolveCurrentTeamMember(members, currentUserId);
-                const allowed = me?.role === 'owner' || me?.role === 'admin';
-                const nextTeam = (teamRes.data ?? null) as TeamSummary | null;
-
-                setChannels(nextChannels);
-                setCanManageGithub(allowed);
-                setViewerRole(me?.role ?? null);
-                setHasStoredSecret(Boolean(nextTeam?.githubConfig?.hasWebhookSecret));
-                setForm({
-                    repoUrl: nextTeam?.githubConfig?.repoUrl ?? '',
-                    webhookSecret: '',
-                    notifyChannelId: nextTeam?.githubConfig?.notifyChannelId ?? nextChannels[0]?.id ?? '',
-                });
-
-                if (!allowed) return;
-
-                const settingsRes = await teamApi.getTeamSettings(teamId);
-                if (!active) return;
-                const settings = (settingsRes.data ?? null) as TeamSettingsSummary | null;
-                setHasStoredSecret(Boolean(settings?.githubConfig?.webhookSecret));
-                setForm({
-                    repoUrl: settings?.githubConfig?.repoUrl ?? '',
-                    webhookSecret: settings?.githubConfig?.webhookSecret ?? '',
-                    notifyChannelId: settings?.githubConfig?.notifyChannelId ?? nextChannels[0]?.id ?? '',
-                });
-            })
-            .catch((err: Error) => active && setError(err.message || '설정을 불러오지 못했습니다.'))
-            .finally(() => active && setLoading(false));
-        return () => {
-            active = false;
+        const publicConfig = (workspace.team as TeamSummary | null)?.githubConfig ?? null;
+        const settingsConfig = (workspace.settings as TeamSettingsSummary | null)?.githubConfig ?? null;
+        const source = canManageGithub ? settingsConfig : publicConfig;
+        const nextForm = {
+            repoUrl: source?.repoUrl ?? '',
+            webhookSecret: canManageGithub ? (settingsConfig?.webhookSecret ?? '') : '',
+            notifyChannelId: source?.notifyChannelId ?? channels[0]?.id ?? '',
         };
-    }, [teamId]);
+        const nextHasSecret = canManageGithub
+            ? Boolean(settingsConfig?.webhookSecret)
+            : Boolean(publicConfig?.hasWebhookSecret);
+        const nextSyncKey = JSON.stringify(nextForm);
+
+        setHasStoredSecret(nextHasSecret);
+        if (syncKeyRef.current !== nextSyncKey) {
+            syncKeyRef.current = nextSyncKey;
+            setForm(nextForm);
+        }
+    }, [canManageGithub, channels, workspace.settings, workspace.team]);
+
+    useEffect(
+        () => () => {
+            if (savedTimerRef.current) {
+                clearTimeout(savedTimerRef.current);
+            }
+        },
+        [],
+    );
+
+    const announceSaved = () => {
+        setSaved(true);
+        if (savedTimerRef.current) {
+            clearTimeout(savedTimerRef.current);
+        }
+        savedTimerRef.current = setTimeout(() => setSaved(false), 4000);
+    };
 
     const selectedChannel = useMemo(
         () => channels.find((item) => item.id === form.notifyChannelId) ?? null,
@@ -79,29 +82,45 @@ export function useGitHubSettings(teamId: string) {
 
     const save = async () => {
         if (!canManageGithub) {
-            setError('owner/admin만 GitHub 설정을 변경할 수 있습니다.');
+            setSaveError('owner/admin만 GitHub 설정을 변경할 수 있습니다.');
             return;
         }
         setSaving(true);
         setSaved(false);
-        setError('');
+        setSaveError('');
         try {
             const response = await teamApi.updateGithubConfig(teamId, form);
             const settings = (response.data ?? null) as TeamSettingsSummary | null;
             setHasStoredSecret(Boolean(settings?.githubConfig?.webhookSecret));
-            setForm({
+            const nextForm = {
                 repoUrl: settings?.githubConfig?.repoUrl ?? form.repoUrl,
                 webhookSecret: settings?.githubConfig?.webhookSecret ?? form.webhookSecret,
                 notifyChannelId: settings?.githubConfig?.notifyChannelId ?? form.notifyChannelId,
-            });
-            setSaved(true);
-            setTimeout(() => setSaved(false), 2500);
+            };
+            syncKeyRef.current = JSON.stringify(nextForm);
+            setForm(nextForm);
+            announceSaved();
+            await Promise.allSettled([workspace.refreshBase(), workspace.refreshSettings()]);
         } catch (err: any) {
-            setError(err.message ?? '저장 실패');
+            setSaveError(err.message ?? '저장 실패');
         } finally {
             setSaving(false);
         }
     };
 
-    return { canManageGithub, channels, error, form, generateSecret, hasStoredSecret, loading, save, saved, saving, selectedChannel, updateField, viewerRole };
+    return {
+        canManageGithub,
+        channels,
+        error,
+        form,
+        generateSecret,
+        hasStoredSecret,
+        loading,
+        save,
+        saved,
+        saving,
+        selectedChannel,
+        updateField,
+        viewerRole,
+    };
 }

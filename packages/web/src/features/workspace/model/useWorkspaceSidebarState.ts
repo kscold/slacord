@@ -1,46 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi, teamApi } from '@/lib/api-client';
-import { hasTeamWriteAccess, resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
-import type { TeamMemberSummary } from '@/src/entities/team/types';
+import { authApi } from '@/lib/api-client';
+import { useTeamWorkspaceData } from '@/src/features/team/model/useTeamWorkspaceData';
 
 export function useWorkspaceSidebarState(teamId: string) {
     const router = useRouter();
-    const [currentUserId, setCurrentUserId] = useState('');
-    const [currentUsername, setCurrentUsername] = useState('');
-    const [members, setMembers] = useState<TeamMemberSummary[]>([]);
-
-    useEffect(() => {
-        let active = true;
-        Promise.all([authApi.getMe().catch(() => null), teamApi.getMembers(teamId).catch(() => null)]).then(([meRes, memberRes]) => {
-            if (!active) return;
-            if (meRes?.success && meRes.data) {
-                const user = meRes.data as { id: string; username: string };
-                setCurrentUserId(user.id);
-                setCurrentUsername(user.username);
-            }
-            if (memberRes?.success && Array.isArray(memberRes.data)) setMembers(memberRes.data as TeamMemberSummary[]);
-        });
-        return () => {
-            active = false;
-        };
-    }, [teamId]);
+    const workspace = useTeamWorkspaceData(teamId);
 
     const logout = async () => {
         await authApi.logout();
         router.push('/auth/login');
     };
 
-    const currentMember = resolveCurrentTeamMember(members, currentUserId);
-
     return {
-        currentMember,
-        currentUserId,
-        currentUsername,
-        canWrite: hasTeamWriteAccess(currentMember?.role),
+        currentMember: workspace.currentMember,
+        currentUserId: workspace.currentUserId,
+        currentUsername: workspace.currentUsername,
+        canWrite: workspace.canWrite,
         logout,
-        members,
+        members: workspace.members,
     };
 }

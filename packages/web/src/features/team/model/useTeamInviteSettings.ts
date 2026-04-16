@@ -1,32 +1,29 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { authApi, teamApi } from '@/lib/api-client';
+import { teamApi } from '@/lib/api-client';
 import { publicAppUrl } from '@/lib/runtime-config';
 import { resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
 import type { TeamInviteLink, TeamMemberSummary } from '@/src/entities/team/types';
+import { useTeamWorkspaceData } from './useTeamWorkspaceData';
 
 const EMPTY_FORM = { label: '', defaultRole: 'member' as const, maxUses: '', expiresInDays: '7' };
 
 export function useTeamInviteSettings(teamId: string) {
-    const [members, setMembers] = useState<TeamMemberSummary[]>([]);
     const [invites, setInvites] = useState<TeamInviteLink[]>([]);
     const [form, setForm] = useState(EMPTY_FORM);
-    const [currentUserId, setCurrentUserId] = useState('');
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState('');
+    const workspace = useTeamWorkspaceData(teamId);
 
     const load = async () => {
-        const [meRes, memberRes] = await Promise.all([authApi.getMe(), teamApi.getMembers(teamId)]);
-        const nextUserId = (meRes.data as { id: string } | undefined)?.id ?? '';
-        const nextMembers = (memberRes.data ?? []) as TeamMemberSummary[];
+        const nextUserId = workspace.currentUserId;
+        const nextMembers = workspace.members as TeamMemberSummary[];
         const me = resolveCurrentTeamMember(nextMembers, nextUserId);
         const allowed = !!me && (me.role === 'owner' || me.role === 'admin' || me.canManageInvites);
 
         setError('');
-        setCurrentUserId(nextUserId);
-        setMembers(nextMembers);
         if (!allowed) return void setInvites([]);
 
         const inviteRes = await teamApi.getInviteLinks(teamId);
@@ -35,20 +32,26 @@ export function useTeamInviteSettings(teamId: string) {
 
     useEffect(() => {
         let active = true;
-        setLoading(true);
-        load().catch((err: Error) => active && setError(err.message || '초대 정보를 불러오지 못했습니다.')).finally(() => active && setLoading(false));
+        setLoading((current) => current || !workspace.hasBaseSnapshot);
+        load()
+            .catch((err: Error) => active && setError(err.message || '초대 정보를 불러오지 못했습니다.'))
+            .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, [teamId]);
+    }, [teamId, workspace.currentUserId, workspace.hasBaseSnapshot, workspace.members]);
 
-    const me = useMemo(() => resolveCurrentTeamMember(members, currentUserId), [currentUserId, members]);
+    const me = useMemo(
+        () => resolveCurrentTeamMember(workspace.members, workspace.currentUserId),
+        [workspace.currentUserId, workspace.members],
+    );
     const canManageInvites = !!me && (me.role === 'owner' || me.role === 'admin' || me.canManageInvites);
     const canManageMembers = me?.role === 'owner';
     const activeInvite = invites.find((invite) => invite.active) ?? invites[0] ?? null;
     const inviteUrl = activeInvite ? `${publicAppUrl()}/invite/${activeInvite.code}` : '';
 
-    const updateField = (key: keyof typeof EMPTY_FORM, value: string) => setForm((current) => ({ ...current, [key]: value }));
+    const updateField = (key: keyof typeof EMPTY_FORM, value: string) =>
+        setForm((current) => ({ ...current, [key]: value }));
 
     const createInvite = async () => {
         setCreating(true);
@@ -89,7 +92,10 @@ export function useTeamInviteSettings(teamId: string) {
         }
     };
 
-    const updateMemberAccess = async (memberId: string, data: { role?: 'admin' | 'member' | 'guest'; canManageInvites?: boolean }) => {
+    const updateMemberAccess = async (
+        memberId: string,
+        data: { role?: 'admin' | 'member' | 'guest'; canManageInvites?: boolean },
+    ) => {
         setError('');
         try {
             await teamApi.updateMemberAccess(teamId, memberId, data);
@@ -99,5 +105,22 @@ export function useTeamInviteSettings(teamId: string) {
         }
     };
 
-    return { activeInvite, canManageInvites, canManageMembers, creating, currentUserId, error, form, inviteUrl, invites, loading, members, createInvite, deleteInvite, revokeInvite, updateField, updateMemberAccess };
+    return {
+        activeInvite,
+        canManageInvites,
+        canManageMembers,
+        creating,
+        currentUserId: workspace.currentUserId,
+        error,
+        form,
+        inviteUrl,
+        invites,
+        loading,
+        members: workspace.members,
+        createInvite,
+        deleteInvite,
+        revokeInvite,
+        updateField,
+        updateMemberAccess,
+    };
 }

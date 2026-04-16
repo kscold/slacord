@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { authApi, teamApi } from '@/lib/api-client';
-import { resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
+import { teamApi } from '@/lib/api-client';
 import type {
     BridgeConfig,
     BridgeJobPlatform,
@@ -10,10 +9,10 @@ import type {
     BridgeJobSummary,
     PublicBridgeConfig,
     BridgeTargetConfig,
-    TeamMemberSummary,
     TeamSettingsSummary,
     TeamSummary,
 } from '@/src/entities/team/types';
+import { useTeamWorkspaceData } from './useTeamWorkspaceData';
 
 type JobStatusFilter = 'all' | BridgeJobStatus;
 type JobPlatformFilter = 'all' | BridgeJobPlatform;
@@ -55,20 +54,29 @@ function toEditableBridgeConfig(config: PublicBridgeConfig | null | undefined): 
 export function useExternalBridgeSettings(teamId: string) {
     const [form, setForm] = useState<BridgeConfig>(createDefaultBridgeConfig());
     const [jobs, setJobs] = useState<BridgeJobSummary[]>([]);
-    const [canManageBridge, setCanManageBridge] = useState(false);
-    const [viewerRole, setViewerRole] = useState<TeamMemberSummary['role'] | null>(null);
-    const [loading, setLoading] = useState(true);
     const [jobsLoading, setJobsLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [retryingJobId, setRetryingJobId] = useState<string | null>(null);
     const [saved, setSaved] = useState(false);
-    const [error, setError] = useState('');
+    const [saveError, setSaveError] = useState('');
     const [statusFilter, setStatusFilter] = useState<JobStatusFilter>('all');
     const [platformFilter, setPlatformFilter] = useState<JobPlatformFilter>('all');
     const mountedRef = useRef(true);
     const retryRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const syncKeyRef = useRef('');
+    const workspace = useTeamWorkspaceData(teamId, { includeSettings: true });
+    const canManageBridge = workspace.currentMember?.role === 'owner' || workspace.currentMember?.role === 'admin';
+    const viewerRole = workspace.currentMember?.role ?? null;
+    const loading = workspace.isInitialLoading || (canManageBridge && workspace.isInitialSettingsLoading);
+    const error = saveError || workspace.error || (canManageBridge ? workspace.settingsError : '');
 
-    const fetchJobs = async (filters: { status: JobStatusFilter; platform: JobPlatformFilter } = { status: statusFilter, platform: platformFilter }) => {
+    const fetchJobs = async (
+        filters: { status: JobStatusFilter; platform: JobPlatformFilter } = {
+            status: statusFilter,
+            platform: platformFilter,
+        },
+    ) => {
         const jobsRes = await teamApi.getBridgeJobs(teamId, {
             limit: 12,
             status: filters.status === 'all' ? undefined : filters.status,
@@ -85,52 +93,37 @@ export function useExternalBridgeSettings(teamId: string) {
                 clearTimeout(retryRefreshTimerRef.current);
                 retryRefreshTimerRef.current = null;
             }
+            if (savedTimerRef.current) {
+                clearTimeout(savedTimerRef.current);
+                savedTimerRef.current = null;
+            }
         };
     }, []);
 
+    const announceSaved = () => {
+        setSaved(true);
+        if (savedTimerRef.current) {
+            clearTimeout(savedTimerRef.current);
+        }
+        savedTimerRef.current = setTimeout(() => setSaved(false), 4000);
+    };
+
     useEffect(() => {
-        let active = true;
-        const load = async () => {
-            setLoading(true);
-            setError('');
-            try {
-                const [meRes, membersRes, teamRes] = await Promise.all([authApi.getMe(), teamApi.getMembers(teamId), teamApi.getTeam(teamId)]);
-                if (!active) return;
-                const currentUserId = (meRes.data as { id: string } | undefined)?.id ?? '';
-                const members = (membersRes.data ?? []) as TeamMemberSummary[];
-                const me = resolveCurrentTeamMember(members, currentUserId);
-                const allowed = me?.role === 'owner' || me?.role === 'admin';
-                const nextTeam = (teamRes.data ?? null) as TeamSummary | null;
-                setCanManageBridge(allowed);
-                setViewerRole(me?.role ?? null);
-                setForm(toEditableBridgeConfig(nextTeam?.bridgeConfig));
-
-                if (!allowed) {
-                    setJobs([]);
-                    setJobsLoading(false);
-                    return;
-                }
-
-                const settingsRes = await teamApi.getTeamSettings(teamId);
-                if (!active) return;
-                const settings = (settingsRes.data ?? null) as TeamSettingsSummary | null;
-                setForm(settings?.bridgeConfig ?? createDefaultBridgeConfig());
-            } catch (err: any) {
-                if (!active) return;
-                setError(err.message || '외부 브리지 설정을 불러오지 못했습니다.');
-            } finally {
-                if (!active) return;
-                setLoading(false);
-                setJobsLoading(false);
-            }
-        };
-
-        void load();
-
-        return () => {
-            active = false;
-        };
-    }, [teamId]);
+        const publicConfig = (workspace.team as TeamSummary | null)?.bridgeConfig;
+        const settingsConfig = (workspace.settings as TeamSettingsSummary | null)?.bridgeConfig;
+        const nextForm = canManageBridge
+            ? (settingsConfig ?? createDefaultBridgeConfig())
+            : toEditableBridgeConfig((publicConfig as PublicBridgeConfig | null | undefined) ?? null);
+        const nextSyncKey = JSON.stringify(nextForm);
+        if (syncKeyRef.current !== nextSyncKey) {
+            syncKeyRef.current = nextSyncKey;
+            setForm(nextForm);
+        }
+        if (!canManageBridge) {
+            setJobs([]);
+            setJobsLoading(false);
+        }
+    }, [canManageBridge, workspace.settings, workspace.team]);
 
     useEffect(() => {
         if (!canManageBridge) return;
@@ -144,7 +137,7 @@ export function useExternalBridgeSettings(teamId: string) {
                 setJobs(nextJobs);
             } catch (err: any) {
                 if (!active) return;
-                setError(err.message || '브리지 relay 이력을 불러오지 못했습니다.');
+                setSaveError(err.message || '브리지 relay 이력을 불러오지 못했습니다.');
             } finally {
                 if (!active) return;
                 setJobsLoading(false);
@@ -174,21 +167,30 @@ export function useExternalBridgeSettings(teamId: string) {
 
     const save = async () => {
         if (!canManageBridge) {
-            setError('owner/admin만 외부 브리지 설정을 변경할 수 있습니다.');
+            setSaveError('owner/admin만 외부 브리지 설정을 변경할 수 있습니다.');
             return;
         }
         setSaving(true);
         setSaved(false);
-        setError('');
+        setSaveError('');
         try {
             const response = await teamApi.updateBridgeConfig(teamId, form);
             const nextTeam = (response.data ?? null) as TeamSettingsSummary | null;
-            setForm(nextTeam?.bridgeConfig ?? form);
-            setJobs(await fetchJobs());
-            setSaved(true);
-            setTimeout(() => setSaved(false), 2500);
+            const nextForm = nextTeam?.bridgeConfig ?? form;
+            syncKeyRef.current = JSON.stringify(nextForm);
+            setForm(nextForm);
+            announceSaved();
+            const refreshResults = await Promise.allSettled([
+                workspace.refreshBase(),
+                workspace.refreshSettings(),
+                fetchJobs(),
+            ]);
+            const jobsResult = refreshResults[2];
+            if (jobsResult?.status === 'fulfilled') {
+                setJobs(jobsResult.value);
+            }
         } catch (err: any) {
-            setError(err.message ?? '브리지 설정 저장 실패');
+            setSaveError(err.message ?? '브리지 설정 저장 실패');
         } finally {
             setSaving(false);
         }
@@ -196,12 +198,12 @@ export function useExternalBridgeSettings(teamId: string) {
 
     const retryJob = async (jobId: string) => {
         if (!canManageBridge) {
-            setError('owner/admin만 실패한 브리지 relay를 다시 시도할 수 있습니다.');
+            setSaveError('owner/admin만 실패한 브리지 relay를 다시 시도할 수 있습니다.');
             return;
         }
 
         setRetryingJobId(jobId);
-        setError('');
+        setSaveError('');
         try {
             await teamApi.retryBridgeJob(teamId, jobId);
             setJobs(await fetchJobs());
@@ -214,7 +216,7 @@ export function useExternalBridgeSettings(teamId: string) {
                     .catch(() => {});
             }, 1800);
         } catch (err: any) {
-            setError(err.message ?? '브리지 relay 재시도 실패');
+            setSaveError(err.message ?? '브리지 relay 재시도 실패');
         } finally {
             setRetryingJobId(null);
         }
