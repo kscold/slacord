@@ -1,6 +1,7 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { DropResult } from '@hello-pangea/dnd';
 import { IssueModal } from '@/src/features/issue/ui/IssueModal';
 import { IssueBoardFilters } from '@/src/features/issue/ui/IssueBoardFilters';
@@ -18,7 +19,29 @@ interface Props {
 
 export default function IssuesPage({ params }: Props) {
     const { teamId } = use(params);
+    const pathname = usePathname();
     const board = useIssueBoard(teamId);
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const quickCreateTitle = searchParams.get('title') ?? '';
+    const quickCreateStatus = normalizeIssueStatus(searchParams.get('status'));
+    const shouldOpenQuickCreate = searchParams.get('create') === '1';
+
+    const clearQuickCreateParams = () => {
+        if (!shouldOpenQuickCreate) return;
+        const nextParams = new URLSearchParams(searchParams.toString());
+        nextParams.delete('create');
+        nextParams.delete('status');
+        nextParams.delete('title');
+        const nextQuery = nextParams.toString();
+        router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+    };
+
+    useEffect(() => {
+        if (!shouldOpenQuickCreate) return;
+        board.setCreateStatus(quickCreateStatus ?? 'todo');
+        board.setShowCreate(true);
+    }, [board.setCreateStatus, board.setShowCreate, quickCreateStatus, shouldOpenQuickCreate]);
 
     const handleDragEnd = async (result: DropResult) => {
         const { draggableId, destination, source } = result;
@@ -73,12 +96,17 @@ export default function IssuesPage({ params }: Props) {
 
             {board.showCreate && (
                 <IssueModal
+                    initialTitle={quickCreateTitle}
+                    key={`create:${quickCreateTitle}:${board.createStatus}`}
                     mode="create"
                     readOnly={!board.canWrite}
                     teamId={teamId}
                     members={board.members}
                     onSubmit={board.handleCreate}
-                    onClose={() => board.setShowCreate(false)}
+                    onClose={() => {
+                        board.setShowCreate(false);
+                        clearQuickCreateParams();
+                    }}
                 />
             )}
             {board.selectedIssue && (
@@ -93,4 +121,9 @@ export default function IssuesPage({ params }: Props) {
             )}
         </div>
     );
+}
+
+function normalizeIssueStatus(value: string | null): IssueStatus | null {
+    if (!value) return null;
+    return ['todo', 'in_progress', 'in_review', 'done'].includes(value) ? (value as IssueStatus) : null;
 }

@@ -351,14 +351,17 @@ test.describe.serial("slacord web e2e", () => {
     );
 
     await expect(
-      page.getByRole("dialog", { name: "메시지 빠른 검색" }),
+      page.getByRole("dialog", { name: "워크스페이스 빠른 검색" }),
     ).toBeVisible();
     await page
-      .getByPlaceholder("메시지, 작성자, 팀, 채널로 검색...")
+      .getByPlaceholder("메시지, 문서, 이슈, 채널, 동작으로 검색...")
       .fill(targetContent);
-    await expect(page.getByText(targetContent)).toBeVisible();
+    const messageResult = page
+      .getByRole("link", { name: new RegExp(targetContent) })
+      .first();
+    await expect(messageResult).toBeVisible();
 
-    await page.getByRole("link", { name: new RegExp(targetContent) }).click();
+    await messageResult.click();
     await page.waitForURL(
       new RegExp(`/${fixture.teamId}/channel/${fixture.channelId}\\?message=`),
     );
@@ -395,6 +398,65 @@ test.describe.serial("slacord web e2e", () => {
     await page.goto(`/${fixture.teamId}/issues`);
     await page.goto(`/${fixture.teamId}/channel/${fixture.channelId}`);
     await expect(page.getByText(targetContent)).toBeVisible();
+  });
+
+  test("명령 팔레트에서 채널 이동과 문서 및 이슈 quick action을 실행한다", async ({
+    page,
+  }) => {
+    const extraChannelName = `ops-room-${Date.now().toString().slice(-5)}`;
+    const extraChannelId = await createChannel({
+      teamId: fixture.teamId,
+      token: fixture.owner.token,
+      name: extraChannelName,
+      type: "public",
+    });
+    const documentTitle = `cmd-doc-${Date.now().toString().slice(-5)}`;
+    const issueTitle = `cmd-issue-${Date.now().toString().slice(-5)}`;
+
+    await loginWithSession(page, fixture.owner);
+    await page.goto(`/${fixture.teamId}/channel/${fixture.channelId}`);
+
+    const openPalette = async () => {
+      await page.keyboard.press(
+        process.platform === "darwin" ? "Meta+K" : "Control+K",
+      );
+      await expect(
+        page.getByRole("dialog", { name: "워크스페이스 빠른 검색" }),
+      ).toBeVisible();
+    };
+
+    const paletteInput = page.getByRole("textbox", {
+      name: "명령 팔레트 검색",
+    });
+
+    await openPalette();
+    await paletteInput.fill(extraChannelName);
+    await page
+      .getByRole("link", { name: new RegExp(`${extraChannelName} 공개 채널`) })
+      .first()
+      .click();
+    await page.waitForURL(`**/${fixture.teamId}/channel/${extraChannelId}`);
+
+    await openPalette();
+    await paletteInput.fill(documentTitle);
+    await page
+      .getByRole("button", { name: new RegExp(`"${documentTitle}" 문서 생성`) })
+      .click();
+    await page.waitForURL(new RegExp(`/${fixture.teamId}/docs/[^?]+\\?edit=1`));
+    await expect(page.locator("input").first()).toHaveValue(documentTitle);
+
+    await openPalette();
+    await paletteInput.fill(issueTitle);
+    await page
+      .getByRole("button", { name: new RegExp(`"${issueTitle}" 이슈 초안 열기`) })
+      .click();
+    await page.waitForURL(
+      new RegExp(`/${fixture.teamId}/issues\\?create=1&status=todo&title=`),
+    );
+    await expect(page.getByRole("heading", { name: "이슈 생성" })).toBeVisible();
+    await expect(
+      page.getByRole("textbox", { name: "이슈 제목", exact: true }),
+    ).toHaveValue(issueTitle);
   });
 
   test("guest는 워크스페이스를 읽기 전용으로 사용한다", async ({ page }) => {

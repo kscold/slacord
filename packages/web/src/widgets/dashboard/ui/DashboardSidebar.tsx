@@ -68,7 +68,7 @@ export function DashboardSidebar({ currentUserName }: Props) {
                     >
                         <div>
                             <p className="text-sm font-semibold text-white">빠른 검색</p>
-                            <p className="mt-1 text-xs text-text-secondary">워크스페이스 메시지를 바로 찾기</p>
+                            <p className="mt-1 text-xs text-text-secondary">메시지 검색과 대시보드 quick action을 바로 열기</p>
                         </div>
                         <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-text-tertiary">
                             {typeof navigator !== 'undefined' && navigator.userAgent.includes('Mac') ? '⌘K' : 'Ctrl+K'}

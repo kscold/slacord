@@ -7,6 +7,7 @@ import { IssueAssigneePicker } from './IssueAssigneePicker';
 import { IssueModalFields } from './IssueModalFields';
 
 interface CreateProps {
+    initialTitle?: string;
     mode: 'create';
     readOnly?: boolean;
     teamId: string;
@@ -28,7 +29,7 @@ type Props = CreateProps | EditProps;
 
 export function IssueModal(props: Props) {
     const isEdit = props.mode === 'edit';
-    const [title, setTitle] = useState(isEdit ? props.issue.title : '');
+    const [title, setTitle] = useState(isEdit ? props.issue.title : (props.initialTitle ?? ''));
     const [description, setDescription] = useState(isEdit ? (props.issue.description ?? '') : '');
     const [priority, setPriority] = useState<IssuePriority>(isEdit ? props.issue.priority : 'medium');
     const [status, setStatus] = useState<IssueStatus>(isEdit ? props.issue.status : 'todo');

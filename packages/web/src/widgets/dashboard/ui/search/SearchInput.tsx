@@ -1,10 +1,18 @@
 interface Props {
     autoFocus?: boolean;
+    ariaLabel?: string;
+    placeholder?: string;
     query: string;
     onChange: (value: string) => void;
 }
 
-export function SearchInput({ autoFocus = false, query, onChange }: Props) {
+export function SearchInput({
+    autoFocus = false,
+    ariaLabel = '메시지 검색',
+    placeholder = '메시지, 작성자, 팀, 채널로 검색...',
+    query,
+    onChange,
+}: Props) {
     return (
         <div className="relative">
             <svg
@@ -22,11 +30,11 @@ export function SearchInput({ autoFocus = false, query, onChange }: Props) {
             </svg>
             <input
                 autoFocus={autoFocus}
-                aria-label="메시지 검색"
+                aria-label={ariaLabel}
                 type="text"
                 value={query}
                 onChange={(e) => onChange(e.target.value)}
-                placeholder="메시지, 작성자, 팀, 채널로 검색..."
+                placeholder={placeholder}
                 className="w-full rounded-2xl border border-border-primary bg-bg-secondary py-4 pl-12 pr-4 text-base text-white outline-none transition focus:border-brand-400"
             />
         </div>

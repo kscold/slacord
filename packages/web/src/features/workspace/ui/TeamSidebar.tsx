@@ -79,7 +79,7 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
                     >
                         <div>
                             <p className="text-sm font-semibold text-white">빠른 검색</p>
-                            <p className="mt-1 text-xs text-text-secondary">메시지, 작성자, 팀, 채널을 한 번에 찾기</p>
+                            <p className="mt-1 text-xs text-text-secondary">메시지, 채널, 문서, 이슈와 quick action을 한 번에 열기</p>
                         </div>
                         <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-text-tertiary">
                             {isDesktopMac ? '⌘K' : 'Ctrl+K'}
@@ -225,6 +225,13 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
                 onClose={() => setSearchOpen(false)}
                 open={searchOpen}
                 restoreFocusRef={searchButtonRef}
+                workspace={{
+                    canWrite,
+                    channels: sidebarChannels,
+                    currentUserId,
+                    members,
+                    teamId,
+                }}
             />
         </>
     );

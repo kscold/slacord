@@ -102,3 +102,5 @@ UX without growing accidental complexity.
   access, and bridge retry flows
 - GitHub, bridge config, invite link, member access, and bridge retry actions now
   append team-scoped audit entries
+- `mod+k` palette now layers command-style quick actions for channels, docs, and
+  issues on top of global message search
