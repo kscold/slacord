@@ -7,21 +7,25 @@
 ## 기능
 
 ### 실시간 채팅
+
 - 채널 기반 팀 대화 (public / private / DM / 소그룹)
 - 이모지 반응, 메시지 편집/삭제, 핀 고정
 - 타이핑 표시, 스레드 답글
 - 파일 첨부 (MinIO 오브젝트 스토리지)
 
 ### 허들 (음성/영상통화)
+
 - WebRTC Mesh P2P 기반 (4명 이하 소규모 팀)
 - 음성 채널 + 텍스트 채널 내 허들 시작
 - 마이크/카메라 토글, 화면 공유
 
 ### 이슈 트래커
+
 - 칸반 보드 (할 일 → 진행 중 → 리뷰 → 완료)
 - 담당자 배정, 우선순위, 라벨
 
 ### 문서/위키
+
 - BlockNote 리치 에디터 (노션 스타일 블록 편집)
 - 문서 트리 구조 (상위/하위 문서)
 - RBAC 권한 (문서별 열람/편집 제한)
@@ -30,14 +34,17 @@
 - Confluence 문서 일괄 가져오기
 
 ### 공지사항
+
 - 팀 전체 공지, 핀 고정
 
 ### 데스크톱 앱
+
 - Electron 기반 (macOS / Windows)
 - 자동 업데이트 (GitHub Releases)
 - 네이티브 알림
 
 ### 기타
+
 - 팀원 온라인 프레즌스
 - GitHub Webhook 알림 연동
 - 디스코드 봇 연동 (회원가입/에러 모니터링)
@@ -45,14 +52,14 @@
 
 ## 기술 스택
 
-| 영역 | 기술 |
-|------|------|
-| **백엔드** | NestJS 11, TypeScript, MongoDB (Mongoose), Socket.IO, JWT |
-| **프론트엔드** | Next.js 16, TypeScript, Tailwind CSS v4, Zustand |
-| **데스크톱** | Electron 39, electron-updater |
-| **스토리지** | MinIO (S3 호환 오브젝트 스토리지) |
-| **인프라** | Docker, Colima, Nginx, PM2 |
-| **아키텍처** | 헥사고날 (Ports & Adapters), FSD (Feature-Sliced Design) |
+| 영역           | 기술                                                      |
+| -------------- | --------------------------------------------------------- |
+| **백엔드**     | NestJS 11, TypeScript, MongoDB (Mongoose), Socket.IO, JWT |
+| **프론트엔드** | Next.js 16, TypeScript, Tailwind CSS v4, Zustand          |
+| **데스크톱**   | Electron 39, electron-updater                             |
+| **스토리지**   | MinIO (S3 호환 오브젝트 스토리지)                         |
+| **인프라**     | Docker, Colima, Nginx, PM2                                |
+| **아키텍처**   | 헥사고날 (Ports & Adapters), FSD (Feature-Sliced Design)  |
 
 ## 패키지 구성
 
@@ -63,6 +70,29 @@ packages/
 ├── desktop/     Electron 데스크톱 앱
 └── contracts/   공유 타입 정의
 ```
+
+## 로컬 실행 프로필
+
+현재 코드 기준 로컬 서버/웹을 띄우면서 컨테이너로 포워딩된 MongoDB/MinIO를
+함께 쓰는 실행 프로필을 추가했습니다.
+
+- 기본 프로필: `config/profiles/local-container.env`
+- Discord mock 검증 프로필: `config/profiles/local-container-discord-mock.env`
+- 민감값 override: `config/profiles/*.local.env` (gitignored)
+
+자주 쓰는 명령:
+
+```bash
+yarn profile:print
+yarn dev:stack:profile
+yarn build:server
+yarn build:web:profile
+yarn start:stack:profile
+yarn verify:full
+```
+
+상세 동작과 override 예시는 [runtime-profiles.md](./docs/runtime-profiles.md)에서
+확인할 수 있습니다.
 
 ## 라이선스
 

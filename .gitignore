@@ -55,6 +55,7 @@ lerna-debug.log*
 /packages/*/.env.local
 /packages/*/.env.development
 /packages/*/.env.production
+/config/profiles/*.local.env
 
 # Project documentation
 CLAUDE.md
