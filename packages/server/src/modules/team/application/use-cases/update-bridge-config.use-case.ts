@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../domain/team.port';
 import {
+    createTeamAuditLogEntry,
     createDefaultBridgeWorkerConfig,
     type BridgeWorkerConfig,
     type BridgeWorkerTargetConfig,
@@ -17,7 +18,22 @@ export class UpdateBridgeConfigUseCase {
         if (!team.hasAdminAccess(actorId)) throw new BadRequestException('외부 브리지 설정을 변경할 권한이 없습니다.');
 
         const normalized = normalizeBridgeConfig(config);
-        const result = await this.teamRepo.updateBridgeConfig(teamId, normalized);
+        const enabledTargets = ['slack', 'discord'].filter((platform) => normalized[platform as keyof BridgeWorkerConfig].enabled);
+        const result = await this.teamRepo.updateBridgeConfig(teamId, normalized, createTeamAuditLogEntry({
+            actorId,
+            category: 'delivery',
+            action: 'bridge_config_updated',
+            summary: 'Slack/Discord 브리지 설정을 저장함',
+            target: enabledTargets.length > 0 ? enabledTargets.join(', ') : 'disabled',
+            metadata: {
+                slackEnabled: normalized.slack.enabled,
+                slackRelayAnnouncements: normalized.slack.relayAnnouncements,
+                slackRelayGithub: normalized.slack.relayGithub,
+                discordEnabled: normalized.discord.enabled,
+                discordRelayAnnouncements: normalized.discord.relayAnnouncements,
+                discordRelayGithub: normalized.discord.relayGithub,
+            },
+        }));
         if (!result) throw new BadRequestException('외부 브리지 설정 저장에 실패했습니다.');
         return result;
     }

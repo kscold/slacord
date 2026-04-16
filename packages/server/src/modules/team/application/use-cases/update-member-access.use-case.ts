@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../domain/team.port';
-import type { TeamMemberRole } from '../../domain/team.entity';
+import { createTeamAuditLogEntry, type TeamMemberRole } from '../../domain/team.entity';
 
 @Injectable()
 export class UpdateMemberAccessUseCase {
@@ -12,18 +12,33 @@ export class UpdateMemberAccessUseCase {
         const target = team.getMember(memberId);
         if (!target) throw new BadRequestException('멤버를 찾을 수 없습니다.');
         if (target.role === 'owner' && input.role) throw new BadRequestException('owner 역할은 여기서 변경할 수 없습니다.');
+        const nextRole = input.role ?? target.role;
+        const nextCanManageInvites = nextRole === 'guest' ? false : (input.canManageInvites ?? target.canManageInvites);
         const nextMembers = team.members.map((member) =>
             member.userId === memberId
                 ? {
                       ...member,
-                      role: input.role ?? member.role,
-                      canManageInvites: (input.role ?? member.role) === 'guest'
-                          ? false
-                          : (input.canManageInvites ?? member.canManageInvites),
+                      role: nextRole,
+                      canManageInvites: nextCanManageInvites,
                   }
                 : member,
         );
-        const updated = await this.teamRepo.replaceAccess(teamId, nextMembers, team.inviteLinks);
+        const updated = await this.teamRepo.replaceAccess(
+            teamId,
+            nextMembers,
+            team.inviteLinks,
+            createTeamAuditLogEntry({
+                actorId,
+                category: 'access',
+                action: 'member_access_updated',
+                summary: '멤버 접근 권한을 업데이트함',
+                target: memberId,
+                metadata: {
+                    role: nextRole,
+                    canManageInvites: nextCanManageInvites,
+                },
+            }),
+        );
         if (!updated) throw new BadRequestException('멤버 권한 변경에 실패했습니다.');
         return updated.getMember(memberId);
     }

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
@@ -7,6 +7,7 @@ import { CreateTeamUseCase } from '../../application/use-cases/create-team.use-c
 import { GetInviteLinksUseCase } from '../../application/use-cases/get-invite-links.use-case';
 import { GetTeamUseCase } from '../../application/use-cases/get-team.use-case';
 import { GetTeamSettingsUseCase } from '../../application/use-cases/get-team-settings.use-case';
+import { GetTeamAuditLogsUseCase } from '../../application/use-cases/get-team-audit-logs.use-case';
 import { GetTeamsUseCase } from '../../application/use-cases/get-teams.use-case';
 import { GetTeamMembersUseCase } from '../../application/use-cases/get-team-members.use-case';
 import { JoinTeamUseCase } from '../../application/use-cases/join-team.use-case';
@@ -31,6 +32,7 @@ export class TeamController {
         private readonly createTeamUseCase: CreateTeamUseCase,
         private readonly getTeamUseCase: GetTeamUseCase,
         private readonly getTeamSettingsUseCase: GetTeamSettingsUseCase,
+        private readonly getTeamAuditLogsUseCase: GetTeamAuditLogsUseCase,
         private readonly getTeamsUseCase: GetTeamsUseCase,
         private readonly getTeamMembersUseCase: GetTeamMembersUseCase,
         private readonly joinTeamUseCase: JoinTeamUseCase,
@@ -65,6 +67,22 @@ export class TeamController {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.getTeamSettingsUseCase.execute(teamId, user.userId);
         return { success: true, data: team.toSettings() };
+    }
+
+    @Get(':teamId/audit-logs')
+    @ApiOperation({ summary: '운영 감사 로그 조회 (owner/admin)' })
+    async getTeamAuditLogs(
+        @Param('teamId') teamId: string,
+        @CurrentUser() user: { userId: string },
+        @Query('category') category?: string,
+        @Query('limit') limit?: string,
+    ) {
+        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
+        const auditLogs = await this.getTeamAuditLogsUseCase.execute(teamId, user.userId, {
+            category,
+            limit: limit ? Number(limit) : undefined,
+        });
+        return { success: true, data: auditLogs };
     }
 
     @Get(':teamId/member')

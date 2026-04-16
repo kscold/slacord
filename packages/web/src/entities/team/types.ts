@@ -31,6 +31,15 @@ export interface PublicGitHubConfig {
 export type BridgeJobStatus = 'pending' | 'processing' | 'sent' | 'failed';
 export type BridgeJobPlatform = 'slack' | 'discord';
 export type BridgeJobEventType = 'announcement' | 'github';
+export type TeamAuditLogCategory = 'delivery' | 'access' | 'bridge';
+export type TeamAuditLogAction =
+    | 'github_config_updated'
+    | 'bridge_config_updated'
+    | 'invite_link_created'
+    | 'invite_link_revoked'
+    | 'invite_link_deleted'
+    | 'member_access_updated'
+    | 'bridge_job_retried';
 
 export interface BridgeJobSummary {
     id: string;
@@ -77,6 +86,17 @@ export interface TeamSettingsSummary {
         notifyChannelId: string;
     } | null;
     bridgeConfig: BridgeConfig;
+    createdAt: string;
+}
+
+export interface TeamAuditLogSummary {
+    id: string;
+    actorId: string;
+    category: TeamAuditLogCategory;
+    action: TeamAuditLogAction;
+    summary: string;
+    target: string | null;
+    metadata: Record<string, boolean | number | string | null>;
     createdAt: string;
 }
 

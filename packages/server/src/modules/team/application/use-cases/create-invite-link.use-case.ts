@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../domain/team.port';
-import type { TeamInviteRole } from '../../domain/team.entity';
+import { createTeamAuditLogEntry, type TeamInviteRole } from '../../domain/team.entity';
 
 export interface CreateInviteLinkInput {
     teamId: string;
@@ -31,7 +31,24 @@ export class CreateInviteLinkUseCase {
             revokedAt: null,
             createdAt: new Date(),
         } as const;
-        const updated = await this.teamRepo.replaceAccess(input.teamId, team.members, [next, ...team.inviteLinks]);
+        const updated = await this.teamRepo.replaceAccess(
+            input.teamId,
+            team.members,
+            [next, ...team.inviteLinks],
+            createTeamAuditLogEntry({
+                actorId: input.userId,
+                category: 'access',
+                action: 'invite_link_created',
+                summary: '초대 링크를 생성함',
+                target: next.label ?? next.code,
+                metadata: {
+                    code: next.code,
+                    defaultRole: next.defaultRole,
+                    expiresAt: next.expiresAt?.toISOString() ?? null,
+                    maxUses: next.maxUses,
+                },
+            }),
+        );
         if (!updated) throw new BadRequestException('초대 링크 생성에 실패했습니다.');
         return next;
     }

@@ -6,6 +6,7 @@ import { useTeamWorkspaceData } from '../model/useTeamWorkspaceData';
 import { DiscordImportPanel } from './DiscordImportPanel';
 import { ExternalBridgeSettingsPanel } from './ExternalBridgeSettingsPanel';
 import { GitHubSettingsSection } from './GitHubSettingsSection';
+import { TeamAuditLogPanel } from './TeamAuditLogPanel';
 import { TeamInviteSettingsPanel } from './TeamInviteSettingsPanel';
 
 const SECTION_ITEMS = [
@@ -26,6 +27,12 @@ const SECTION_ITEMS = [
         eyebrow: 'Imports',
         label: '가져오기와 마이그레이션',
         description: 'Confluence와 Discord에서 문서와 대화 기록을 옮기는 작업을 분리합니다.',
+    },
+    {
+        key: 'operations',
+        eyebrow: 'Operations',
+        label: '운영 이력',
+        description: '설정 변경, 초대 관리, 브리지 재시도 같은 운영 액션을 시간순으로 확인합니다.',
     },
 ] as const;
 
@@ -172,6 +179,8 @@ export function TeamSettingsShell({ teamId }: Props) {
                         <DiscordImportPanel teamId={teamId} onImported={workspace.refreshBase} />
                     </>
                 ) : null}
+
+                {activeSection === 'operations' ? <TeamAuditLogPanel teamId={teamId} /> : null}
             </section>
         </div>
     );

@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { UpdateMemberAccessUseCase } from './update-member-access.use-case';
-import { TeamEntity } from '../../domain/team.entity';
+import { TeamEntity, createDefaultBridgeWorkerConfig } from '../../domain/team.entity';
 
 function makeTeam() {
     return new TeamEntity(
@@ -15,6 +15,7 @@ function makeTeam() {
         ],
         [],
         null,
+        createDefaultBridgeWorkerConfig(),
         new Date('2025-01-01T00:00:00.000Z'),
     );
 }
@@ -40,6 +41,7 @@ describe('UpdateMemberAccessUseCase', () => {
             members,
             team.inviteLinks,
             team.githubConfig,
+            createDefaultBridgeWorkerConfig(),
             team.createdAt,
         ));
         useCase = new UpdateMemberAccessUseCase(mockTeamRepo as any);
@@ -51,7 +53,17 @@ describe('UpdateMemberAccessUseCase', () => {
             canManageInvites: true,
         });
 
-        expect(mockTeamRepo.replaceAccess).toHaveBeenCalled();
+        expect(mockTeamRepo.replaceAccess).toHaveBeenCalledWith(
+            'team-1',
+            expect.any(Array),
+            expect.any(Array),
+            expect.objectContaining({
+                action: 'member_access_updated',
+                category: 'access',
+                summary: '멤버 접근 권한을 업데이트함',
+                target: 'member-1',
+            }),
+        );
         expect(result).toMatchObject({ role: 'guest', canManageInvites: false });
     });
 

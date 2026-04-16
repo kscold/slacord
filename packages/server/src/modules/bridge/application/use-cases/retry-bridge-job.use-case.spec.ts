@@ -52,6 +52,7 @@ function makeJob(status: 'failed' | 'sent' = 'failed') {
 
 describe('RetryBridgeJobUseCase', () => {
     const mockTeamRepo = {
+        appendAuditLog: jest.fn(),
         findById: jest.fn(),
     };
     const mockBridgeJobRepo = {
@@ -64,6 +65,7 @@ describe('RetryBridgeJobUseCase', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockTeamRepo.findById.mockResolvedValue(makeTeam());
+        mockTeamRepo.appendAuditLog.mockResolvedValue(makeTeam());
         mockBridgeJobRepo.findById.mockResolvedValue(makeJob());
         mockBridgeJobRepo.enqueueMany.mockResolvedValue([makeJob('failed')]);
         useCase = new RetryBridgeJobUseCase(mockTeamRepo as any, mockBridgeJobRepo as any);
@@ -83,6 +85,15 @@ describe('RetryBridgeJobUseCase', () => {
                 url: 'https://slacord.dev/announcements/1',
             }),
         ]);
+        expect(mockTeamRepo.appendAuditLog).toHaveBeenCalledWith(
+            'team-1',
+            expect.objectContaining({
+                action: 'bridge_job_retried',
+                category: 'bridge',
+                summary: '실패한 브리지 relay를 다시 시도함',
+                target: 'bridge failed',
+            }),
+        );
     });
 
     it('관리자가 아니면 실패한 bridge job을 다시 시도할 수 없다', async () => {

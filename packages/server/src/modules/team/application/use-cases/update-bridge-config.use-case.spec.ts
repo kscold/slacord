@@ -63,7 +63,15 @@ describe('UpdateBridgeConfigUseCase', () => {
             },
         });
 
-        expect(mockTeamRepo.updateBridgeConfig).toHaveBeenCalled();
+        expect(mockTeamRepo.updateBridgeConfig).toHaveBeenCalledWith(
+            'team-1',
+            expect.any(Object),
+            expect.objectContaining({
+                action: 'bridge_config_updated',
+                category: 'delivery',
+                summary: 'Slack/Discord 브리지 설정을 저장함',
+            }),
+        );
         expect(result.bridgeConfig.slack.enabled).toBe(true);
         expect(result.bridgeConfig.slack.relayAnnouncements).toBe(true);
     });

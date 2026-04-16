@@ -548,6 +548,29 @@ test.describe.serial("slacord web e2e", () => {
       relayAnnouncements: true,
       relayGithub: false,
     });
+
+    const auditLogs = await jsonFetch<
+      Array<{
+        action: string;
+        category: string;
+        summary: string;
+      }>
+    >(`/team/${fixture.teamId}/audit-logs`, {
+      token: fixture.owner.token,
+    });
+
+    expect(auditLogs.data?.[0]).toMatchObject({
+      action: "bridge_config_updated",
+      category: "delivery",
+      summary: "Slack/Discord 브리지 설정을 저장함",
+    });
+
+    await page.getByRole("button", { name: /운영 이력/ }).click();
+    await page.waitForURL(`**/${fixture.teamId}/settings?section=operations`);
+    await expect(page.getByText("운영 감사 로그와 재시도 흐름을 남김")).toBeVisible();
+    await expect(
+      page.getByText("Slack/Discord 브리지 설정을 저장함"),
+    ).toBeVisible();
   });
 
   test("설정 페이지에서 섹션을 전환하며 접근과 가져오기 패널을 연다", async ({
@@ -576,6 +599,12 @@ test.describe.serial("slacord web e2e", () => {
     await page.waitForURL(`**/${fixture.teamId}/settings?section=access`);
     await expect(
       page.getByRole("button", { name: "초대 링크 만들기" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: /운영 이력/ }).click();
+    await page.waitForURL(`**/${fixture.teamId}/settings?section=operations`);
+    await expect(
+      page.getByRole("heading", { name: "운영 감사 로그와 재시도 흐름을 남김" }),
     ).toBeVisible();
   });
 });

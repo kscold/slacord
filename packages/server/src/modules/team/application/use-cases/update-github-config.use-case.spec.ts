@@ -25,11 +25,20 @@ describe('UpdateGithubConfigUseCase', () => {
             notifyChannelId: 'channel-1',
         });
 
-        expect(mockTeamRepo.updateGithubConfig).toHaveBeenCalledWith('team-1', {
-            repoUrl: 'https://github.com/openai/slacord',
-            webhookSecret: 'secret',
-            notifyChannelId: 'channel-1',
-        });
+        expect(mockTeamRepo.updateGithubConfig).toHaveBeenCalledWith(
+            'team-1',
+            {
+                repoUrl: 'https://github.com/openai/slacord',
+                webhookSecret: 'secret',
+                notifyChannelId: 'channel-1',
+            },
+            expect.objectContaining({
+                action: 'github_config_updated',
+                category: 'delivery',
+                summary: 'GitHub webhook 설정을 저장함',
+                target: 'https://github.com/openai/slacord',
+            }),
+        );
         expect(result).toEqual({ id: 'team-1' });
     });
 

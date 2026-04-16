@@ -170,6 +170,18 @@ export const teamApi = {
     async getTeamSettings(teamId: string) {
         return apiFetch(`/api/team/${teamId}/settings`);
     },
+    async getTeamAuditLogs(
+        teamId: string,
+        options: {
+            category?: 'delivery' | 'access' | 'bridge';
+            limit?: number;
+        } = {},
+    ) {
+        const params = new URLSearchParams();
+        params.set('limit', String(options.limit ?? 20));
+        if (options.category) params.set('category', options.category);
+        return apiFetch(`/api/team/${teamId}/audit-logs?${params.toString()}`);
+    },
     async importDiscordGuild(teamId: string, data: { botToken: string; guildId: string; channelIds: string[] }) {
         return apiFetch(`/api/team/${teamId}/discord/import`, { method: 'POST', body: JSON.stringify(data) });
     },

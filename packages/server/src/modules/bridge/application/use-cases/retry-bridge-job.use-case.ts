@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { BRIDGE_JOB_REPOSITORY, type IBridgeJobRepository } from '../../domain/bridge-job.port';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../../team/domain/team.port';
+import { createTeamAuditLogEntry } from '../../../team/domain/team.entity';
 
 @Injectable()
 export class RetryBridgeJobUseCase {
@@ -36,6 +37,20 @@ export class RetryBridgeJobUseCase {
                 url: job.url,
             },
         ]);
+
+        await this.teamRepo.appendAuditLog(teamId, createTeamAuditLogEntry({
+            actorId,
+            category: 'bridge',
+            action: 'bridge_job_retried',
+            summary: '실패한 브리지 relay를 다시 시도함',
+            target: job.title,
+            metadata: {
+                originalJobId: job.id,
+                retryJobId: retryJob.id,
+                platform: job.platform,
+                eventType: job.eventType,
+            },
+        }));
 
         return retryJob;
     }

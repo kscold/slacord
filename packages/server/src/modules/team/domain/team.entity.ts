@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 export type TeamMemberRole = 'owner' | 'admin' | 'member' | 'guest';
 export type TeamInviteRole = Exclude<TeamMemberRole, 'owner'>;
 
@@ -65,6 +67,50 @@ export interface PublicBridgeWorkerConfig {
     discord: PublicBridgeWorkerTargetConfig;
 }
 
+export type TeamAuditLogCategory = 'delivery' | 'access' | 'bridge';
+export type TeamAuditLogAction =
+    | 'github_config_updated'
+    | 'bridge_config_updated'
+    | 'invite_link_created'
+    | 'invite_link_revoked'
+    | 'invite_link_deleted'
+    | 'member_access_updated'
+    | 'bridge_job_retried';
+
+export type TeamAuditLogMetadataValue = boolean | number | string | null;
+
+export interface TeamAuditLogEntry {
+    id: string;
+    actorId: string;
+    category: TeamAuditLogCategory;
+    action: TeamAuditLogAction;
+    summary: string;
+    target: string | null;
+    metadata: Record<string, TeamAuditLogMetadataValue>;
+    createdAt: Date;
+}
+
+export function createTeamAuditLogEntry(input: {
+    actorId: string;
+    category: TeamAuditLogCategory;
+    action: TeamAuditLogAction;
+    summary: string;
+    target?: string | null;
+    metadata?: Record<string, TeamAuditLogMetadataValue>;
+    createdAt?: Date;
+}): TeamAuditLogEntry {
+    return {
+        id: randomUUID(),
+        actorId: input.actorId,
+        category: input.category,
+        action: input.action,
+        summary: input.summary,
+        target: input.target ?? null,
+        metadata: sanitizeAuditMetadata(input.metadata ?? {}),
+        createdAt: input.createdAt ?? new Date(),
+    };
+}
+
 export function createDefaultBridgeWorkerTargetConfig(): BridgeWorkerTargetConfig {
     return {
         enabled: false,
@@ -94,6 +140,7 @@ export class TeamEntity {
         public readonly githubConfig: GitHubConfig | null,
         public readonly bridgeConfig: BridgeWorkerConfig,
         public readonly createdAt: Date,
+        public readonly auditLogs: TeamAuditLogEntry[] = [],
     ) {}
 
     getMember(userId: string): TeamMember | undefined {
@@ -167,6 +214,12 @@ export class TeamEntity {
             createdAt: this.createdAt,
         };
     }
+}
+
+function sanitizeAuditMetadata(input: Record<string, TeamAuditLogMetadataValue>) {
+    return Object.fromEntries(
+        Object.entries(input).filter(([, value]) => ['boolean', 'number', 'string'].includes(typeof value) || value === null),
+    );
 }
 
 function toPublicGithubConfig(config: GitHubConfig): PublicGitHubConfig {

@@ -94,3 +94,11 @@ UX without growing accidental complexity.
 - richer document collaboration flows such as comments and inline discussion
 - command-style quick actions across issues, docs, and channels
 - stronger bridge observability and replay tools
+
+### Current Status
+
+- `in_progress`
+- team settings now expose an operations section with admin audit logs for delivery,
+  access, and bridge retry flows
+- GitHub, bridge config, invite link, member access, and bridge retry actions now
+  append team-scoped audit entries

@@ -101,6 +101,46 @@ class TeamInviteLinkSchema {
 
 const TeamInviteLinkSchemaFactory = SchemaFactory.createForClass(TeamInviteLinkSchema);
 
+@Schema({ _id: false })
+class TeamAuditLogSchema {
+    @Prop({ required: true })
+    id: string;
+
+    @Prop({ required: true })
+    actorId: string;
+
+    @Prop({ required: true, enum: ['delivery', 'access', 'bridge'] })
+    category: string;
+
+    @Prop({
+        required: true,
+        enum: [
+            'github_config_updated',
+            'bridge_config_updated',
+            'invite_link_created',
+            'invite_link_revoked',
+            'invite_link_deleted',
+            'member_access_updated',
+            'bridge_job_retried',
+        ],
+    })
+    action: string;
+
+    @Prop({ required: true })
+    summary: string;
+
+    @Prop({ type: String, default: null })
+    target: string | null;
+
+    @Prop({ type: Object, default: {} })
+    metadata: Record<string, boolean | number | string | null>;
+
+    @Prop({ default: () => new Date() })
+    createdAt: Date;
+}
+
+const TeamAuditLogSchemaFactory = SchemaFactory.createForClass(TeamAuditLogSchema);
+
 /** 팀(워크스페이스) MongoDB 스키마 */
 @Schema({ timestamps: true, collection: 'teams' })
 export class Team {
@@ -133,6 +173,9 @@ export class Team {
         }),
     })
     bridgeConfig: BridgeWorkerConfigSchema;
+
+    @Prop({ type: [TeamAuditLogSchemaFactory], default: [] })
+    auditLogs: TeamAuditLogSchema[];
 
     createdAt: Date;
     updatedAt: Date;

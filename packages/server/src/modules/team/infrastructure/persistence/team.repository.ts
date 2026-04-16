@@ -7,16 +7,18 @@ import {
     TeamInviteLink,
     TeamMember,
     createDefaultBridgeWorkerConfig,
+    type TeamAuditLogEntry,
     type BridgeWorkerConfig,
     type GitHubConfig,
 } from '../../domain/team.entity';
 import { Team, TeamDocument } from './team.schema';
-import { normalizeGitHubRepo } from '../../../../shared/lib/normalize-github-repo';
 
 /** Team Repository Adapter - MongoDB 구현체 */
 @Injectable()
 export class TeamRepository implements ITeamRepository {
     constructor(@InjectModel(Team.name) private readonly teamModel: Model<TeamDocument>) {}
+
+    private static readonly MAX_AUDIT_LOGS = 120;
 
     async findById(id: string): Promise<TeamEntity | null> {
         if (!isValidObjectId(id)) return null;
@@ -60,16 +62,33 @@ export class TeamRepository implements ITeamRepository {
         return this.toEntity(doc.toObject());
     }
 
-    async addMember(teamId: string, member: TeamMember): Promise<TeamEntity> {
+    async addMember(teamId: string, member: TeamMember, auditLog?: TeamAuditLogEntry): Promise<TeamEntity> {
+        const auditLogUpdate = this.buildAuditLogUpdate(auditLog);
         const doc = await this.teamModel
-            .findByIdAndUpdate(teamId, { $push: { members: member } }, { new: true })
+            .findByIdAndUpdate(
+                teamId,
+                {
+                    $push: {
+                        members: member,
+                        ...(auditLogUpdate.$push ?? {}),
+                    },
+                },
+                { new: true },
+            )
             .lean();
         if (!doc) throw new NotFoundException(`팀을 찾을 수 없습니다: ${teamId}`);
         return this.toEntity(doc);
     }
 
-    async replaceAccess(teamId: string, members: TeamMember[], inviteLinks: TeamInviteLink[]): Promise<TeamEntity | null> {
-        const doc = await this.teamModel.findByIdAndUpdate(teamId, { $set: { members, inviteLinks } }, { new: true }).lean();
+    async replaceAccess(
+        teamId: string,
+        members: TeamMember[],
+        inviteLinks: TeamInviteLink[],
+        auditLog?: TeamAuditLogEntry,
+    ): Promise<TeamEntity | null> {
+        const doc = await this.teamModel
+            .findByIdAndUpdate(teamId, { $set: { members, inviteLinks }, ...this.buildAuditLogUpdate(auditLog) }, { new: true })
+            .lean();
         return doc ? this.toEntity(doc) : null;
     }
 
@@ -77,17 +96,22 @@ export class TeamRepository implements ITeamRepository {
         return !!(await this.teamModel.exists({ slug }));
     }
 
-    async updateGithubConfig(teamId: string, config: GitHubConfig): Promise<TeamEntity | null> {
+    async updateGithubConfig(teamId: string, config: GitHubConfig, auditLog?: TeamAuditLogEntry): Promise<TeamEntity | null> {
         const doc = await this.teamModel
-            .findByIdAndUpdate(teamId, { $set: { githubConfig: config } }, { new: true })
+            .findByIdAndUpdate(teamId, { $set: { githubConfig: config }, ...this.buildAuditLogUpdate(auditLog) }, { new: true })
             .lean();
         return doc ? this.toEntity(doc) : null;
     }
 
-    async updateBridgeConfig(teamId: string, config: BridgeWorkerConfig): Promise<TeamEntity | null> {
+    async updateBridgeConfig(teamId: string, config: BridgeWorkerConfig, auditLog?: TeamAuditLogEntry): Promise<TeamEntity | null> {
         const doc = await this.teamModel
-            .findByIdAndUpdate(teamId, { $set: { bridgeConfig: config } }, { new: true })
+            .findByIdAndUpdate(teamId, { $set: { bridgeConfig: config }, ...this.buildAuditLogUpdate(auditLog) }, { new: true })
             .lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
+    async appendAuditLog(teamId: string, auditLog: TeamAuditLogEntry): Promise<TeamEntity | null> {
+        const doc = await this.teamModel.findByIdAndUpdate(teamId, this.buildAuditLogUpdate(auditLog), { new: true }).lean();
         return doc ? this.toEntity(doc) : null;
     }
 
@@ -129,6 +153,30 @@ export class TeamRepository implements ITeamRepository {
                 },
             },
             doc.createdAt,
+            (doc.auditLogs ?? []).map((auditLog: any) => ({
+                id: auditLog.id,
+                actorId: auditLog.actorId,
+                category: auditLog.category,
+                action: auditLog.action,
+                summary: auditLog.summary,
+                target: auditLog.target ?? null,
+                metadata: auditLog.metadata ?? {},
+                createdAt: auditLog.createdAt,
+            })),
         );
+    }
+
+    private buildAuditLogUpdate(auditLog?: TeamAuditLogEntry) {
+        if (!auditLog) return {};
+
+        return {
+            $push: {
+                auditLogs: {
+                    $each: [auditLog],
+                    $position: 0,
+                    $slice: TeamRepository.MAX_AUDIT_LOGS,
+                },
+            },
+        };
     }
 }

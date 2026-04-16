@@ -1,4 +1,4 @@
-import { TeamEntity, TeamInviteLink, TeamMember, GitHubConfig, BridgeWorkerConfig } from './team.entity';
+import { TeamEntity, TeamInviteLink, TeamMember, GitHubConfig, BridgeWorkerConfig, TeamAuditLogEntry } from './team.entity';
 
 export interface ITeamRepository {
     findById(id: string): Promise<TeamEntity | null>;
@@ -14,11 +14,12 @@ export interface ITeamRepository {
         members: TeamMember[];
         inviteLinks?: TeamInviteLink[];
     }): Promise<TeamEntity>;
-    addMember(teamId: string, member: TeamMember): Promise<TeamEntity>;
-    replaceAccess(teamId: string, members: TeamMember[], inviteLinks: TeamInviteLink[]): Promise<TeamEntity | null>;
+    addMember(teamId: string, member: TeamMember, auditLog?: TeamAuditLogEntry): Promise<TeamEntity>;
+    replaceAccess(teamId: string, members: TeamMember[], inviteLinks: TeamInviteLink[], auditLog?: TeamAuditLogEntry): Promise<TeamEntity | null>;
     existsBySlug(slug: string): Promise<boolean>;
-    updateGithubConfig(teamId: string, config: GitHubConfig): Promise<TeamEntity | null>;
-    updateBridgeConfig(teamId: string, config: BridgeWorkerConfig): Promise<TeamEntity | null>;
+    updateGithubConfig(teamId: string, config: GitHubConfig, auditLog?: TeamAuditLogEntry): Promise<TeamEntity | null>;
+    updateBridgeConfig(teamId: string, config: BridgeWorkerConfig, auditLog?: TeamAuditLogEntry): Promise<TeamEntity | null>;
+    appendAuditLog(teamId: string, auditLog: TeamAuditLogEntry): Promise<TeamEntity | null>;
 }
 
 export const TEAM_REPOSITORY = Symbol('ITeamRepository');
