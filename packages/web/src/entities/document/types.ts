@@ -34,3 +34,17 @@ export interface DocumentVersion {
     savedBy: string;
     createdAt: string;
 }
+
+export interface DocumentComment {
+    id: string;
+    teamId: string;
+    documentId: string;
+    parentId: string | null;
+    content: string;
+    anchorText: string | null;
+    createdBy: string;
+    resolvedAt: string | null;
+    resolvedBy: string | null;
+    createdAt: string;
+    updatedAt: string;
+}

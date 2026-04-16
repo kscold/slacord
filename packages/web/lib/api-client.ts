@@ -6,6 +6,7 @@
 
 import { toApiUrl } from './runtime-config';
 import type { ChannelType } from '@/src/entities/channel/types';
+import type { DocumentComment } from '@/src/entities/document/types';
 import type { MessageSearchPayload } from '@/src/entities/message/search.types';
 import type {
     BridgeConfig,
@@ -313,6 +314,9 @@ export const documentApi = {
     async getDocument(teamId: string, documentId: string) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`);
     },
+    async getDocumentComments(teamId: string, documentId: string) {
+        return apiFetch<DocumentComment[]>(`/api/team/${teamId}/document/${documentId}/comment`);
+    },
     async createDocument(
         teamId: string,
         data: { title: string; content?: string; parentId?: string | null; contentFormat?: 'plain' | 'html' | 'json' },
@@ -334,6 +338,22 @@ export const documentApi = {
         data: { title?: string; content?: string; contentFormat?: 'plain' | 'html' | 'json' },
     ) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    async createDocumentComment(
+        teamId: string,
+        documentId: string,
+        data: { content: string; anchorText?: string | null; parentId?: string | null },
+    ) {
+        return apiFetch<DocumentComment>(`/api/team/${teamId}/document/${documentId}/comment`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+    async updateDocumentCommentStatus(teamId: string, documentId: string, commentId: string, resolved: boolean) {
+        return apiFetch<DocumentComment>(`/api/team/${teamId}/document/${documentId}/comment/${commentId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ resolved }),
+        });
     },
     async getDocumentVersions(teamId: string, documentId: string) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}/version`);

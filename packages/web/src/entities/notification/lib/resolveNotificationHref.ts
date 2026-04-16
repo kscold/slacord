@@ -5,6 +5,10 @@ export function resolveNotificationHref(teamId: string, notification: AppNotific
         return `/${teamId}/issues?issue=${notification.resourceId}`;
     }
 
+    if (notification.resourceType === 'document') {
+        return `/${teamId}/docs/${notification.resourceId}`;
+    }
+
     if (notification.channelId) {
         return `/${teamId}/channel/${notification.channelId}`;
     }

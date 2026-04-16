@@ -104,3 +104,5 @@ UX without growing accidental complexity.
   append team-scoped audit entries
 - `mod+k` palette now layers command-style quick actions for channels, docs, and
   issues on top of global message search
+- document detail pages now support quoted discussion starters, threaded comments,
+  resolve flows, and document-targeted notification routing

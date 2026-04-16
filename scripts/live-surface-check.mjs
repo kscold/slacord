@@ -1742,6 +1742,83 @@ async function main() {
     return "restricted access ok";
   });
 
+  await check("document", "문서 코멘트 작성과 해결 처리", async () => {
+    const created = await api(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment`,
+      {
+        method: "POST",
+        token: context.users.allowedMember.token,
+        body: {
+          content: `이 문단 확인 부탁해요 @${context.users.owner.username}`,
+          anchorText: "allowed member edit",
+        },
+      },
+    );
+
+    const commentId = created.payload?.data?.id;
+    assert(commentId, "문서 코멘트 ID가 없습니다.");
+
+    const reply = await api(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment`,
+      {
+        method: "POST",
+        token: context.users.owner.token,
+        body: {
+          content: "확인했습니다. 다음 액션으로 정리할게요.",
+          parentId: commentId,
+        },
+      },
+    );
+    assert(reply.payload?.data?.id, "문서 답글 ID가 없습니다.");
+
+    const list = await api(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment`,
+      {
+        token: context.users.allowedMember.token,
+      },
+    );
+    assert(
+      (list.payload?.data || []).some((comment) => comment.id === commentId),
+      "작성한 문서 코멘트가 목록에 없습니다.",
+    );
+
+    const resolved = await api(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment/${commentId}`,
+      {
+        method: "PATCH",
+        token: context.users.owner.token,
+        body: { resolved: true },
+      },
+    );
+    assert(resolved.payload?.data?.resolvedAt, "문서 코멘트가 해결 상태로 바뀌지 않았습니다.");
+
+    return `${commentId} resolved`;
+  });
+
+  await check("security", "비허용 멤버는 제한 문서 코멘트를 볼 수 없어야 함", async () => {
+    await expectFailure(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment`,
+      {
+        token: context.users.deniedMember.token,
+      },
+    );
+    return "restricted document comment denied";
+  });
+
+  await check("security", "guest는 문서 코멘트를 작성할 수 없어야 함", async () => {
+    await expectFailure(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment`,
+      {
+        method: "POST",
+        token: context.users.guest.token,
+        body: {
+          content: "guest comment should fail",
+        },
+      },
+    );
+    return "guest document comment denied";
+  });
+
   await check("document", "문서 이미지/파일 업로드", async () => {
     const imageForm = new FormData();
     imageForm.append("file", createTinyPngFile());

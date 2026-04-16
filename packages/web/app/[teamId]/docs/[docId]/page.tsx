@@ -3,9 +3,11 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { documentApi } from '@/lib/api-client';
+import { useTeamWorkspaceData } from '@/src/features/team/model/useTeamWorkspaceData';
 import { useDocumentDetail } from '@/src/features/document/model/useDocumentDetail';
 import { useDocumentVersions } from '@/src/features/document/model/useDocumentVersions';
 import { DocumentChildrenPanel } from '@/src/features/document/ui/DocumentChildrenPanel';
+import { DocumentCommentPanel } from '@/src/features/document/ui/DocumentCommentPanel';
 import { DocumentContent } from '@/src/features/document/ui/DocumentContent';
 import { DocumentDetailHeader } from '@/src/features/document/ui/DocumentDetailHeader';
 import dynamic from 'next/dynamic';
@@ -28,6 +30,7 @@ export default function DocDetailPage({ params }: Props) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { doc, setDoc, children, loading } = useDocumentDetail(teamId, docId);
+    const workspace = useTeamWorkspaceData(teamId);
     const { loading: versionLoading, restoreVersion, versions } = useDocumentVersions(teamId, docId);
     const [editing, setEditing] = useState(false);
     const [title, setTitle] = useState('');
@@ -35,6 +38,7 @@ export default function DocDetailPage({ params }: Props) {
     const [actionError, setActionError] = useState('');
     const [confirming, setConfirming] = useState(false);
     const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
+    const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
 
     useEffect(() => {
         if (!doc) return;
@@ -44,6 +48,12 @@ export default function DocDetailPage({ params }: Props) {
             setEditing(true);
         }
     }, [doc, searchParams]);
+
+    useEffect(() => {
+        if (editing) {
+            setSelectedQuote(null);
+        }
+    }, [editing]);
 
     const handleSave = async () => {
         const response = await documentApi.updateDocument(teamId, docId, {
@@ -156,9 +166,19 @@ export default function DocDetailPage({ params }: Props) {
                 />
             ) : (
                 <div className="min-h-48 overflow-hidden rounded-xl border border-border-primary bg-bg-secondary p-4 sm:p-6">
-                    <DocumentContent doc={doc} />
+                    <DocumentContent doc={doc} onQuoteSelection={setSelectedQuote} />
                 </div>
             )}
+            <DocumentCommentPanel
+                canComment={workspace.canWrite}
+                currentUserId={workspace.currentUserId}
+                doc={doc}
+                documentId={docId}
+                members={workspace.members}
+                onClearSelectedQuote={() => setSelectedQuote(null)}
+                selectedQuote={selectedQuote}
+                teamId={teamId}
+            />
             <DocumentVersionPanel loading={versionLoading} onRestore={handleRestoreVersion} versions={versions} />
             <ConfirmationDialog
                 busy={confirming}

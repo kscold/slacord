@@ -1,5 +1,5 @@
 export type NotificationType = 'mention' | 'issue_assigned' | 'issue_updated' | 'thread_reply';
-export type NotificationResourceType = 'message' | 'issue';
+export type NotificationResourceType = 'message' | 'issue' | 'document';
 
 export class NotificationEntity {
     constructor(

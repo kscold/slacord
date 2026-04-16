@@ -67,6 +67,43 @@ async function mockHuddleMedia(page: Page) {
   });
 }
 
+async function selectDocumentText(page: Page, text: string) {
+  await page.evaluate((targetText) => {
+    const container = document.querySelector(
+      '[data-testid="document-content"], .confluence-render',
+    );
+    if (!container) {
+      throw new Error("document content not found");
+    }
+
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let textNode: Text | null = null;
+    while (walker.nextNode()) {
+      const candidate = walker.currentNode as Text;
+      if (candidate.textContent?.includes(targetText)) {
+        textNode = candidate;
+        break;
+      }
+    }
+
+    if (!textNode || !textNode.textContent) {
+      throw new Error(`text not found: ${targetText}`);
+    }
+
+    const start = textNode.textContent.indexOf(targetText);
+    const range = document.createRange();
+    range.setStart(textNode, start);
+    range.setEnd(textNode, start + targetText.length);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const parent = textNode.parentElement as HTMLElement | null;
+    parent?.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+  }, text);
+}
+
 test.describe.serial("slacord web e2e", () => {
   let fixture: WorkspaceFixture;
 
@@ -122,6 +159,33 @@ test.describe.serial("slacord web e2e", () => {
     await page.waitForURL(new RegExp(`/${fixture.teamId}/docs/.+\\?edit=1`));
     await expect(page.getByRole("button", { name: "저장" })).toBeVisible();
     await expect(page.locator("input").first()).toHaveValue(title);
+  });
+
+  test("문서에서 선택 인용 코멘트와 답글 및 해결 처리를 남긴다", async ({
+    page,
+  }) => {
+    const commentContent = `문서 코멘트 검증 ${Date.now().toString().slice(-4)}`;
+    const replyContent = `답글 검증 ${Date.now().toString().slice(-4)}`;
+
+    await loginWithSession(page, fixture.owner);
+    await page.goto(`/${fixture.teamId}/docs/${fixture.documentId}`);
+    await expect(page.getByText("문서 검증 본문")).toBeVisible();
+
+    await selectDocumentText(page, "문서 검증 본문");
+    await expect(page.getByText("선택 인용")).toBeVisible();
+    await expect(page.getByText('"문서 검증 본문"')).toBeVisible();
+
+    await page.getByLabel("새 코멘트").fill(commentContent);
+    await page.getByRole("button", { name: "코멘트 남기기" }).click();
+    await expect(page.getByText(commentContent)).toBeVisible();
+
+    await page.getByRole("button", { name: "답글" }).first().click();
+    await page.getByLabel("답글 남기기").fill(replyContent);
+    await page.getByRole("button", { name: "답글 저장" }).click();
+    await expect(page.getByText(replyContent)).toBeVisible();
+
+    await page.getByRole("button", { name: "해결 처리" }).first().click();
+    await expect(page.getByText("해결됨")).toBeVisible();
   });
 
   test("이슈를 만들고 서버 검색 필터로 찾은 뒤 수정 모달을 연다", async ({

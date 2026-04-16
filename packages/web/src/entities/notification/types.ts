@@ -8,7 +8,7 @@ export interface AppNotification {
     actorId: string;
     actorName: string;
     content: string;
-    resourceType: 'message' | 'issue';
+    resourceType: 'message' | 'issue' | 'document';
     resourceId: string;
     channelId: string | null;
     isRead: boolean;

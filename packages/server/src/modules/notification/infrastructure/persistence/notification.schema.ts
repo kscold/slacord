@@ -21,7 +21,7 @@ export class Notification extends Document {
     @Prop({ required: true })
     content: string;
 
-    @Prop({ required: true, enum: ['message', 'issue'] })
+    @Prop({ required: true, enum: ['message', 'issue', 'document'] })
     resourceType: string;
 
     @Prop({ required: true })
