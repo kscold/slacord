@@ -2,10 +2,11 @@ import Link from 'next/link';
 import type { MessageSearchResult } from '@/src/entities/message/search.types';
 
 interface Props {
+    onSelect?: () => void;
     result: MessageSearchResult;
 }
 
-export function SearchResultCard({ result }: Props) {
+export function SearchResultCard({ onSelect, result }: Props) {
     return (
         <Link
             href={{
@@ -15,6 +16,7 @@ export function SearchResultCard({ result }: Props) {
                     at: result.createdAt,
                 },
             }}
+            onClick={onSelect}
             className="block rounded-[24px] border border-border-primary bg-bg-secondary p-5 transition hover:border-brand-400/40 hover:bg-bg-hover"
         >
             <div className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">

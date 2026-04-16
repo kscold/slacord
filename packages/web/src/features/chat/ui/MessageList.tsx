@@ -11,6 +11,7 @@ interface Props {
     hasOlderMessages?: boolean;
     highlightMessageId?: string | null;
     isLoadingOlder?: boolean;
+    onViewportAnchorChange?: (anchor: { createdAt: string; messageId: string } | null) => void;
     onLoadOlder?: () => void | Promise<unknown>;
     onReact: (messageId: string, emoji: string) => void;
     onDelete: (messageId: string) => void;
@@ -24,6 +25,7 @@ export function MessageList({
     hasOlderMessages = false,
     highlightMessageId = null,
     isLoadingOlder = false,
+    onViewportAnchorChange,
     onLoadOlder,
     onReact,
     onDelete,
@@ -33,6 +35,7 @@ export function MessageList({
 }: Props) {
     const { messages, typingUsers, isLoading } = useChatStore();
     const lastScrolledHighlightRef = useRef<string | null>(null);
+    const anchorFrameRef = useRef<number | null>(null);
 
     // 스레드 답글 수를 로컬 store에서 실시간 계산
     const replyCountMap = useMemo(() => {
@@ -63,6 +66,53 @@ export function MessageList({
         useStickyScroll({
             itemIds: mainMessageIds,
         });
+
+    useEffect(() => {
+        if (!onViewportAnchorChange) return;
+
+        const publishAnchor = () => {
+            const container = containerRef.current;
+            if (!container || mainMessages.length === 0) {
+                onViewportAnchorChange(null);
+                return;
+            }
+
+            const containerRect = container.getBoundingClientRect();
+            const anchor =
+                mainMessages.find((message) => {
+                    const element = document.getElementById(`message-${message.id}`);
+                    if (!element) return false;
+                    const rect = element.getBoundingClientRect();
+                    return rect.bottom >= containerRect.top + 12;
+                }) ?? mainMessages[mainMessages.length - 1];
+
+            onViewportAnchorChange({
+                messageId: anchor.id,
+                createdAt: anchor.createdAt,
+            });
+        };
+
+        const scheduleAnchorPublish = () => {
+            if (anchorFrameRef.current !== null) {
+                window.cancelAnimationFrame(anchorFrameRef.current);
+            }
+            anchorFrameRef.current = window.requestAnimationFrame(() => {
+                anchorFrameRef.current = null;
+                publishAnchor();
+            });
+        };
+
+        scheduleAnchorPublish();
+        const container = containerRef.current;
+        container?.addEventListener('scroll', scheduleAnchorPublish, { passive: true });
+
+        return () => {
+            if (anchorFrameRef.current !== null) {
+                window.cancelAnimationFrame(anchorFrameRef.current);
+            }
+            container?.removeEventListener('scroll', scheduleAnchorPublish);
+        };
+    }, [containerRef, mainMessages, onViewportAnchorChange]);
 
     useEffect(() => {
         if (!highlightMessageId) return;

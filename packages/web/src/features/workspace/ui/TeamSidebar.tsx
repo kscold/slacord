@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { resolveChannelLabel } from '@/src/entities/channel/lib/resolveChannelLabel';
 import type { Channel } from '@/src/entities/channel/types';
+import { WorkspaceSearchPalette } from '@/src/features/search/ui/WorkspaceSearchPalette';
 import { useDesktopMac } from '../model/useDesktopMac';
 import { useWorkspaceSidebarState } from '../model/useWorkspaceSidebarState';
 import { useWorkspaceChannels } from '../model/useWorkspaceChannels';
@@ -24,6 +26,8 @@ interface Props {
 export function TeamSidebar({ teamId, teamName, channels }: Props) {
     const pathname = usePathname();
     const isDesktopMac = useDesktopMac();
+    const [searchOpen, setSearchOpen] = useState(false);
+    const searchButtonRef = useRef<HTMLButtonElement>(null);
     const { canWrite, currentUserId, currentUsername, logout, members } = useWorkspaceSidebarState(teamId);
     const activeChannelId = pathname.startsWith(`/${teamId}/channel/`) ? (pathname.split('/')[3] ?? null) : null;
     const { channels: sidebarChannels } = useWorkspaceChannels({
@@ -39,6 +43,17 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
     );
     const directChannels = sidebarChannels.filter((channel) => channel.type === 'dm' || channel.type === 'group');
 
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') return;
+            event.preventDefault();
+            setSearchOpen(true);
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     return (
         <>
             <WorkspaceMobileNav
@@ -48,6 +63,7 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
                 currentUserId={currentUserId}
                 members={members}
                 onLogout={logout}
+                onOpenSearch={() => setSearchOpen(true)}
                 teamId={teamId}
                 teamName={teamName}
                 username={currentUsername}
@@ -55,8 +71,25 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
             <aside className="hidden h-screen w-60 shrink-0 border-r border-border-primary bg-bg-secondary lg:flex lg:flex-col lg:sticky lg:top-0">
                 <SidebarWorkspaceHeader teamId={teamId} teamName={teamName} isDesktopMac={isDesktopMac} />
                 <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+                    <button
+                        ref={searchButtonRef}
+                        type="button"
+                        onClick={() => setSearchOpen(true)}
+                        className="flex w-full items-center justify-between rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition hover:border-brand-400/30 hover:bg-white/[0.06]"
+                    >
+                        <div>
+                            <p className="text-sm font-semibold text-white">빠른 검색</p>
+                            <p className="mt-1 text-xs text-text-secondary">메시지, 작성자, 팀, 채널을 한 번에 찾기</p>
+                        </div>
+                        <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-text-tertiary">
+                            {isDesktopMac ? '⌘K' : 'Ctrl+K'}
+                        </span>
+                    </button>
                     <NotificationBell teamId={teamId} />
-                    <SidebarSection title="채널" action={canWrite ? <CreateChannelButton teamId={teamId} /> : undefined}>
+                    <SidebarSection
+                        title="채널"
+                        action={canWrite ? <CreateChannelButton teamId={teamId} /> : undefined}
+                    >
                         {workspaceChannels.length === 0 && (
                             <p className="px-3 py-2 text-xs text-text-tertiary">아직 채널이 없습니다.</p>
                         )}
@@ -80,7 +113,9 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
                                 />
                             </div>
                         ) : (
-                            <p className="px-3 py-2 text-xs text-text-tertiary">guest는 읽기 전용이라 DM이나 소그룹을 만들 수 없습니다.</p>
+                            <p className="px-3 py-2 text-xs text-text-tertiary">
+                                guest는 읽기 전용이라 DM이나 소그룹을 만들 수 없습니다.
+                            </p>
                         )}
                         <div className="mt-2 space-y-1">
                             {directChannels.length === 0 && (
@@ -186,6 +221,11 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
                 </nav>
                 <SidebarUserBar username={currentUsername} onLogout={logout} />
             </aside>
+            <WorkspaceSearchPalette
+                onClose={() => setSearchOpen(false)}
+                open={searchOpen}
+                restoreFocusRef={searchButtonRef}
+            />
         </>
     );
 }

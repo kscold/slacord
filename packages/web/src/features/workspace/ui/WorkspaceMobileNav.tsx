@@ -16,6 +16,7 @@ interface Props {
     currentUserId: string;
     members: TeamMemberSummary[];
     onLogout: () => Promise<void>;
+    onOpenSearch: () => void;
     teamId: string;
     teamName: string;
     username: string;
@@ -28,6 +29,7 @@ export function WorkspaceMobileNav({
     currentUserId,
     members,
     onLogout,
+    onOpenSearch,
     teamId,
     teamName,
     username,
@@ -47,6 +49,13 @@ export function WorkspaceMobileNav({
                     <p className="text-xs text-text-tertiary">워크스페이스</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={onOpenSearch}
+                        className="rounded-full border border-border-primary px-3 py-2 text-xs text-text-secondary"
+                    >
+                        검색
+                    </button>
                     <Link
                         href="/dashboard"
                         className="rounded-full border border-border-primary px-3 py-2 text-xs text-text-secondary"
@@ -100,7 +109,9 @@ export function WorkspaceMobileNav({
                                     />
                                 </div>
                             ) : (
-                                <p className="px-3 py-2 text-xs text-text-tertiary">guest는 읽기 전용이라 DM이나 소그룹을 만들 수 없습니다.</p>
+                                <p className="px-3 py-2 text-xs text-text-tertiary">
+                                    guest는 읽기 전용이라 DM이나 소그룹을 만들 수 없습니다.
+                                </p>
                             )}
                             <div className="mt-2 space-y-1">
                                 {directChannels.map((channel) => (

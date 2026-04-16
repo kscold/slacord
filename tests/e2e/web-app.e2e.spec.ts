@@ -331,6 +331,72 @@ test.describe.serial("slacord web e2e", () => {
     await expect(page.getByText(targetContent)).toBeVisible();
   });
 
+  test("mod+k 빠른 검색에서 메시지를 찾고 채널로 이동한다", async ({
+    page,
+  }) => {
+    const targetContent = `palette-target-${Date.now().toString().slice(-6)}`;
+
+    await sendSocketMessage({
+      session: fixture.actor,
+      teamId: fixture.teamId,
+      channelId: fixture.channelId,
+      content: targetContent,
+    });
+
+    await loginWithSession(page, fixture.owner);
+    await page.goto(`/${fixture.teamId}/channel/${fixture.channelId}`);
+
+    await page.keyboard.press(
+      process.platform === "darwin" ? "Meta+K" : "Control+K",
+    );
+
+    await expect(
+      page.getByRole("dialog", { name: "메시지 빠른 검색" }),
+    ).toBeVisible();
+    await page
+      .getByPlaceholder("메시지, 작성자, 팀, 채널로 검색...")
+      .fill(targetContent);
+    await expect(page.getByText(targetContent)).toBeVisible();
+
+    await page.getByRole("link", { name: new RegExp(targetContent) }).click();
+    await page.waitForURL(
+      new RegExp(`/${fixture.teamId}/channel/${fixture.channelId}\\?message=`),
+    );
+    await expect(page.getByText(targetContent)).toBeVisible();
+  });
+
+  test("오래된 대화 위치를 저장했다가 채널 재진입 시 복원한다", async ({
+    page,
+  }) => {
+    const targetContent = `resume-anchor-${Date.now().toString().slice(-6)}`;
+    const fillerMessages = Array.from(
+      { length: 60 },
+      (_, index) => `resume-filler-${index.toString().padStart(2, "0")}`,
+    );
+
+    await sendSocketMessages({
+      session: fixture.actor,
+      teamId: fixture.teamId,
+      channelId: fixture.channelId,
+      contents: [targetContent, ...fillerMessages],
+    });
+
+    await loginWithSession(page, fixture.owner);
+    await page.goto("/dashboard/messages");
+    await page
+      .getByPlaceholder("메시지, 작성자, 팀, 채널로 검색...")
+      .fill(targetContent);
+    await page.getByRole("link", { name: new RegExp(targetContent) }).click();
+    await page.waitForURL(
+      new RegExp(`/${fixture.teamId}/channel/${fixture.channelId}\\?message=`),
+    );
+    await expect(page.getByText(targetContent)).toBeVisible();
+
+    await page.goto(`/${fixture.teamId}/issues`);
+    await page.goto(`/${fixture.teamId}/channel/${fixture.channelId}`);
+    await expect(page.getByText(targetContent)).toBeVisible();
+  });
+
   test("guest는 워크스페이스를 읽기 전용으로 사용한다", async ({ page }) => {
     const guest = await createGuestSessionForTeam({
       ownerToken: fixture.owner.token,

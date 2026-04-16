@@ -52,6 +52,9 @@ UX without growing accidental complexity.
   workspace scraping
 - channel pages can load older history on demand and deep-link to searched
   messages outside the initial 50-message window
+- workspace sidebar and dashboard now expose a `mod+k` quick search palette
+- channel pages restore unread anchors or the last viewed older message when
+  re-entering the conversation
 
 ## Phase 3: Navigation And Accessibility
 

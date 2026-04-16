@@ -3,6 +3,7 @@ import { SearchResultCard } from './SearchResultCard';
 
 interface Props {
     indexing: boolean;
+    onSelectResult?: () => void;
     pinnedResults: MessageSearchResult[];
     query: string;
     recentResults: MessageSearchResult[];
@@ -10,7 +11,15 @@ interface Props {
     teamCount: number;
 }
 
-export function SearchResultList({ indexing, pinnedResults, query, recentResults, results, teamCount }: Props) {
+export function SearchResultList({
+    indexing,
+    onSelectResult,
+    pinnedResults,
+    query,
+    recentResults,
+    results,
+    teamCount,
+}: Props) {
     if (!query.trim()) {
         return (
             <div className="space-y-6">
@@ -22,8 +31,14 @@ export function SearchResultList({ indexing, pinnedResults, query, recentResults
                     title="방금 올라온 메시지"
                     items={recentResults}
                     emptyText="표시할 최근 메시지가 없습니다."
+                    onSelectResult={onSelectResult}
                 />
-                <SearchSection title="고정된 중요 메시지" items={pinnedResults} emptyText="고정된 메시지가 없습니다." />
+                <SearchSection
+                    title="고정된 중요 메시지"
+                    items={pinnedResults}
+                    emptyText="고정된 메시지가 없습니다."
+                    onSelectResult={onSelectResult}
+                />
             </div>
         );
     }
@@ -51,7 +66,7 @@ export function SearchResultList({ indexing, pinnedResults, query, recentResults
     return (
         <div className="grid gap-4">
             {results.map((result) => (
-                <SearchResultCard key={result.id} result={result} />
+                <SearchResultCard key={result.id} onSelect={onSelectResult} result={result} />
             ))}
         </div>
     );
@@ -60,10 +75,12 @@ export function SearchResultList({ indexing, pinnedResults, query, recentResults
 function SearchSection({
     emptyText,
     items,
+    onSelectResult,
     title,
 }: {
     emptyText: string;
     items: MessageSearchResult[];
+    onSelectResult?: () => void;
     title: string;
 }) {
     return (
@@ -74,7 +91,7 @@ function SearchSection({
             {items.length ? (
                 <div className="grid gap-4">
                     {items.map((item) => (
-                        <SearchResultCard key={item.id} result={item} />
+                        <SearchResultCard key={item.id} onSelect={onSelectResult} result={item} />
                     ))}
                 </div>
             ) : (

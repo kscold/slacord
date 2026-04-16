@@ -62,6 +62,7 @@ export function MessageItem({
     return (
         <div
             id={`message-${message.id}`}
+            data-message-created-at={message.createdAt}
             data-message-id={message.id}
             ref={containerRef}
             onMouseEnter={supportsHover ? openMenu : undefined}
