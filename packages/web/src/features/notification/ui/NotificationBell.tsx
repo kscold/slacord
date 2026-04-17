@@ -68,9 +68,12 @@ export function NotificationBell({ teamId }: Props) {
                     </span>
                 )}
             </button>
+
+            {/* 패널은 항상 fixed 오버레이로 — sidebar nav 안에 인라인 렌더링되지 않도록 */}
             {open && (
-                <div className="fixed inset-0 z-50 flex lg:static lg:z-auto">
-                    <div className="flex-1 lg:hidden" onClick={() => setOpen(false)} />
+                <div className="fixed inset-0 z-50 flex">
+                    {/* 뒷배경 오버레이 (클릭 시 닫힘) */}
+                    <div className="flex-1" onClick={() => setOpen(false)} />
                     <NotificationPanel
                         ref={panelRef}
                         id={panelId}

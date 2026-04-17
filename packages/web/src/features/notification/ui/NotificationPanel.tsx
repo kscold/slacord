@@ -51,7 +51,7 @@ export const NotificationPanel = forwardRef<HTMLElement, Props>(function Notific
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="fixed inset-0 z-50 flex flex-col bg-bg-primary outline-none lg:static lg:z-auto lg:w-96 lg:border-l lg:border-border-primary"
+            className="flex h-full w-80 flex-col bg-bg-primary outline-none border-l border-border-primary"
         >
             <div className="flex items-center justify-between border-b border-border-primary px-4 py-3 shrink-0">
                 <h3 id={titleId} className="text-base font-bold text-white">
