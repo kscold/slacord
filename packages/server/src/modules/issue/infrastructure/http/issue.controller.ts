@@ -76,14 +76,23 @@ export class IssueController {
         @Body() dto: UpdateIssueDto,
     ) {
         await this.issueAccessService.ensureWritableMember(teamId, user.userId);
-        const issue = await this.updateIssueUseCase.execute({ id: issueId, ...dto });
-        void this.issueNotificationService.notifyAssignees({
-            teamId,
-            actorId: user.userId,
-            assigneeIds: dto.assigneeIds,
-            issueId: issue.id,
-            issueTitle: issue.title,
+        const { updated: issue, previousAssigneeIds } = await this.updateIssueUseCase.execute({
+            id: issueId,
+            ...dto,
         });
+        // 새로 추가된 담당자에게만 알림 — 기존 담당자 중복 알림 방지
+        const newAssigneeIds = (dto.assigneeIds ?? []).filter(
+            (id) => !previousAssigneeIds.includes(id),
+        );
+        if (newAssigneeIds.length > 0) {
+            void this.issueNotificationService.notifyAssignees({
+                teamId,
+                actorId: user.userId,
+                assigneeIds: newAssigneeIds,
+                issueId: issue.id,
+                issueTitle: issue.title,
+            });
+        }
         return { success: true, data: issue.toPublic() };
     }
 
