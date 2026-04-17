@@ -71,6 +71,11 @@ function IssueCardBody({ assignees, issue, priorityClass }: { assignees: TeamMem
                             {label}
                         </span>
                     ))}
+                    {issue.labels.length > 2 && (
+                        <span className="rounded-full border border-border-primary px-2 py-0.5 text-xs text-text-tertiary">
+                            +{issue.labels.length - 2}
+                        </span>
+                    )}
                 </div>
                 {assignees.length > 0 ? (
                     <div className="flex shrink-0 -space-x-1.5">
