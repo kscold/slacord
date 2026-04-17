@@ -65,9 +65,9 @@ export class ChannelRepository implements IChannelRepository {
         return this.toEntity(doc.toObject());
     }
 
-    private toEntity(doc: any): ChannelEntity {
+    private toEntity(doc: ChannelDocument): ChannelEntity {
         return new ChannelEntity(
-            doc._id.toString(),
+            String(doc._id),
             doc.teamId.toString(),
             doc.name,
             doc.description,

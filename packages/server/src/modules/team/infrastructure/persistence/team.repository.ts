@@ -8,6 +8,10 @@ import {
     TeamMember,
     createDefaultBridgeWorkerConfig,
     type TeamAuditLogEntry,
+    type TeamAuditLogCategory,
+    type TeamAuditLogAction,
+    type TeamMemberRole,
+    type TeamInviteRole,
     type BridgeWorkerConfig,
     type GitHubConfig,
 } from '../../domain/team.entity';
@@ -115,24 +119,24 @@ export class TeamRepository implements ITeamRepository {
         return doc ? this.toEntity(doc) : null;
     }
 
-    private toEntity(doc: any): TeamEntity {
+    private toEntity(doc: TeamDocument): TeamEntity {
         return new TeamEntity(
-            doc._id.toString(),
+            String(doc._id),
             doc.name,
             doc.slug,
             doc.description,
             doc.iconUrl,
-            doc.members.map((m: any) => ({
+            doc.members.map((m) => ({
                 userId: m.userId,
-                role: m.role,
+                role: m.role as TeamMemberRole,
                 joinedAt: m.joinedAt,
                 canManageInvites: !!m.canManageInvites,
             })),
-            (doc.inviteLinks ?? []).map((invite: any) => ({
+            (doc.inviteLinks ?? []).map((invite) => ({
                 code: invite.code,
                 label: invite.label ?? null,
                 createdBy: invite.createdBy,
-                defaultRole: invite.defaultRole,
+                defaultRole: invite.defaultRole as TeamInviteRole,
                 expiresAt: invite.expiresAt ?? null,
                 maxUses: invite.maxUses ?? null,
                 useCount: invite.useCount ?? 0,
@@ -153,11 +157,11 @@ export class TeamRepository implements ITeamRepository {
                 },
             },
             doc.createdAt,
-            (doc.auditLogs ?? []).map((auditLog: any) => ({
+            (doc.auditLogs ?? []).map((auditLog) => ({
                 id: auditLog.id,
                 actorId: auditLog.actorId,
-                category: auditLog.category,
-                action: auditLog.action,
+                category: auditLog.category as TeamAuditLogCategory,
+                action: auditLog.action as TeamAuditLogAction,
                 summary: auditLog.summary,
                 target: auditLog.target ?? null,
                 metadata: auditLog.metadata ?? {},

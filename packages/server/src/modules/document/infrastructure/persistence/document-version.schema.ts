@@ -24,6 +24,8 @@ export class DocVersion {
 
     @Prop({ required: true })
     savedBy: string;
+
+    createdAt: Date;
 }
 
 export const DocumentVersionSchema = SchemaFactory.createForClass(DocVersion);

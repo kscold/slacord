@@ -11,14 +11,14 @@ export class DocumentVersionRepository implements IDocumentVersionRepository {
 
     private toEntity(doc: DocumentVersionDocument) {
         return new DocumentVersionEntity(
-            (doc._id as any).toString(),
+            String(doc._id),
             doc.documentId,
             doc.teamId,
             doc.title,
             doc.content,
             doc.contentFormat ?? 'plain',
             doc.savedBy,
-            (doc as any).createdAt,
+            doc.createdAt,
         );
     }
 

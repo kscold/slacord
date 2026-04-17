@@ -11,7 +11,7 @@ export class MessageRepository implements IMessageRepository {
     constructor(@InjectModel(Message.name) private readonly messageModel: Model<MessageDocument>) {}
 
     async findByChannel(channelId: string, limit: number, before?: Date): Promise<MessageEntity[]> {
-        const query: any = { channelId };
+        const query: Record<string, unknown> = { channelId };
         if (before) {
             query.createdAt = { $lt: before };
         }
@@ -111,19 +111,19 @@ export class MessageRepository implements IMessageRepository {
         const doc = await this.messageModel.findById(id);
         if (!doc) return null;
 
-        const existing = doc.reactions.find((r: any) => r.emoji === emoji);
+        const existing = doc.reactions.find((r) => r.emoji === emoji);
         if (existing) {
             const idx = existing.userIds.indexOf(userId);
             if (idx >= 0) {
                 existing.userIds.splice(idx, 1);
                 if (existing.userIds.length === 0) {
-                    doc.reactions = doc.reactions.filter((r: any) => r.emoji !== emoji);
+                    doc.reactions = doc.reactions.filter((r) => r.emoji !== emoji);
                 }
             } else {
                 existing.userIds.push(userId);
             }
         } else {
-            doc.reactions.push({ emoji, userIds: [userId] } as any);
+            doc.reactions.push({ emoji, userIds: [userId] });
         }
 
         await doc.save();
@@ -194,9 +194,9 @@ export class MessageRepository implements IMessageRepository {
         return updated ? this.toEntity(updated) : null;
     }
 
-    private toEntity(doc: any): MessageEntity {
+    private toEntity(doc: MessageDocument): MessageEntity {
         return new MessageEntity(
-            doc._id.toString(),
+            String(doc._id),
             doc.teamId.toString(),
             doc.channelId.toString(),
             doc.authorId,

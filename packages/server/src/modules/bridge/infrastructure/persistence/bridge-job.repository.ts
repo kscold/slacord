@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { type BridgeJobListOptions, type IBridgeJobRepository } from '../../domain/bridge-job.port';
 import { BridgeJob, type BridgeJobDocument } from './bridge-job.schema';
-import { BridgeJobEntity, type CreateBridgeJobInput } from '../../domain/bridge-job.entity';
+import { BridgeJobEntity, type BridgePlatform, type BridgeEventType, type BridgeJobStatus, type CreateBridgeJobInput } from '../../domain/bridge-job.entity';
 
 const CLAIM_STALE_MS = 60_000;
 
@@ -109,17 +109,17 @@ export class BridgeJobRepository implements IBridgeJobRepository {
         });
     }
 
-    private toEntity(doc: any) {
+    private toEntity(doc: BridgeJobDocument) {
         return new BridgeJobEntity(
-            doc._id.toString(),
+            String(doc._id),
             doc.teamId,
-            doc.platform,
-            doc.eventType,
+            doc.platform as BridgePlatform,
+            doc.eventType as BridgeEventType,
             doc.webhookUrl,
             doc.title,
             doc.content,
             doc.url ?? null,
-            doc.status,
+            doc.status as BridgeJobStatus,
             doc.attemptCount ?? 0,
             doc.availableAt,
             doc.claimedAt ?? null,

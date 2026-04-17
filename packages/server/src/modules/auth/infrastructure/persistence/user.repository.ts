@@ -35,9 +35,9 @@ export class UserRepository implements IUserRepository {
         return !!(await this.userModel.exists({ email }));
     }
 
-    private toEntity(doc: any): UserEntity {
+    private toEntity(doc: UserDocument): UserEntity {
         return new UserEntity(
-            doc._id.toString(),
+            String(doc._id),
             doc.email,
             doc.username,
             doc.passwordHash,

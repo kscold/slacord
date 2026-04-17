@@ -11,7 +11,7 @@ export class DocumentCommentRepository implements IDocumentCommentRepository {
 
     private toEntity(doc: DocumentCommentDocument): DocumentCommentEntity {
         return new DocumentCommentEntity(
-            (doc._id as any).toString(),
+            String(doc._id),
             doc.teamId,
             doc.documentId,
             doc.parentId ?? null,
@@ -23,8 +23,8 @@ export class DocumentCommentRepository implements IDocumentCommentRepository {
             doc.editedAt ?? null,
             doc.deletedAt ?? null,
             doc.deletedBy ?? null,
-            (doc as any).createdAt,
-            (doc as any).updatedAt,
+            doc.createdAt,
+            doc.updatedAt,
         );
     }
 

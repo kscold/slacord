@@ -41,9 +41,9 @@ export class ChannelReadRepository implements IChannelReadRepository {
         return this.toEntity(doc!);
     }
 
-    private toEntity(doc: any): ChannelReadEntity {
+    private toEntity(doc: ChannelReadDocument): ChannelReadEntity {
         return new ChannelReadEntity(
-            doc._id.toString(),
+            String(doc._id),
             doc.teamId,
             doc.channelId,
             doc.userId,
