@@ -32,6 +32,10 @@ export class Notification extends Document {
 
     @Prop({ default: false, index: true })
     isRead: boolean;
+
+    // timestamps: true 로 자동 생성 — 타입 명시로 any 캐스트 방지
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

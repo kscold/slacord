@@ -11,7 +11,7 @@ export class NotificationRepository implements INotificationRepository {
 
     private toEntity(doc: Notification): NotificationEntity {
         return new NotificationEntity(
-            (doc._id as any).toString(),
+            String(doc._id),
             doc.teamId,
             doc.recipientId,
             doc.type as NotificationType,
@@ -22,7 +22,7 @@ export class NotificationRepository implements INotificationRepository {
             doc.resourceId,
             doc.channelId,
             doc.isRead,
-            (doc as any).createdAt,
+            doc.createdAt,
         );
     }
 
