@@ -58,6 +58,9 @@ export class Doc {
 
     @Prop({ type: String, default: null })
     archivedBy: string | null;
+
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export const DocumentSchema = SchemaFactory.createForClass(Doc);

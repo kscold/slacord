@@ -11,7 +11,7 @@ export class IssueRepository implements IIssueRepository {
     constructor(@InjectModel(Issue.name) private readonly issueModel: Model<IssueDocument>) {}
 
     async findByTeam(teamId: string, filters?: IssueSearchFilters): Promise<IssueEntity[]> {
-        const query: any = { teamId };
+        const query: Record<string, unknown> = { teamId };
         if (filters?.status) query.status = filters.status;
         if (filters?.assigneeId) query.assigneeIds = filters.assigneeId;
         if (filters?.query?.trim()) {
@@ -19,12 +19,12 @@ export class IssueRepository implements IIssueRepository {
             query.$or = [{ title: pattern }, { description: pattern }];
         }
         const docs = await this.issueModel.find(query).sort({ createdAt: -1 }).lean();
-        return docs.map((d) => this.toEntity(d));
+        return docs.map((d) => this.toEntity(d as IssueDocument));
     }
 
     async findById(id: string): Promise<IssueEntity | null> {
         const doc = await this.issueModel.findById(id).lean();
-        return doc ? this.toEntity(doc) : null;
+        return doc ? this.toEntity(doc as IssueDocument) : null;
     }
 
     async save(data: {
@@ -37,7 +37,7 @@ export class IssueRepository implements IIssueRepository {
         createdBy: string;
     }): Promise<IssueEntity> {
         const doc = await this.issueModel.create(data);
-        return this.toEntity(doc.toObject());
+        return this.toEntity(doc);
     }
 
     async update(id: string, data: Partial<{
@@ -49,7 +49,7 @@ export class IssueRepository implements IIssueRepository {
         labels: string[];
     }>): Promise<IssueEntity | null> {
         const doc = await this.issueModel.findByIdAndUpdate(id, data, { new: true }).lean();
-        return doc ? this.toEntity(doc) : null;
+        return doc ? this.toEntity(doc as IssueDocument) : null;
     }
 
     async deleteById(id: string): Promise<boolean> {
@@ -57,9 +57,9 @@ export class IssueRepository implements IIssueRepository {
         return result !== null;
     }
 
-    private toEntity(doc: any): IssueEntity {
+    private toEntity(doc: IssueDocument): IssueEntity {
         return new IssueEntity(
-            doc._id.toString(),
+            String(doc._id),
             doc.teamId.toString(),
             doc.title,
             doc.description ?? '',

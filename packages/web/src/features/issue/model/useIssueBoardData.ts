@@ -21,21 +21,25 @@ interface Props {
 
 export function useIssueBoardData({ teamId, filters }: Props) {
     const searchParams = useSearchParams();
-    const { issues, setIssues } = useIssueStore();
+    const { issues, setIssues, setLoading } = useIssueStore();
     const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
     const workspace = useTeamWorkspaceData(teamId);
 
     const loadIssues = useCallback(async () => {
-        const response = await issueApi.getIssues(teamId, {
-            query: filters.query,
-            assigneeId: filters.assigneeId || undefined,
-            status: filters.statusFilter === 'all' ? undefined : filters.statusFilter,
-        });
-
-        if (response.success && Array.isArray(response.data)) {
-            setIssues(response.data);
+        setLoading(true);
+        try {
+            const response = await issueApi.getIssues(teamId, {
+                query: filters.query,
+                assigneeId: filters.assigneeId || undefined,
+                status: filters.statusFilter === 'all' ? undefined : filters.statusFilter,
+            });
+            if (response.success && Array.isArray(response.data)) {
+                setIssues(response.data);
+            }
+        } finally {
+            setLoading(false);
         }
-    }, [filters.assigneeId, filters.query, filters.statusFilter, setIssues, teamId]);
+    }, [filters.assigneeId, filters.query, filters.statusFilter, setIssues, setLoading, teamId]);
 
     useEffect(() => {
         const timeout = window.setTimeout(

@@ -12,7 +12,7 @@ export class DocumentRepository implements IDocumentRepository {
 
     private toEntity(doc: DocumentDocument): DocumentEntity {
         return new Entity(
-            (doc._id as any).toString(),
+            String(doc._id),
             doc.teamId,
             doc.title,
             doc.content,
@@ -23,14 +23,14 @@ export class DocumentRepository implements IDocumentRepository {
             doc.externalSource ?? null,
             doc.externalId ?? null,
             doc.externalUrl ?? null,
-            (doc as any).visibility ?? 'team',
-            (doc as any).editPolicy ?? 'all',
-            (doc as any).allowedViewerIds ?? [],
-            (doc as any).allowedEditorIds ?? [],
-            (doc as any).archivedAt ?? null,
-            (doc as any).archivedBy ?? null,
-            (doc as any).createdAt,
-            (doc as any).updatedAt,
+            doc.visibility ?? 'team',
+            doc.editPolicy ?? 'all',
+            doc.allowedViewerIds ?? [],
+            doc.allowedEditorIds ?? [],
+            doc.archivedAt ?? null,
+            doc.archivedBy ?? null,
+            doc.createdAt,
+            doc.updatedAt,
         );
     }
 
