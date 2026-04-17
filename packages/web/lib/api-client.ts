@@ -314,8 +314,10 @@ export const documentApi = {
     async getDocument(teamId: string, documentId: string) {
         return apiFetch(`/api/team/${teamId}/document/${documentId}`);
     },
-    async getDocumentComments(teamId: string, documentId: string) {
-        return apiFetch<DocumentComment[]>(`/api/team/${teamId}/document/${documentId}/comment`);
+    async getDocumentComments(teamId: string, documentId: string, options: { status?: 'all' | 'open' | 'resolved' } = {}) {
+        const params = new URLSearchParams();
+        if (options.status && options.status !== 'all') params.set('status', options.status);
+        return apiFetch<DocumentComment[]>(`/api/team/${teamId}/document/${documentId}/comment${params.toString() ? `?${params.toString()}` : ''}`);
     },
     async createDocument(
         teamId: string,
@@ -349,10 +351,26 @@ export const documentApi = {
             body: JSON.stringify(data),
         });
     },
+    async updateDocumentComment(
+        teamId: string,
+        documentId: string,
+        commentId: string,
+        data: { content: string },
+    ) {
+        return apiFetch<DocumentComment>(`/api/team/${teamId}/document/${documentId}/comment/${commentId}/content`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        });
+    },
     async updateDocumentCommentStatus(teamId: string, documentId: string, commentId: string, resolved: boolean) {
         return apiFetch<DocumentComment>(`/api/team/${teamId}/document/${documentId}/comment/${commentId}`, {
             method: 'PATCH',
             body: JSON.stringify({ resolved }),
+        });
+    },
+    async deleteDocumentComment(teamId: string, documentId: string, commentId: string) {
+        return apiFetch<DocumentComment>(`/api/team/${teamId}/document/${documentId}/comment/${commentId}`, {
+            method: 'DELETE',
         });
     },
     async getDocumentVersions(teamId: string, documentId: string) {

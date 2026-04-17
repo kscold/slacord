@@ -45,6 +45,9 @@ export interface DocumentComment {
     createdBy: string;
     resolvedAt: string | null;
     resolvedBy: string | null;
+    editedAt: string | null;
+    deletedAt: string | null;
+    deletedBy: string | null;
     createdAt: string;
     updatedAt: string;
 }

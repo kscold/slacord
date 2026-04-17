@@ -30,6 +30,15 @@ export class DocComment {
 
     @Prop({ type: String, default: null })
     resolvedBy: string | null;
+
+    @Prop({ type: Date, default: null })
+    editedAt: Date | null;
+
+    @Prop({ type: Date, default: null })
+    deletedAt: Date | null;
+
+    @Prop({ type: String, default: null })
+    deletedBy: string | null;
 }
 
 export const DocumentCommentSchema = SchemaFactory.createForClass(DocComment);

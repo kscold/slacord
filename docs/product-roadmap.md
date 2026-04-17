@@ -106,3 +106,5 @@ UX without growing accidental complexity.
   issues on top of global message search
 - document detail pages now support quoted discussion starters, threaded comments,
   resolve flows, and document-targeted notification routing
+- document discussion threads now support edit, soft delete, and resolved-only
+  filtering for triage and cleanup flows

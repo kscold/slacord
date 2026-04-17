@@ -12,6 +12,8 @@ import { DocumentVersionRepository } from './infrastructure/persistence/document
 import { CreateDocumentUseCase } from './application/use-cases/create-document.use-case';
 import { CreateDocumentCommentUseCase } from './application/use-cases/create-document-comment.use-case';
 import { UpdateDocumentUseCase } from './application/use-cases/update-document.use-case';
+import { UpdateDocumentCommentUseCase } from './application/use-cases/update-document-comment.use-case';
+import { DeleteDocumentCommentUseCase } from './application/use-cases/delete-document-comment.use-case';
 import { UpdateDocumentCommentStatusUseCase } from './application/use-cases/update-document-comment-status.use-case';
 import { GetDocumentCommentsUseCase } from './application/use-cases/get-document-comments.use-case';
 import { GetDocumentsUseCase } from './application/use-cases/get-documents.use-case';
@@ -50,6 +52,8 @@ import { StorageModule } from '../../shared/storage/storage.module';
         CreateDocumentUseCase,
         CreateDocumentCommentUseCase,
         UpdateDocumentUseCase,
+        UpdateDocumentCommentUseCase,
+        DeleteDocumentCommentUseCase,
         UpdateDocumentCommentStatusUseCase,
         GetDocumentCommentsUseCase,
         GetDocumentsUseCase,

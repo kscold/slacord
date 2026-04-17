@@ -40,6 +40,9 @@ function makeComment(overrides: Partial<{ id: string; teamId: string; documentId
         overrides.createdBy ?? 'user-author',
         overrides.resolvedAt ?? null,
         null,
+        null,
+        null,
+        null,
         new Date(),
         new Date(),
     );
@@ -74,7 +77,9 @@ describe('CreateDocumentCommentUseCase', () => {
         findByDocument: jest.fn(),
         findById: jest.fn(),
         save: jest.fn(),
+        updateContent: jest.fn(),
         updateStatus: jest.fn(),
+        softDelete: jest.fn(),
     };
     const mockDocumentRepo = {
         findByTeam: jest.fn(),

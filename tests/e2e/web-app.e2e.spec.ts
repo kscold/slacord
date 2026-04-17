@@ -166,6 +166,7 @@ test.describe.serial("slacord web e2e", () => {
   }) => {
     const commentContent = `문서 코멘트 검증 ${Date.now().toString().slice(-4)}`;
     const replyContent = `답글 검증 ${Date.now().toString().slice(-4)}`;
+    const editedCommentContent = `${commentContent} 수정본`;
 
     await loginWithSession(page, fixture.owner);
     await page.goto(`/${fixture.teamId}/docs/${fixture.documentId}`);
@@ -184,8 +185,26 @@ test.describe.serial("slacord web e2e", () => {
     await page.getByRole("button", { name: "답글 저장" }).click();
     await expect(page.getByText(replyContent)).toBeVisible();
 
+    await page.getByRole("button", { name: "수정" }).first().click();
+    await page.getByLabel("코멘트 수정").fill(editedCommentContent);
+    await page.getByRole("button", { name: "편집 저장" }).click();
+    await expect(page.getByText(editedCommentContent)).toBeVisible();
+    await expect(page.getByText("수정됨")).toBeVisible();
+
     await page.getByRole("button", { name: "해결 처리" }).first().click();
     await expect(page.getByText("해결됨")).toBeVisible();
+
+    await page.getByRole("button", { name: "열린 토론" }).click();
+    await expect(
+      page.getByText("열린 토론이 없습니다. 해결되지 않은 이슈가 생기면 여기에서 바로 이어서 볼 수 있습니다."),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "해결됨" }).click();
+    await expect(page.getByText(editedCommentContent)).toBeVisible();
+
+    await page.getByRole("button", { name: "삭제" }).first().click();
+    await page.getByRole("button", { name: "삭제하기" }).click();
+    await expect(page.getByText("삭제된 코멘트입니다.")).toBeVisible();
   });
 
   test("이슈를 만들고 서버 검색 필터로 찾은 뒤 수정 모달을 연다", async ({

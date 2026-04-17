@@ -40,4 +40,16 @@ describe('buildNotificationCopy', () => {
         expect(result.actorName).toBe('팀 동료');
         expect(result.title).toBe('팀 동료님이 스레드에 답글을 남겼어요');
     });
+
+    it('문서 멘션은 문서 맥락이 드러나는 제목을 사용함', () => {
+        const result = buildNotificationCopy(makeNotification('mention', { resourceType: 'document' }));
+
+        expect(result.title).toBe('김슬랙님이 문서에서 멘션했어요');
+    });
+
+    it('문서 답글 알림은 문서 토론 제목을 사용함', () => {
+        const result = buildNotificationCopy(makeNotification('thread_reply', { resourceType: 'document' }));
+
+        expect(result.title).toBe('김슬랙님이 문서 토론에 답글을 남겼어요');
+    });
 });

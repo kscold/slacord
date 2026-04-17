@@ -20,6 +20,9 @@ export class DocumentCommentRepository implements IDocumentCommentRepository {
             doc.createdBy,
             doc.resolvedAt ?? null,
             doc.resolvedBy ?? null,
+            doc.editedAt ?? null,
+            doc.deletedAt ?? null,
+            doc.deletedBy ?? null,
             (doc as any).createdAt,
             (doc as any).updatedAt,
         );
@@ -47,8 +50,31 @@ export class DocumentCommentRepository implements IDocumentCommentRepository {
         return this.toEntity(doc);
     }
 
+    async updateContent(id: string, data: { content: string; editedAt: Date | null }): Promise<DocumentCommentEntity | null> {
+        const doc = await this.model.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
+        return doc ? this.toEntity(doc as DocumentCommentDocument) : null;
+    }
+
     async updateStatus(id: string, data: { resolvedAt: Date | null; resolvedBy: string | null }): Promise<DocumentCommentEntity | null> {
         const doc = await this.model.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
+        return doc ? this.toEntity(doc as DocumentCommentDocument) : null;
+    }
+
+    async softDelete(id: string, data: { deletedAt: Date; deletedBy: string }): Promise<DocumentCommentEntity | null> {
+        const doc = await this.model
+            .findByIdAndUpdate(
+                id,
+                {
+                    $set: {
+                        content: '',
+                        anchorText: null,
+                        deletedAt: data.deletedAt,
+                        deletedBy: data.deletedBy,
+                    },
+                },
+                { new: true },
+            )
+            .lean();
         return doc ? this.toEntity(doc as DocumentCommentDocument) : null;
     }
 }

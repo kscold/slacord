@@ -11,7 +11,9 @@ export interface IDocumentCommentRepository {
         anchorText: string | null;
         createdBy: string;
     }): Promise<DocumentCommentEntity>;
+    updateContent(id: string, data: { content: string; editedAt: Date | null }): Promise<DocumentCommentEntity | null>;
     updateStatus(id: string, data: { resolvedAt: Date | null; resolvedBy: string | null }): Promise<DocumentCommentEntity | null>;
+    softDelete(id: string, data: { deletedAt: Date; deletedBy: string }): Promise<DocumentCommentEntity | null>;
 }
 
 export const DOCUMENT_COMMENT_REPOSITORY = Symbol('DOCUMENT_COMMENT_REPOSITORY');

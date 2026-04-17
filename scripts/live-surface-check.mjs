@@ -1757,6 +1757,7 @@ async function main() {
 
     const commentId = created.payload?.data?.id;
     assert(commentId, "문서 코멘트 ID가 없습니다.");
+    context.documentIds.comment = commentId;
 
     const reply = await api(
       `/team/${context.teamId}/document/${context.documentIds.root}/comment`,
@@ -1769,7 +1770,8 @@ async function main() {
         },
       },
     );
-    assert(reply.payload?.data?.id, "문서 답글 ID가 없습니다.");
+    const replyId = reply.payload?.data?.id;
+    assert(replyId, "문서 답글 ID가 없습니다.");
 
     const list = await api(
       `/team/${context.teamId}/document/${context.documentIds.root}/comment`,
@@ -1782,6 +1784,29 @@ async function main() {
       "작성한 문서 코멘트가 목록에 없습니다.",
     );
 
+    const edited = await api(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment/${commentId}/content`,
+      {
+        method: "PATCH",
+        token: context.users.allowedMember.token,
+        body: {
+          content: "수정된 문서 코멘트입니다.",
+        },
+      },
+    );
+    assert(edited.payload?.data?.editedAt, "문서 코멘트 수정 시 editedAt이 기록되지 않았습니다.");
+
+    const openList = await api(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment?status=open`,
+      {
+        token: context.users.allowedMember.token,
+      },
+    );
+    assert(
+      (openList.payload?.data || []).some((comment) => comment.id === commentId),
+      "열린 토론 필터에서 작성한 코멘트를 찾지 못했습니다.",
+    );
+
     const resolved = await api(
       `/team/${context.teamId}/document/${context.documentIds.root}/comment/${commentId}`,
       {
@@ -1792,7 +1817,27 @@ async function main() {
     );
     assert(resolved.payload?.data?.resolvedAt, "문서 코멘트가 해결 상태로 바뀌지 않았습니다.");
 
-    return `${commentId} resolved`;
+    const resolvedList = await api(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment?status=resolved`,
+      {
+        token: context.users.allowedMember.token,
+      },
+    );
+    assert(
+      (resolvedList.payload?.data || []).some((comment) => comment.id === commentId),
+      "해결된 토론 필터에서 해결한 코멘트를 찾지 못했습니다.",
+    );
+
+    const deleted = await api(
+      `/team/${context.teamId}/document/${context.documentIds.root}/comment/${replyId}`,
+      {
+        method: "DELETE",
+        token: context.users.owner.token,
+      },
+    );
+    assert(deleted.payload?.data?.deletedAt, "문서 답글 삭제 시 deletedAt이 기록되지 않았습니다.");
+
+    return `${commentId} resolved / ${replyId} deleted`;
   });
 
   await check("security", "비허용 멤버는 제한 문서 코멘트를 볼 수 없어야 함", async () => {

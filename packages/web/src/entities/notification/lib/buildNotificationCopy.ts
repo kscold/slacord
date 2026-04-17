@@ -12,13 +12,17 @@ export function buildNotificationCopy(notification: AppNotification) {
 function buildNotificationTitle(notification: AppNotification, actorName: string) {
     switch (notification.type) {
         case 'mention':
-            return `${actorName}님이 멘션했어요`;
+            return notification.resourceType === 'document'
+                ? `${actorName}님이 문서에서 멘션했어요`
+                : `${actorName}님이 멘션했어요`;
         case 'issue_assigned':
             return `${actorName}님이 이슈를 맡겼어요`;
         case 'issue_updated':
             return `${actorName}님이 이슈를 업데이트했어요`;
         case 'thread_reply':
-            return `${actorName}님이 스레드에 답글을 남겼어요`;
+            return notification.resourceType === 'document'
+                ? `${actorName}님이 문서 토론에 답글을 남겼어요`
+                : `${actorName}님이 스레드에 답글을 남겼어요`;
         default:
             return `${actorName}님이 새 알림을 보냈어요`;
     }
