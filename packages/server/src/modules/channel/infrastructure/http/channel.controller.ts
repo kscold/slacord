@@ -21,16 +21,13 @@ export class ChannelController {
     @ApiOperation({ summary: '팀의 채널 목록 조회' })
     async getChannels(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
         const channels = await this.getChannelsUseCase.execute(teamId, user.userId);
-        return {
-            success: true,
-            data: channels.map(({ channel, unreadCount, mentionCount, lastReadAt, lastMessageAt }) => ({
-                ...channel.toPublic(),
-                unreadCount,
-                mentionCount,
-                lastReadAt: lastReadAt?.toISOString() ?? null,
-                lastMessageAt: lastMessageAt?.toISOString() ?? null,
-            })),
-        };
+        return channels.map(({ channel, unreadCount, mentionCount, lastReadAt, lastMessageAt }) => ({
+            ...channel.toPublic(),
+            unreadCount,
+            mentionCount,
+            lastReadAt: lastReadAt?.toISOString() ?? null,
+            lastMessageAt: lastMessageAt?.toISOString() ?? null,
+        }));
     }
 
     @Post()
@@ -41,11 +38,10 @@ export class ChannelController {
         @Body() dto: CreateChannelDto,
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        const channel = await this.createChannelUseCase.execute({
+        return this.createChannelUseCase.execute({
             teamId,
             createdBy: user.userId,
             ...dto,
         });
-        return { success: true, data: channel.toPublic() };
     }
 }

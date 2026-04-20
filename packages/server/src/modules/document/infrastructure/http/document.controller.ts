@@ -79,7 +79,7 @@ export class DocumentController {
     ) {
         const docs = await this.getUseCase.executeList(teamId);
         const visible = docs.filter((d) => d.canView(user.userId, access.role));
-        return { success: true, data: visible.map((d) => d.toTreeNode()) };
+        return visible.map((d) => d.toTreeNode());
     }
 
     @Get('archived/list')
@@ -88,7 +88,7 @@ export class DocumentController {
     async getArchivedDocuments(@Param('teamId') teamId: string) {
         const docs = await this.getUseCase.executeList(teamId, true);
         const archived = docs.filter((d) => d.isArchived);
-        return { success: true, data: archived.map((d) => d.toTreeNode()) };
+        return archived.map((d) => d.toTreeNode());
     }
 
     @Get(':documentId')
@@ -102,12 +102,9 @@ export class DocumentController {
     ) {
         const doc = await this.requireVisibleDocument(teamId, documentId, user.userId, access.role);
         return {
-            success: true,
-            data: {
-                ...doc.toPublic(),
-                canEdit: doc.canEdit(user.userId, access.role),
-                canDelete: doc.canDelete(user.userId, access.role),
-            },
+            ...doc.toPublic(),
+            canEdit: doc.canEdit(user.userId, access.role),
+            canDelete: doc.canDelete(user.userId, access.role),
         };
     }
 
@@ -123,7 +120,7 @@ export class DocumentController {
     ) {
         await this.requireVisibleDocument(teamId, documentId, user.userId, access.role);
         const comments = await this.getCommentUseCase.executeList(documentId, this.normalizeCommentStatusFilter(status));
-        return { success: true, data: comments.map((comment) => comment.toPublic()) };
+        return comments;
     }
 
     @Post(':documentId/comment')
@@ -147,7 +144,7 @@ export class DocumentController {
             createdBy: user.userId,
         });
 
-        return { success: true, data: comment.toPublic() };
+        return comment;
     }
 
     @Patch(':documentId/comment/:commentId/content')
@@ -174,7 +171,7 @@ export class DocumentController {
             commentId,
             content: dto.content,
         });
-        return { success: true, data: updated.toPublic() };
+        return updated;
     }
 
     @Patch(':documentId/comment/:commentId')
@@ -202,7 +199,7 @@ export class DocumentController {
             resolved: dto.resolved,
             actorId: user.userId,
         });
-        return { success: true, data: updated.toPublic() };
+        return updated;
     }
 
     @Delete(':documentId/comment/:commentId')
@@ -228,7 +225,7 @@ export class DocumentController {
             commentId,
             deletedBy: user.userId,
         });
-        return { success: true, data: deleted.toPublic() };
+        return deleted;
     }
 
     @Post()
@@ -247,7 +244,7 @@ export class DocumentController {
             parentId: dto.parentId ?? null,
             createdBy: user.userId,
         });
-        return { success: true, data: doc.toPublic() };
+        return doc;
     }
 
     @Post('import/confluence')
@@ -281,7 +278,7 @@ export class DocumentController {
             throw new ForbiddenException('문서 권한 설정은 관리자만 변경할 수 있습니다.');
         }
         const doc = await this.updateUseCase.execute({ id: documentId, ...dto, updatedBy: user.userId });
-        return { success: true, data: doc.toPublic() };
+        return doc;
     }
 
     @Get(':documentId/version')
@@ -297,7 +294,7 @@ export class DocumentController {
         if (existing.teamId !== teamId) throw new ForbiddenException('이 문서에 접근할 권한이 없습니다.');
         if (!existing.canView(user.userId, access.role)) throw new ForbiddenException('이 문서 버전을 볼 권한이 없습니다.');
         const versions = await this.getVersionsUseCase.execute(documentId);
-        return { success: true, data: versions.map((version) => version.toPublic()) };
+        return versions;
     }
 
     @Post(':documentId/version/:versionId/restore')
@@ -314,7 +311,7 @@ export class DocumentController {
         if (existing.teamId !== teamId) throw new ForbiddenException('이 문서에 접근할 권한이 없습니다.');
         if (!existing.canEdit(user.userId, access.role)) throw new ForbiddenException('이 문서 버전을 복원할 권한이 없습니다.');
         const doc = await this.restoreVersionUseCase.execute(documentId, versionId, user.userId);
-        return { success: true, data: doc.toPublic() };
+        return doc;
     }
 
     @Post(':documentId/archive')
@@ -330,7 +327,7 @@ export class DocumentController {
         if (existing.teamId !== teamId) throw new ForbiddenException('이 문서에 접근할 권한이 없습니다.');
         if (!existing.canDelete(user.userId, access.role)) throw new ForbiddenException('이 문서를 아카이브할 권한이 없습니다.');
         const doc = await this.archiveUseCase.execute(documentId, user.userId);
-        return { success: true, data: doc.toPublic() };
+        return doc;
     }
 
     @Post(':documentId/restore')
@@ -340,7 +337,7 @@ export class DocumentController {
         const existing = await this.getUseCase.executeOne(documentId);
         if (existing.teamId !== teamId) throw new ForbiddenException('이 문서에 접근할 권한이 없습니다.');
         const doc = await this.restoreUseCase.execute(documentId);
-        return { success: true, data: doc.toPublic() };
+        return doc;
     }
 
     @Delete(':documentId')
@@ -357,6 +354,6 @@ export class DocumentController {
         if (!existing.canDelete(user.userId, access.role)) throw new ForbiddenException('이 문서를 삭제할 권한이 없습니다.');
         if (!existing.isArchived) throw new ForbiddenException('영구 삭제는 아카이브된 문서만 가능합니다. 먼저 아카이브하세요.');
         await this.deleteUseCase.execute(documentId);
-        return { success: true };
+        return;
     }
 }

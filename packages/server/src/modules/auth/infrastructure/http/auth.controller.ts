@@ -26,8 +26,7 @@ export class AuthController {
     @Post('register')
     @ApiOperation({ summary: '회원가입' })
     async register(@Body() dto: RegisterDto) {
-        const user = await this.registerUseCase.execute(dto);
-        return { success: true, data: user.toPublic() };
+        return this.registerUseCase.execute(dto);
     }
 
     @Post('login')
@@ -35,7 +34,7 @@ export class AuthController {
     async login(
         @Body() dto: LoginDto,
         @Res({ passthrough: true }) res: Response,
-    ): Promise<{ success: boolean; data: LoginOutput }> {
+    ): Promise<LoginOutput> {
         const result = await this.loginUseCase.execute(dto);
         const maxAge = dto.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
         res.cookie('access_token', result.accessToken, {
@@ -45,7 +44,7 @@ export class AuthController {
             path: '/',
             maxAge,
         });
-        return { success: true, data: result };
+        return result;
     }
 
     @Post('logout')
@@ -57,7 +56,6 @@ export class AuthController {
             secure: this.isSecureCookie(),
             path: '/',
         });
-        return { success: true };
     }
 
     @Get('me')
@@ -65,6 +63,6 @@ export class AuthController {
     @ApiBearerAuth()
     @ApiOperation({ summary: '내 정보 조회' })
     async getMe(@CurrentUser() user: { userId: string }) {
-        return { success: true, data: await this.getMeUseCase.execute(user.userId) };
+        return this.getMeUseCase.execute(user.userId);
     }
 }

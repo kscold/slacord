@@ -16,7 +16,7 @@ export class TeamInviteController {
     @Get(':code')
     @ApiOperation({ summary: '초대 링크 미리보기' })
     async getInvitePreview(@Param('code') code: string) {
-        return { success: true, data: await this.getInvitePreviewUseCase.execute(code) };
+        return this.getInvitePreviewUseCase.execute(code);
     }
 
     @Post(':code/join')
@@ -25,7 +25,6 @@ export class TeamInviteController {
     @ApiOperation({ summary: '초대 링크로 팀 참여' })
     async joinByInvite(@Param('code') code: string, @CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        const team = await this.joinTeamByInviteUseCase.execute(code, user.userId);
-        return { success: true, data: team.toPublic() };
+        return this.joinTeamByInviteUseCase.execute(code, user.userId);
     }
 }

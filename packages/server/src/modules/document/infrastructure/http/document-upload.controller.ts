@@ -36,7 +36,7 @@ export class DocumentUploadController {
         if (!document.canEdit(user.userId, access.role)) {
             throw new ForbiddenException('이 문서에 파일을 업로드할 권한이 없습니다.');
         }
-        return { success: true, data: await this.uploadUseCase.execute({ teamId, documentId, file }) };
+        return this.uploadUseCase.execute({ teamId, documentId, file });
     }
 
     @Post('upload/image')
@@ -50,6 +50,6 @@ export class DocumentUploadController {
     ) {
         if (!file?.buffer) throw new BadRequestException('업로드할 파일이 필요합니다.');
         if (!file.mimetype?.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드할 수 있습니다.');
-        return { success: true, data: await this.uploadUseCase.execute({ teamId, file }) };
+        return this.uploadUseCase.execute({ teamId, file });
     }
 }

@@ -21,12 +21,10 @@ export class MessageSearchController {
         @Query('limit') limit?: string,
     ) {
         const parsedLimit = limit ? parseInt(limit, 10) : undefined;
-        const data = await this.getMessageSearchUseCase.execute({
+        return this.getMessageSearchUseCase.execute({
             userId: user.userId,
             query,
             limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
         });
-
-        return { success: true, data };
     }
 }

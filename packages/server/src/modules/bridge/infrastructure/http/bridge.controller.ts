@@ -26,13 +26,12 @@ export class BridgeController {
         @Query('eventType') eventType?: string,
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        const jobs = await this.getBridgeJobsUseCase.execute(teamId, user.userId, {
+        return this.getBridgeJobsUseCase.execute(teamId, user.userId, {
             limit: Number(limit ?? 12),
             status,
             platform,
             eventType,
         });
-        return { success: true, data: jobs.map((job) => job.toPublic()) };
     }
 
     @Post('jobs/:jobId/retry')
@@ -43,7 +42,6 @@ export class BridgeController {
         @CurrentUser() user: { userId: string },
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        const job = await this.retryBridgeJobUseCase.execute(teamId, user.userId, jobId);
-        return { success: true, data: job.toPublic() };
+        return this.retryBridgeJobUseCase.execute(teamId, user.userId, jobId);
     }
 }

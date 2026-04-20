@@ -46,7 +46,7 @@ export class MessageController {
             limit: limit ? parseInt(limit, 10) : 50,
             before: before ? new Date(before) : undefined,
         });
-        return { success: true, data: messages.map((m) => m.toPublic()) };
+        return messages;
     }
 
     @Get('pinned')
@@ -54,7 +54,7 @@ export class MessageController {
     async getPinnedMessages(@Param('channelId') channelId: string, @CurrentUser() user: { userId: string }) {
         await this.messageAccessService.ensureChannelMember(channelId, user.userId);
         const messages = await this.getPinnedMessagesUseCase.execute(channelId);
-        return { success: true, data: messages.map((message) => message.toPublic()) };
+        return messages;
     }
 
     @Get(':messageId/thread')
@@ -66,7 +66,7 @@ export class MessageController {
     ) {
         await this.messageAccessService.ensureMessageInChannel(channelId, messageId, user.userId);
         const messages = await this.getThreadMessagesUseCase.execute(messageId);
-        return { success: true, data: messages.map((message) => message.toPublic()) };
+        return messages;
     }
 
     @Patch(':messageId')
@@ -79,7 +79,7 @@ export class MessageController {
     ) {
         await this.messageAccessService.ensureMessageWriter(_channelId, messageId, user.userId);
         const message = await this.editMessageUseCase.execute(messageId, user.userId, dto.content);
-        return { success: true, data: message.toPublic() };
+        return message;
     }
 
     @Patch(':messageId/pin')
@@ -93,7 +93,7 @@ export class MessageController {
         await this.messageAccessService.ensureMessageWriter(channelId, messageId, user.userId);
         const message = await this.pinMessageUseCase.execute(messageId, dto.isPinned);
         this.messageGateway.emitPinnedUpdated(channelId, message.toPublic());
-        return { success: true, data: message.toPublic() };
+        return message;
     }
 
     @Delete(':messageId')
@@ -106,6 +106,6 @@ export class MessageController {
         await this.messageAccessService.ensureMessageWriter(channelId, messageId, user.userId);
         await this.deleteMessageUseCase.execute(messageId, user.userId);
         this.messageGateway.emitMessageDeleted(channelId, messageId);
-        return { success: true };
+        return;
     }
 }

@@ -50,7 +50,7 @@ export class TeamController {
     async getMyTeams(@CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const teams = await this.getTeamsUseCase.execute(user.userId);
-        return { success: true, data: teams.map((t) => t.toPublic()) };
+        return teams;
     }
 
     @Get(':teamId')
@@ -58,7 +58,7 @@ export class TeamController {
     async getTeam(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.getTeamUseCase.execute(teamId, user.userId);
-        return { success: true, data: team.toPublic() };
+        return team;
     }
 
     @Get(':teamId/settings')
@@ -66,7 +66,7 @@ export class TeamController {
     async getTeamSettings(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.getTeamSettingsUseCase.execute(teamId, user.userId);
-        return { success: true, data: team.toSettings() };
+        return team.toSettings();
     }
 
     @Get(':teamId/audit-logs')
@@ -82,14 +82,14 @@ export class TeamController {
             category,
             limit: limit ? Number(limit) : undefined,
         });
-        return { success: true, data: auditLogs };
+        return auditLogs;
     }
 
     @Get(':teamId/member')
     @ApiOperation({ summary: '팀 멤버 목록 조회' })
     async getMembers(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        return { success: true, data: await this.getTeamMembersUseCase.execute(teamId, user.userId) };
+        return this.getTeamMembersUseCase.execute(teamId, user.userId);
     }
 
     @Post()
@@ -97,7 +97,7 @@ export class TeamController {
     async createTeam(@CurrentUser() user: { userId: string }, @Body() dto: CreateTeamDto) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.createTeamUseCase.execute({ ...dto, ownerId: user.userId });
-        return { success: true, data: team.toPublic() };
+        return team;
     }
 
     @Post(':slug/join')
@@ -105,7 +105,7 @@ export class TeamController {
     async joinTeam(@CurrentUser() user: { userId: string }, @Param('slug') slug: string) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.joinTeamUseCase.execute({ slug, userId: user.userId });
-        return { success: true, data: team.toPublic() };
+        return team;
     }
 
     @Patch(':teamId/github')
@@ -117,7 +117,7 @@ export class TeamController {
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.updateGithubConfigUseCase.execute(teamId, user.userId, dto);
-        return { success: true, data: team.toSettings() };
+        return team.toSettings();
     }
 
     @Patch(':teamId/bridge')
@@ -129,28 +129,28 @@ export class TeamController {
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         const team = await this.updateBridgeConfigUseCase.execute(teamId, user.userId, dto);
-        return { success: true, data: team.toSettings() };
+        return team.toSettings();
     }
 
     @Get(':teamId/invite-links')
     @ApiOperation({ summary: '초대 링크 목록 조회' })
     async getInviteLinks(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        return { success: true, data: await this.getInviteLinksUseCase.execute(teamId, user.userId) };
+        return this.getInviteLinksUseCase.execute(teamId, user.userId);
     }
 
     @Post(':teamId/invite-links')
     @ApiOperation({ summary: '초대 링크 생성' })
     async createInviteLink(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }, @Body() dto: CreateInviteLinkDto) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        return { success: true, data: await this.createInviteLinkUseCase.execute({ teamId, userId: user.userId, ...dto }) };
+        return this.createInviteLinkUseCase.execute({ teamId, userId: user.userId, ...dto });
     }
 
     @Patch(':teamId/invite-links/:code/revoke')
     @ApiOperation({ summary: '초대 링크 비활성화' })
     async revokeInviteLink(@Param('teamId') teamId: string, @Param('code') code: string, @CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        return { success: true, data: await this.revokeInviteLinkUseCase.execute(teamId, code, user.userId) };
+        return this.revokeInviteLinkUseCase.execute(teamId, code, user.userId);
     }
 
     @Delete(':teamId/invite-links/:code')
@@ -158,7 +158,7 @@ export class TeamController {
     async deleteInviteLink(@Param('teamId') teamId: string, @Param('code') code: string, @CurrentUser() user: { userId: string }) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         await this.deleteInviteLinkUseCase.execute(teamId, code, user.userId);
-        return { success: true };
+        return;
     }
 
     @Patch(':teamId/member/:memberId/access')
@@ -170,6 +170,6 @@ export class TeamController {
         @Body() dto: UpdateMemberAccessDto,
     ) {
         if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
-        return { success: true, data: await this.updateMemberAccessUseCase.execute(teamId, user.userId, memberId, dto) };
+        return this.updateMemberAccessUseCase.execute(teamId, user.userId, memberId, dto);
     }
 }
