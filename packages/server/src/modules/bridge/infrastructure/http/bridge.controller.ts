@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
@@ -25,7 +25,6 @@ export class BridgeController {
         @Query('platform') platform?: string,
         @Query('eventType') eventType?: string,
     ) {
-        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         return this.getBridgeJobsUseCase.execute(teamId, user.userId, {
             limit: Number(limit ?? 12),
             status,
@@ -41,7 +40,6 @@ export class BridgeController {
         @Param('jobId') jobId: string,
         @CurrentUser() user: { userId: string },
     ) {
-        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         return this.retryBridgeJobUseCase.execute(teamId, user.userId, jobId);
     }
 }

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
@@ -37,7 +37,6 @@ export class ChannelController {
         @CurrentUser() user: { userId: string },
         @Body() dto: CreateChannelDto,
     ) {
-        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         return this.createChannelUseCase.execute({
             teamId,
             createdBy: user.userId,

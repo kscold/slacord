@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
@@ -24,7 +24,6 @@ export class TeamInviteController {
     @ApiBearerAuth()
     @ApiOperation({ summary: '초대 링크로 팀 참여' })
     async joinByInvite(@Param('code') code: string, @CurrentUser() user: { userId: string }) {
-        if (!user?.userId) throw new BadRequestException('사용자 정보가 올바르지 않습니다.');
         return this.joinTeamByInviteUseCase.execute(code, user.userId);
     }
 }
