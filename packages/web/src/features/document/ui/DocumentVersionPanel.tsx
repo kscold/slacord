@@ -1,6 +1,7 @@
 'use client';
 
 import type { DocumentVersion } from '@/src/entities/document/types';
+import { formatDateTime } from '@/src/shared/lib/datetime';
 
 interface Props {
     loading: boolean;
@@ -31,7 +32,7 @@ export function DocumentVersionPanel({ loading, onRestore, versions }: Props) {
                             <div>
                                 <p className="text-sm font-medium text-white">{version.title}</p>
                                 <p className="mt-1 text-xs text-text-tertiary">
-                                    {new Date(version.createdAt).toLocaleString('ko-KR')} ·{' '}
+                                    {formatDateTime(version.createdAt)} ·{' '}
                                     {version.contentFormat.toUpperCase()}
                                 </p>
                             </div>

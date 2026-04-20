@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { MessageSearchResult } from '@/src/entities/message/search.types';
+import { formatDateTime } from '@/src/shared/lib/datetime';
 
 interface Props {
     onSelect?: () => void;
@@ -31,7 +32,7 @@ export function SearchResultCard({ onSelect, result }: Props) {
             </div>
             <p className="mt-3 line-clamp-2 text-sm leading-7 text-white">{result.content}</p>
             <div className="mt-4 flex items-center justify-between text-xs text-text-muted">
-                <span>{new Date(result.createdAt).toLocaleString('ko-KR')}</span>
+                <span>{formatDateTime(result.createdAt)}</span>
                 <span>{result.attachmentCount ? `첨부 ${result.attachmentCount}개` : result.type}</span>
             </div>
         </Link>

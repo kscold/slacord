@@ -2,6 +2,7 @@
 
 import { forwardRef, useId, useRef, type RefObject } from 'react';
 import { getAvatarColor } from '@/src/shared/lib/avatar';
+import { formatShortDateTime } from '@/src/shared/lib/datetime';
 import type { AppNotification } from '@/src/entities/notification/types';
 import { buildNotificationCopy } from '@/src/entities/notification/lib/buildNotificationCopy';
 import { useDialogFocusTrap } from '@/src/shared/ui/useDialogFocusTrap';
@@ -88,12 +89,7 @@ export const NotificationPanel = forwardRef<HTMLElement, Props>(function Notific
                 )}
                 {notifications.map((n) => {
                     const copy = buildNotificationCopy(n);
-                    const time = new Date(n.createdAt).toLocaleString('ko-KR', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                    });
+                    const time = formatShortDateTime(n.createdAt);
                     return (
                         <button
                             key={n.id}

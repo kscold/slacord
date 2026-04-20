@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { DocumentComment, DocumentFull } from '@/src/entities/document/types';
 import type { TeamMemberSummary } from '@/src/entities/team/types';
 import { ConfirmationDialog } from '@/src/shared/ui/ConfirmationDialog';
+import { formatDateTime } from '@/src/shared/lib/datetime';
 import { useDocumentComments, type DocumentCommentFilter } from '../model/useDocumentComments';
 
 interface Props {
@@ -274,7 +275,7 @@ export function DocumentCommentPanel({
                                             ) : null}
                                         </div>
                                         <p className="mt-1 text-xs text-text-tertiary">
-                                            {new Date(comment.createdAt).toLocaleString('ko-KR')}
+                                            {formatDateTime(comment.createdAt)}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -378,7 +379,7 @@ export function DocumentCommentPanel({
                                                         <div className="flex items-center gap-2">
                                                             <p className="text-sm font-medium text-text-primary">{replyAuthor.username}</p>
                                                             <p className="text-xs text-text-tertiary">
-                                                                {new Date(reply.createdAt).toLocaleString('ko-KR')}
+                                                                {formatDateTime(reply.createdAt)}
                                                             </p>
                                                             {reply.editedAt && !reply.deletedAt ? (
                                                                 <span className="rounded-full border border-border-primary px-2 py-0.5 text-[11px] text-text-tertiary">
