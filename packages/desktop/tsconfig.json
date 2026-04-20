@@ -9,7 +9,8 @@
     "resolveJsonModule": true,
     "outDir": "dist",
     "types": [
-      "node"
+      "node",
+      "vitest/globals"
     ]
   },
   "include": [

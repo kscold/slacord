@@ -16,18 +16,20 @@ export function registerNotificationIpc() {
                 urgency: 'critical',
             });
 
-            // 알림 클릭 시 앱 포커스
-            notification.on('click', () => {
+            // 한 알림은 한 번만 클릭될 수 있으므로 once로 등록 — 자동 해제로 리스너 누수 방지
+            notification.once('click', () => {
                 const win = BrowserWindow.getAllWindows()[0];
-                if (win) {
-                    if (typeof href === 'string' && href.startsWith('/')) {
-                        void win.loadURL(new URL(href, getAppOrigin()).toString());
-                    }
-                    if (win.isMinimized()) win.restore();
-                    win.show();
-                    win.focus();
+                if (!win) return;
+                if (typeof href === 'string' && href.startsWith('/')) {
+                    void win.loadURL(new URL(href, getAppOrigin()).toString());
                 }
+                if (win.isMinimized()) win.restore();
+                win.show();
+                win.focus();
             });
+
+            // 클릭 없이 dismiss된 경우에도 리스너 정리 보장
+            notification.once('close', () => notification.removeAllListeners());
 
             notification.show();
 
