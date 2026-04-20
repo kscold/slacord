@@ -1,12 +1,16 @@
 import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as crypto from 'crypto';
 import { Request } from 'express';
 import { ProcessGitHubEventUseCase } from '../../application/use-cases/process-github-event.use-case';
 import { GitHubEventEntity } from '../../domain/github-event.entity';
 import { GithubConfigService } from '../service/github-config.service';
 import { BridgeEnqueueService } from '../../../bridge/application/services/bridge-enqueue.service';
-import { MessageGateway } from '../../../message/infrastructure/websocket/message.gateway';
+import {
+    MESSAGE_EVENTS,
+    type MessageBroadcastedEvent,
+} from '../../../../shared/events/message-events';
 
 /** GitHub Webhook 수신 컨트롤러 */
 @ApiTags('github')
@@ -16,7 +20,7 @@ export class GithubWebhookController {
         private readonly processEventUseCase: ProcessGitHubEventUseCase,
         private readonly githubConfigService: GithubConfigService,
         private readonly bridgeEnqueueService: BridgeEnqueueService,
-        private readonly messageGateway: MessageGateway,
+        private readonly eventEmitter: EventEmitter2,
     ) {}
 
     @Post()
@@ -47,7 +51,11 @@ export class GithubWebhookController {
 
         const message = await this.processEventUseCase.execute(parsed, config.channelId, config.teamId);
         await this.bridgeEnqueueService.enqueueGithubEvent(config.teamId, parsed);
-        this.messageGateway.emitNewMessage(config.channelId, message.toPublic());
+        const broadcastEvent: MessageBroadcastedEvent = {
+            channelId: config.channelId,
+            message: message.toPublic(),
+        };
+        this.eventEmitter.emit(MESSAGE_EVENTS.BROADCASTED, broadcastEvent);
         return { success: true };
     }
 }

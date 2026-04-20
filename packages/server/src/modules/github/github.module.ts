@@ -7,6 +7,7 @@ import { MessageModule } from '../message/message.module';
 import { TeamModule } from '../team/team.module';
 
 @Module({
+    // MessageModule: ProcessGitHubEventUseCase가 MESSAGE_REPOSITORY 의존. 게이트웨이 직접 호출은 제거됨.
     imports: [MessageModule, TeamModule, BridgeModule],
     controllers: [GithubWebhookController],
     providers: [GithubConfigService, ProcessGitHubEventUseCase],

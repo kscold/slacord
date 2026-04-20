@@ -17,6 +17,7 @@ import { MessageController } from './infrastructure/http/message.controller';
 import { MessageSearchController } from './infrastructure/http/message-search.controller';
 import { MessageUploadController } from './infrastructure/http/message-upload.controller';
 import { MessageGateway } from './infrastructure/websocket/message.gateway';
+import { MessageBroadcastListener } from './application/listeners/message-broadcast.listener';
 import { AuthModule } from '../auth/auth.module';
 import { ChannelModule } from '../channel/channel.module';
 import { TeamModule } from '../team/team.module';
@@ -46,6 +47,7 @@ import { MessageAccessService } from './application/services/message-access.serv
         UploadMessageAttachmentUseCase,
         MessageAccessService,
         MessageGateway,
+        MessageBroadcastListener,
     ],
     exports: [MESSAGE_REPOSITORY, SendMessageUseCase, MessageGateway],
 })

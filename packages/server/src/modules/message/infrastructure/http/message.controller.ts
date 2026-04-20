@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
 import { GetMessagesUseCase } from '../../application/use-cases/get-messages.use-case';
@@ -11,7 +12,11 @@ import { PinMessageUseCase } from '../../application/use-cases/pin-message.use-c
 import { MessageAccessService } from '../../application/services/message-access.service';
 import { EditMessageDto } from './dto/edit-message.dto';
 import { PinMessageDto } from './dto/pin-message.dto';
-import { MessageGateway } from '../websocket/message.gateway';
+import {
+    MESSAGE_EVENTS,
+    type MessageDeletedEvent,
+    type MessagePinnedEvent,
+} from '../../../../shared/events/message-events';
 
 /** 메시지 REST API - 메시지 전송은 WebSocket(gateway)으로 처리 */
 @ApiTags('message')
@@ -27,7 +32,7 @@ export class MessageController {
         private readonly pinMessageUseCase: PinMessageUseCase,
         private readonly deleteMessageUseCase: DeleteMessageUseCase,
         private readonly messageAccessService: MessageAccessService,
-        private readonly messageGateway: MessageGateway,
+        private readonly eventEmitter: EventEmitter2,
     ) {}
 
     @Get()
@@ -92,7 +97,8 @@ export class MessageController {
     ) {
         await this.messageAccessService.ensureMessageWriter(channelId, messageId, user.userId);
         const message = await this.pinMessageUseCase.execute(messageId, dto.isPinned);
-        this.messageGateway.emitPinnedUpdated(channelId, message.toPublic());
+        const pinnedEvent: MessagePinnedEvent = { channelId, message: message.toPublic() };
+        this.eventEmitter.emit(MESSAGE_EVENTS.PINNED, pinnedEvent);
         return message;
     }
 
@@ -105,7 +111,7 @@ export class MessageController {
     ) {
         await this.messageAccessService.ensureMessageWriter(channelId, messageId, user.userId);
         await this.deleteMessageUseCase.execute(messageId, user.userId);
-        this.messageGateway.emitMessageDeleted(channelId, messageId);
-        return;
+        const deletedEvent: MessageDeletedEvent = { channelId, messageId };
+        this.eventEmitter.emit(MESSAGE_EVENTS.DELETED, deletedEvent);
     }
 }
