@@ -42,7 +42,7 @@ describe('UpdateDocumentCommentUseCase', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        useCase = new UpdateDocumentCommentUseCase(mockRepo as any);
+        useCase = new UpdateDocumentCommentUseCase(mockRepo as any, { now: () => new Date() } as any);
     });
 
     it('코멘트를 수정하고 editedAt을 남긴다', async () => {

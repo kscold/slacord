@@ -1,11 +1,13 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { DOCUMENT_COMMENT_REPOSITORY, type IDocumentCommentRepository } from '../../domain/document-comment.port';
+import { CLOCK, type Clock } from '../../../../shared/lib/clock';
 
 @Injectable()
 export class UpdateDocumentCommentUseCase {
     constructor(
         @Inject(DOCUMENT_COMMENT_REPOSITORY)
         private readonly repo: IDocumentCommentRepository,
+        @Inject(CLOCK) private readonly clock: Clock,
     ) {}
 
     async execute(input: { commentId: string; content: string }) {
@@ -19,7 +21,7 @@ export class UpdateDocumentCommentUseCase {
 
         const updated = await this.repo.updateContent(input.commentId, {
             content,
-            editedAt: new Date(),
+            editedAt: this.clock.now(),
         });
         if (!updated) throw new BadRequestException('존재하지 않는 문서 코멘트입니다.');
         return updated;

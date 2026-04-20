@@ -42,7 +42,7 @@ describe('DeleteDocumentCommentUseCase', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        useCase = new DeleteDocumentCommentUseCase(mockRepo as any);
+        useCase = new DeleteDocumentCommentUseCase(mockRepo as any, { now: () => new Date() } as any);
     });
 
     it('코멘트를 soft delete 한다', async () => {

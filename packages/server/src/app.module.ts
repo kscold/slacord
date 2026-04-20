@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { TeamModule } from './modules/team/team.module';
 import { TeamAccessGuard } from './shared/guards/team-access.guard';
 import { ResponseInterceptor } from './shared/interceptors/response.interceptor';
+import { SharedModule } from './shared/shared.module';
 import { BridgeModule } from './modules/bridge/bridge.module';
 import { ChannelModule } from './modules/channel/channel.module';
 import { MessageModule } from './modules/message/message.module';
@@ -32,6 +33,7 @@ import { HealthController } from './shared/http/health.controller';
         { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     ],
     imports: [
+        SharedModule,
         ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
         EventEmitterModule.forRoot({ wildcard: false, maxListeners: 20 }),
         MongooseModule.forRootAsync({

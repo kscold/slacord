@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import type { ITeamRepository } from '../../domain/team.port';
 import { TEAM_REPOSITORY } from '../../domain/team.port';
 import { TeamEntity } from '../../domain/team.entity';
+import { CLOCK, type Clock } from '../../../../shared/lib/clock';
 
 export interface JoinTeamInput {
     slug: string;
@@ -11,7 +12,10 @@ export interface JoinTeamInput {
 /** 팀 참여 유스케이스 */
 @Injectable()
 export class JoinTeamUseCase {
-    constructor(@Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository) {}
+    constructor(
+        @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
+        @Inject(CLOCK) private readonly clock: Clock,
+    ) {}
 
     async execute(input: JoinTeamInput): Promise<TeamEntity> {
         const team = await this.teamRepo.findBySlug(input.slug);
@@ -25,7 +29,7 @@ export class JoinTeamUseCase {
         return this.teamRepo.addMember(team.id, {
             userId: input.userId,
             role: 'member',
-            joinedAt: new Date(),
+            joinedAt: this.clock.now(),
             canManageInvites: false,
         });
     }
