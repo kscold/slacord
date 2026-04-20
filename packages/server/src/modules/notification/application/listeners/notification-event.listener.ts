@@ -8,6 +8,7 @@ import {
     type MentionedEvent,
     type ThreadRepliedEvent,
 } from '../../../../shared/events/notification-events';
+import { NOTIFICATION_CONTENT_MAX } from '../../../../shared/constants/limits';
 
 /**
  * 도메인 이벤트 → 실제 알림 생성 브리지.
@@ -34,7 +35,7 @@ export class NotificationEventListener {
                     type: 'mention',
                     actorId: event.actorId,
                     actorName: event.actorName,
-                    content: event.content.slice(0, 160) || '새 멘션',
+                    content: event.content.slice(0, NOTIFICATION_CONTENT_MAX) || '새 멘션',
                     resourceType: event.resourceType,
                     resourceId: event.resourceId,
                     channelId: event.channelId ?? undefined,
@@ -54,7 +55,7 @@ export class NotificationEventListener {
                 type: 'thread_reply',
                 actorId: event.actorId,
                 actorName: event.actorName,
-                content: event.content.slice(0, 160) || '새 답글',
+                content: event.content.slice(0, NOTIFICATION_CONTENT_MAX) || '새 답글',
                 resourceType: event.resourceType,
                 resourceId: event.resourceId,
                 channelId: event.channelId ?? undefined,

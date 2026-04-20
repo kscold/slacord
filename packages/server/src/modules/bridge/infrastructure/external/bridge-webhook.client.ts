@@ -1,5 +1,9 @@
 import { BadGatewayException, Injectable } from '@nestjs/common';
 import type { BridgeJobEntity } from '../../domain/bridge-job.entity';
+import {
+    DISCORD_EMBED_DESCRIPTION_MAX,
+    SLACK_EMBED_DESCRIPTION_MAX,
+} from '../../../../shared/constants/limits';
 
 @Injectable()
 export class BridgeWebhookClient {
@@ -31,7 +35,7 @@ export class BridgeWebhookClient {
                       type: 'section',
                       text: {
                           type: 'mrkdwn',
-                          text: truncate(job.content, 2800),
+                          text: truncate(job.content, SLACK_EMBED_DESCRIPTION_MAX),
                       },
                   }
                 : null,
@@ -67,7 +71,7 @@ export class BridgeWebhookClient {
             embeds: [
                 {
                     title: truncate(job.title, 256),
-                    description: job.content ? truncate(job.content, 3500) : undefined,
+                    description: job.content ? truncate(job.content, DISCORD_EMBED_DESCRIPTION_MAX) : undefined,
                     url: job.url ?? undefined,
                     color: job.eventType === 'announcement' ? 0xf59e0b : 0x22c55e,
                     footer: {

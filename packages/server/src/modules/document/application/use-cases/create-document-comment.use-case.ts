@@ -11,6 +11,7 @@ import {
     type ThreadRepliedEvent,
 } from '../../../../shared/events/notification-events';
 import { extractMentionTokens, resolveMentionUserIds } from '../../../../shared/lib/mention-extraction';
+import { DOCUMENT_ANCHOR_TEXT_MAX } from '../../../../shared/constants/limits';
 
 interface CreateDocumentCommentInput {
     teamId: string;
@@ -114,5 +115,5 @@ export class CreateDocumentCommentUseCase {
 
 function sanitizeAnchorText(anchorText?: string | null) {
     const value = anchorText?.trim();
-    return value ? value.slice(0, 280) : null;
+    return value ? value.slice(0, DOCUMENT_ANCHOR_TEXT_MAX) : null;
 }
