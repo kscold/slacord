@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { getChatSocket } from '@/lib/socket';
 import { syncPeerVideoTrackSenders } from './mediaTracks';
 import {
@@ -13,6 +13,7 @@ import {
 } from './recovery';
 import { resolveHuddleRtcConfig } from './rtcConfig';
 import { useHuddleStore } from './huddle.store';
+import { useHuddleSignaling } from './useHuddleSignaling';
 
 export function useHuddle(currentUserId: string) {
     const store = useHuddleStore();
@@ -389,79 +390,47 @@ export function useHuddle(currentUserId: string) {
         emitMediaState(channelId);
     }, [emitMediaState, stopScreenShare, store, syncLocalVideoTrack]);
 
-    useEffect(() => {
-        const socket = getChatSocket();
-
-        const onConnect = () => {
-            const channelId = useHuddleStore.getState().activeChannelId;
-            if (!channelId) return;
-            socket.emit('huddle:join', { channelId });
-            emitMediaState(channelId);
-        };
-
-        const onUserJoined = (data: { channelId: string; userId: string }) => {
-            if (data.userId === currentUserId || useHuddleStore.getState().activeChannelId !== data.channelId) return;
-            createPeer(data.userId, data.channelId, true);
-        };
-
-        const onUserLeft = (data: { userId: string }) => {
-            closePeer(data.userId);
-            store.removeParticipant(data.userId);
-        };
-
-        const onOffer = async (data: { channelId: string; fromUserId: string; offer: RTCSessionDescriptionInit }) => {
-            let pc = peers.current.get(data.fromUserId);
+    useHuddleSignaling({
+        currentUserId,
+        isActiveChannel: (channelId) => useHuddleStore.getState().activeChannelId === channelId,
+        emitMediaState,
+        onUserJoined: (channelId, userId) => {
+            createPeer(userId, channelId, true);
+        },
+        onUserLeft: (userId) => {
+            closePeer(userId);
+            store.removeParticipant(userId);
+        },
+        onOffer: async (channelId, fromUserId, offer) => {
+            let pc = peers.current.get(fromUserId);
             if (pc && pc.signalingState !== 'stable') {
-                closePeer(data.fromUserId);
+                closePeer(fromUserId);
                 pc = undefined;
             }
 
-            const nextPeer = pc ?? createPeer(data.fromUserId, data.channelId, false);
-            await nextPeer.setRemoteDescription(new RTCSessionDescription(data.offer));
+            const nextPeer = pc ?? createPeer(fromUserId, channelId, false);
+            await nextPeer.setRemoteDescription(new RTCSessionDescription(offer));
             const answer = await nextPeer.createAnswer();
             await nextPeer.setLocalDescription(answer);
-            socket.emit('huddle:answer', { channelId: data.channelId, targetUserId: data.fromUserId, answer: nextPeer.localDescription });
-        };
-
-        const onAnswer = async (data: { fromUserId: string; answer: RTCSessionDescriptionInit }) => {
-            const pc = peers.current.get(data.fromUserId);
-            if (pc) {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-            }
-        };
-
-        const onIceCandidate = async (data: { fromUserId: string; candidate: RTCIceCandidateInit }) => {
-            const pc = peers.current.get(data.fromUserId);
-            if (pc) {
-                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-            }
-        };
-
-        const onParticipants = (data: { channelId: string; participants: { userId: string; audio: boolean; video: boolean }[] }) => {
-            if (data.channelId !== useHuddleStore.getState().activeChannelId) return;
-            store.setParticipants(data.participants.filter((participant) => participant.userId !== currentUserId));
-        };
-
-        socket.on('connect', onConnect);
-        socket.on('huddle:user-joined', onUserJoined);
-        socket.on('huddle:user-left', onUserLeft);
-        socket.on('huddle:offer', onOffer);
-        socket.on('huddle:answer', onAnswer);
-        socket.on('huddle:ice-candidate', onIceCandidate);
-        socket.on('huddle:participants', onParticipants);
-
-        return () => {
-            socket.off('connect', onConnect);
-            socket.off('huddle:user-joined', onUserJoined);
-            socket.off('huddle:user-left', onUserLeft);
-            socket.off('huddle:offer', onOffer);
-            socket.off('huddle:answer', onAnswer);
-            socket.off('huddle:ice-candidate', onIceCandidate);
-            socket.off('huddle:participants', onParticipants);
+            getChatSocket().emit('huddle:answer', {
+                channelId,
+                targetUserId: fromUserId,
+                answer: nextPeer.localDescription,
+            });
+        },
+        onAnswer: async (fromUserId, answer) => {
+            const pc = peers.current.get(fromUserId);
+            if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        },
+        onIceCandidate: async (fromUserId, candidate) => {
+            const pc = peers.current.get(fromUserId);
+            if (pc) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        },
+        onCleanup: () => {
             clearAllRecovery();
             closeAllPeers();
-        };
-    }, [clearAllRecovery, closeAllPeers, closePeer, createPeer, currentUserId, emitMediaState, store]);
+        },
+    });
 
     return {
         activeChannelId: store.activeChannelId,
