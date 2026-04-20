@@ -1,6 +1,6 @@
 'use client';
 
-import { issueApi } from '@/lib/api-client';
+import { issueApi, unwrapApiData } from '@/lib/api-client';
 import type { Issue, IssuePriority, IssueStatus } from '@/src/entities/issue/types';
 import { useIssueStore } from './issue.store';
 
@@ -24,14 +24,16 @@ export function useIssueBoardActions({ teamId, createStatus, issues, selectedIss
             labels?: string[];
         }) => {
             const response = await issueApi.createIssue(teamId, { ...data, status: createStatus });
-            if (response.success && response.data) addIssue(response.data as Issue);
+            const created = unwrapApiData<Issue>(response);
+            if (created) addIssue(created);
         },
 
         handleUpdate: async (data: Partial<Issue>) => {
             if (!selectedIssue) return;
             const response = await issueApi.updateIssue(teamId, selectedIssue.id, data);
-            if (response.success && response.data) {
-                updateIssue(selectedIssue.id, response.data as Issue);
+            const updated = unwrapApiData<Issue>(response);
+            if (updated) {
+                updateIssue(selectedIssue.id, updated);
                 setSelectedIssueId(selectedIssue.id);
             }
         },

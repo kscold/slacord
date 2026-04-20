@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { channelApi } from '@/lib/api-client';
+import { channelApi, unwrapApiData } from '@/lib/api-client';
 import { emitWorkspaceChannelRead } from '@/src/features/workspace/model/channelReadEvents';
 
 interface Props {
@@ -29,8 +29,8 @@ export function useChannelReadSync({ channelId, canMarkRead, latestMessageId }: 
 
         try {
             const response = await channelApi.markChannelRead(channelId);
-            if (response.success && response.data) {
-                const payload = response.data as { channelId: string; lastReadAt: string };
+            const payload = unwrapApiData<{ channelId: string; lastReadAt: string }>(response);
+            if (payload) {
                 lastMarkedKeyRef.current = nextKey;
                 emitWorkspaceChannelRead({
                     channelId: payload.channelId,

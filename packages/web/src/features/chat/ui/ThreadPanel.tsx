@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { messageApi } from '@/lib/api-client';
+import { messageApi, unwrapApiArray } from '@/lib/api-client';
 import type { Message } from '@/src/entities/message/types';
 import { getAvatarColor } from '@/src/shared/lib/avatar';
 import { useChatStore } from '../model/chat.store';
@@ -53,9 +53,7 @@ export function ThreadPanel({
 
     useEffect(() => {
         messageApi.getThreadMessages(channelId, parentMessage.id).then((response) => {
-            if (response.success && Array.isArray(response.data)) {
-                setReplies(response.data as Message[]);
-            }
+            setReplies(unwrapApiArray<Message>(response));
         });
     }, [channelId, parentMessage.id]);
 

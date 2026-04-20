@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { messageApi } from '@/lib/api-client';
+import { messageApi, unwrapApiArray } from '@/lib/api-client';
 import type { Message } from '@/src/entities/message/types';
 
 interface Props {
@@ -16,9 +16,7 @@ export function PinnedMessagesPanel({ channelId, onClose, onOpenThread, onToggle
 
     useEffect(() => {
         messageApi.getPinnedMessages(channelId).then((response) => {
-            if (response.success && Array.isArray(response.data)) {
-                setMessages(response.data as Message[]);
-            }
+            setMessages(unwrapApiArray<Message>(response));
         });
     }, [channelId]);
 

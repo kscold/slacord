@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { documentApi } from '@/lib/api-client';
+import { documentApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import type { DocumentComment } from '@/src/entities/document/types';
 
 export type DocumentCommentFilter = 'all' | 'open' | 'resolved';
@@ -21,9 +21,7 @@ export function useDocumentComments(teamId: string, documentId: string, filter: 
         documentApi.getDocumentComments(teamId, documentId, { status: filter })
             .then((response) => {
                 if (!active) return;
-                if (response.success && Array.isArray(response.data)) {
-                    setComments(response.data);
-                }
+                setComments(unwrapApiArray<DocumentComment>(response));
             })
             .catch((nextError: Error) => {
                 if (!active) return;
@@ -41,33 +39,37 @@ export function useDocumentComments(teamId: string, documentId: string, filter: 
     const createComment = async (input: { content: string; anchorText?: string | null; parentId?: string | null }) => {
         setError('');
         const response = await documentApi.createDocumentComment(teamId, documentId, input);
-        if (!response.success || !response.data) return null;
+        const created = unwrapApiData<DocumentComment>(response);
+        if (!created) return null;
         setRefreshToken((current) => current + 1);
-        return response.data;
+        return created;
     };
 
     const updateComment = async (commentId: string, content: string) => {
         setError('');
         const response = await documentApi.updateDocumentComment(teamId, documentId, commentId, { content });
-        if (!response.success || !response.data) return null;
+        const updated = unwrapApiData<DocumentComment>(response);
+        if (!updated) return null;
         setRefreshToken((current) => current + 1);
-        return response.data;
+        return updated;
     };
 
     const updateCommentStatus = async (commentId: string, resolved: boolean) => {
         setError('');
         const response = await documentApi.updateDocumentCommentStatus(teamId, documentId, commentId, resolved);
-        if (!response.success || !response.data) return null;
+        const updated = unwrapApiData<DocumentComment>(response);
+        if (!updated) return null;
         setRefreshToken((current) => current + 1);
-        return response.data;
+        return updated;
     };
 
     const deleteComment = async (commentId: string) => {
         setError('');
         const response = await documentApi.deleteDocumentComment(teamId, documentId, commentId);
-        if (!response.success || !response.data) return null;
+        const deleted = unwrapApiData<DocumentComment>(response);
+        if (!deleted) return null;
         setRefreshToken((current) => current + 1);
-        return response.data;
+        return deleted;
     };
 
     return {

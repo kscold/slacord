@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { channelApi } from '@/lib/api-client';
+import { channelApi, unwrapApiData } from '@/lib/api-client';
 import type { TeamMemberSummary } from '@/src/entities/team/types';
 
 interface Props {
@@ -38,9 +38,10 @@ export function DirectRoomLauncher({ teamId, members }: Props) {
                 type: isDm ? 'dm' : 'group',
                 memberIds: selectedIds,
             });
-            if (response.success && response.data) {
+            const channel = unwrapApiData<{ id: string }>(response);
+            if (channel) {
                 close();
-                router.push(`/${teamId}/channel/${(response.data as { id: string }).id}`);
+                router.push(`/${teamId}/channel/${channel.id}`);
                 router.refresh();
             }
         } catch (err) {
