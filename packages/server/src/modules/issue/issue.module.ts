@@ -10,7 +10,6 @@ import { CreateIssueUseCase } from './application/use-cases/create-issue.use-cas
 import { UpdateIssueUseCase } from './application/use-cases/update-issue.use-case';
 import { GetIssuesUseCase } from './application/use-cases/get-issues.use-case';
 import { DeleteIssueUseCase } from './application/use-cases/delete-issue.use-case';
-import { IssueAccessService } from './application/services/issue-access.service';
 import { IssueNotificationService } from './application/services/issue-notification.service';
 import { IssueController } from './infrastructure/http/issue.controller';
 
@@ -23,7 +22,6 @@ import { IssueController } from './infrastructure/http/issue.controller';
         UpdateIssueUseCase,
         GetIssuesUseCase,
         DeleteIssueUseCase,
-        IssueAccessService,
         IssueNotificationService,
     ],
 })

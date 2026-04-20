@@ -12,7 +12,6 @@ import { NotificationController } from './infrastructure/http/notification.contr
 import { AuthModule } from '../auth/auth.module';
 import { TeamModule } from '../team/team.module';
 import { NotificationGateway } from './infrastructure/websocket/notification.gateway';
-import { NotificationAccessService } from './application/services/notification-access.service';
 
 @Module({
     imports: [AuthModule, TeamModule, MongooseModule.forFeature([{ name: Notification.name, schema: NotificationSchema }])],
@@ -24,7 +23,6 @@ import { NotificationAccessService } from './application/services/notification-a
         GetUnreadNotificationCountUseCase,
         MarkNotificationAsReadUseCase,
         MarkAllNotificationsAsReadUseCase,
-        NotificationAccessService,
         NotificationGateway,
     ],
     exports: [CreateNotificationUseCase],

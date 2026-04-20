@@ -2,11 +2,11 @@ import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/co
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../shared/decorators/current-user.decorator';
+import { TeamRole } from '../../../../shared/decorators/team-role.decorator';
 import { CreateAnnouncementUseCase } from '../../application/use-cases/create-announcement.use-case';
 import { GetAnnouncementsUseCase } from '../../application/use-cases/get-announcements.use-case';
 import { PinAnnouncementUseCase } from '../../application/use-cases/pin-announcement.use-case';
 import { BridgeEnqueueService } from '../../../bridge/application/services/bridge-enqueue.service';
-import { TeamAccessService } from '../../../team/application/services/team-access.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { PinAnnouncementDto } from './dto/pin-announcement.dto';
 
@@ -21,39 +21,36 @@ export class AnnouncementController {
         private readonly getUseCase: GetAnnouncementsUseCase,
         private readonly pinUseCase: PinAnnouncementUseCase,
         private readonly bridgeEnqueueService: BridgeEnqueueService,
-        private readonly teamAccessService: TeamAccessService,
     ) {}
 
     @Get()
+    @TeamRole('member')
     @ApiOperation({ summary: '팀 공지사항 목록 조회 (핀 고정 우선)' })
-    async getAnnouncements(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
-        await this.teamAccessService.requireMember(teamId, user.userId);
+    async getAnnouncements(@Param('teamId') teamId: string) {
         const list = await this.getUseCase.execute(teamId);
         return { success: true, data: list.map((a) => a.toPublic()) };
     }
 
     @Post()
+    @TeamRole('writable')
     @ApiOperation({ summary: '공지사항 생성' })
     async createAnnouncement(
         @Param('teamId') teamId: string,
         @CurrentUser() user: { userId: string },
         @Body() dto: CreateAnnouncementDto,
     ) {
-        await this.teamAccessService.requireWritableMember(teamId, user.userId);
         const announcement = await this.createUseCase.execute({ ...dto, teamId, createdBy: user.userId });
         await this.bridgeEnqueueService.enqueueAnnouncement(announcement);
         return { success: true, data: announcement.toPublic() };
     }
 
     @Patch(':announcementId/pin')
+    @TeamRole('writable')
     @ApiOperation({ summary: '공지사항 핀 고정/해제 (멤버만)' })
     async pinAnnouncement(
-        @Param('teamId') teamId: string,
         @Param('announcementId') announcementId: string,
-        @CurrentUser() user: { userId: string },
         @Body() dto: PinAnnouncementDto,
     ) {
-        await this.teamAccessService.requireWritableMember(teamId, user.userId);
         const announcement = await this.pinUseCase.execute(announcementId, dto.isPinned);
         return { success: true, data: announcement.toPublic() };
     }

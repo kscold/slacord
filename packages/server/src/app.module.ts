@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './modules/auth/auth.module';
 import { TeamModule } from './modules/team/team.module';
+import { TeamAccessGuard } from './shared/guards/team-access.guard';
 import { BridgeModule } from './modules/bridge/bridge.module';
 import { ChannelModule } from './modules/channel/channel.module';
 import { MessageModule } from './modules/message/message.module';
@@ -23,6 +25,9 @@ import { HealthController } from './shared/http/health.controller';
  */
 @Module({
     controllers: [HealthController],
+    providers: [
+        { provide: APP_GUARD, useClass: TeamAccessGuard },
+    ],
     imports: [
         ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
         MongooseModule.forRootAsync({

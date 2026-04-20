@@ -34,11 +34,6 @@ describe('IssueController', () => {
         execute: jest.fn(),
     };
 
-    const mockIssueAccessService = {
-        ensureMember: jest.fn(),
-        ensureWritableMember: jest.fn(),
-    };
-
     const mockIssueNotificationService = {
         notifyAssignees: jest.fn(),
     };
@@ -47,12 +42,12 @@ describe('IssueController', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        // 권한 검사는 TeamAccessGuard(AOP)가 담당하므로 컨트롤러에서 주입받지 않음
         controller = new IssueController(
             mockCreateIssueUseCase as any,
             mockUpdateIssueUseCase as any,
             mockGetIssuesUseCase as any,
             mockDeleteIssueUseCase as any,
-            mockIssueAccessService as any,
             mockIssueNotificationService as any,
         );
     });
@@ -61,9 +56,8 @@ describe('IssueController', () => {
         const issue = makeIssue('issue-1');
         mockGetIssuesUseCase.execute.mockResolvedValue([issue]);
 
-        const result = await controller.getIssues('team-1', { userId: 'user-1' }, 'in_progress', '로그인', 'user-2');
+        const result = await controller.getIssues('team-1', 'in_progress', '로그인', 'user-2');
 
-        expect(mockIssueAccessService.ensureMember).toHaveBeenCalledWith('team-1', 'user-1');
         expect(mockGetIssuesUseCase.execute).toHaveBeenCalledWith('team-1', {
             status: 'in_progress',
             query: '로그인',
@@ -85,7 +79,6 @@ describe('IssueController', () => {
 
         const result = await controller.createIssue('team-1', { userId: 'user-1' }, dto as any);
 
-        expect(mockIssueAccessService.ensureWritableMember).toHaveBeenCalledWith('team-1', 'user-1');
         expect(mockCreateIssueUseCase.execute).toHaveBeenCalledWith({
             ...dto,
             teamId: 'team-1',
@@ -101,9 +94,9 @@ describe('IssueController', () => {
         expect(result).toEqual({ success: true, data: issue.toPublic() });
     });
 
-    it('이슈 수정 후 담당자 알림을 위임함', async () => {
+    it('이슈 수정 후 새로 추가된 담당자에게만 알림을 위임함', async () => {
         const issue = makeIssue('issue-1');
-        mockUpdateIssueUseCase.execute.mockResolvedValue(issue);
+        mockUpdateIssueUseCase.execute.mockResolvedValue({ updated: issue, previousAssigneeIds: [] });
         const dto = {
             status: 'done' as const,
             assigneeIds: ['user-3'],
@@ -111,7 +104,6 @@ describe('IssueController', () => {
 
         const result = await controller.updateIssue('team-1', 'issue-1', { userId: 'user-1' }, dto as any);
 
-        expect(mockIssueAccessService.ensureWritableMember).toHaveBeenCalledWith('team-1', 'user-1');
         expect(mockUpdateIssueUseCase.execute).toHaveBeenCalledWith({
             id: 'issue-1',
             ...dto,
@@ -126,10 +118,21 @@ describe('IssueController', () => {
         expect(result).toEqual({ success: true, data: issue.toPublic() });
     });
 
-    it('이슈 삭제를 위임함', async () => {
-        const result = await controller.deleteIssue('team-1', 'issue-1', { userId: 'user-1' });
+    it('기존 담당자에게는 중복 알림을 보내지 않음', async () => {
+        const issue = makeIssue('issue-1');
+        mockUpdateIssueUseCase.execute.mockResolvedValue({
+            updated: issue,
+            previousAssigneeIds: ['user-2'],
+        });
 
-        expect(mockIssueAccessService.ensureWritableMember).toHaveBeenCalledWith('team-1', 'user-1');
+        await controller.updateIssue('team-1', 'issue-1', { userId: 'user-1' }, { assigneeIds: ['user-2'] } as any);
+
+        expect(mockIssueNotificationService.notifyAssignees).not.toHaveBeenCalled();
+    });
+
+    it('이슈 삭제를 위임함', async () => {
+        const result = await controller.deleteIssue('issue-1');
+
         expect(mockDeleteIssueUseCase.execute).toHaveBeenCalledWith('issue-1');
         expect(result).toEqual({ success: true });
     });

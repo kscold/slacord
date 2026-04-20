@@ -19,10 +19,6 @@ function makeNotification(id: string) {
 }
 
 describe('NotificationController', () => {
-    const mockAccessService = {
-        ensureMember: jest.fn(),
-    };
-
     const mockGetNotificationsUseCase = {
         execute: jest.fn(),
     };
@@ -43,8 +39,8 @@ describe('NotificationController', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        // 권한 검사는 TeamAccessGuard(AOP)가 담당하므로 컨트롤러에서 주입받지 않음
         controller = new NotificationController(
-            mockAccessService as any,
             mockGetNotificationsUseCase as any,
             mockGetUnreadCountUseCase as any,
             mockMarkAsReadUseCase as any,
@@ -52,13 +48,12 @@ describe('NotificationController', () => {
         );
     });
 
-    it('알림 목록 조회 시 멤버 확인 후 공개 응답을 반환함', async () => {
+    it('알림 목록 조회 시 공개 응답을 반환함', async () => {
         const notification = makeNotification('notification-1');
         mockGetNotificationsUseCase.execute.mockResolvedValue([notification]);
 
         const result = await controller.getNotifications('team-1', { userId: 'user-2' });
 
-        expect(mockAccessService.ensureMember).toHaveBeenCalledWith('team-1', 'user-2');
         expect(mockGetNotificationsUseCase.execute).toHaveBeenCalledWith('team-1', 'user-2');
         expect(result).toEqual({ success: true, data: [notification.toPublic()] });
     });
@@ -68,14 +63,12 @@ describe('NotificationController', () => {
 
         const result = await controller.getUnreadCount('team-1', { userId: 'user-2' });
 
-        expect(mockAccessService.ensureMember).toHaveBeenCalledWith('team-1', 'user-2');
         expect(result).toEqual({ success: true, data: { count: 5 } });
     });
 
     it('단일 읽음 처리 요청을 위임함', async () => {
-        const result = await controller.markAsRead('team-1', 'notification-1', { userId: 'user-2' });
+        const result = await controller.markAsRead('notification-1', { userId: 'user-2' });
 
-        expect(mockAccessService.ensureMember).toHaveBeenCalledWith('team-1', 'user-2');
         expect(mockMarkAsReadUseCase.execute).toHaveBeenCalledWith('notification-1', 'user-2');
         expect(result).toEqual({ success: true });
     });
@@ -83,7 +76,6 @@ describe('NotificationController', () => {
     it('전체 읽음 처리 요청을 위임함', async () => {
         const result = await controller.markAllAsRead('team-1', { userId: 'user-2' });
 
-        expect(mockAccessService.ensureMember).toHaveBeenCalledWith('team-1', 'user-2');
         expect(mockMarkAllAsReadUseCase.execute).toHaveBeenCalledWith('team-1', 'user-2');
         expect(result).toEqual({ success: true });
     });
