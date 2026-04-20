@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { channelApi } from '@/lib/api-client';
+import { channelApi, unwrapApiArray } from '@/lib/api-client';
 import { getNotificationSocket, getWorkspaceChatSocket } from '@/lib/socket';
 import type { Channel } from '@/src/entities/channel/types';
 import type { Message } from '@/src/entities/message/types';
@@ -22,9 +22,8 @@ export function useWorkspaceChannels({ teamId, initialChannels, currentUserId, a
 
     const refresh = useCallback(async () => {
         const response = await channelApi.getChannels(teamId);
-        if (response.success && Array.isArray(response.data)) {
-            setChannels(response.data as Channel[]);
-        }
+        const list = unwrapApiArray<Channel>(response);
+        if (list.length > 0) setChannels(list);
     }, [teamId]);
 
     useEffect(() => {

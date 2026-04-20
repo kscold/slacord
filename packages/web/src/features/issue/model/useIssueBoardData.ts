@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { issueApi } from '@/lib/api-client';
+import { issueApi, unwrapApiArray } from '@/lib/api-client';
 import { useIssueStore } from './issue.store';
 import { getIssuesByStatus } from './getIssuesByStatus';
-import type { IssueStatus } from '@/src/entities/issue/types';
+import type { Issue, IssueStatus } from '@/src/entities/issue/types';
 import { useTeamWorkspaceData } from '@/src/features/team/model/useTeamWorkspaceData';
 
 interface IssueBoardFiltersState {
@@ -33,9 +33,7 @@ export function useIssueBoardData({ teamId, filters }: Props) {
                 assigneeId: filters.assigneeId || undefined,
                 status: filters.statusFilter === 'all' ? undefined : filters.statusFilter,
             });
-            if (response.success && Array.isArray(response.data)) {
-                setIssues(response.data);
-            }
+            setIssues(unwrapApiArray<Issue>(response));
         } finally {
             setLoading(false);
         }

@@ -24,6 +24,24 @@ interface ApiResponse<T = any> {
 }
 
 /**
+ * ApiResponse에서 배열 데이터만 꺼내는 헬퍼.
+ * 실패 / 배열 아님 → 빈 배열. 훅 내부에서 Array.isArray + as 캐스트 반복 제거용.
+ */
+export function unwrapApiArray<T>(response: ApiResponse<unknown>): T[] {
+    if (!response.success || !Array.isArray(response.data)) return [];
+    return response.data as T[];
+}
+
+/**
+ * ApiResponse에서 단일 객체 데이터만 꺼내는 헬퍼.
+ * 실패 / 데이터 없음 → null.
+ */
+export function unwrapApiData<T>(response: ApiResponse<unknown>): T | null {
+    if (!response.success || response.data == null) return null;
+    return response.data as T;
+}
+
+/**
  * 공통 fetch 래퍼
  * - credentials: 'include'를 자동으로 추가
  */
