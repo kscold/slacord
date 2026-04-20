@@ -20,7 +20,6 @@ import { MessageGateway } from './infrastructure/websocket/message.gateway';
 import { AuthModule } from '../auth/auth.module';
 import { ChannelModule } from '../channel/channel.module';
 import { TeamModule } from '../team/team.module';
-import { NotificationModule } from '../notification/notification.module';
 import { StorageModule } from '../../shared/storage/storage.module';
 import { MessageAccessService } from './application/services/message-access.service';
 
@@ -29,7 +28,6 @@ import { MessageAccessService } from './application/services/message-access.serv
         AuthModule,
         ChannelModule,
         TeamModule,
-        NotificationModule,
         StorageModule,
         MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }]),
     ],

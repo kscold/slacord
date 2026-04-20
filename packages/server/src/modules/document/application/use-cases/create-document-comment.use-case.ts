@@ -1,10 +1,15 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { USER_REPOSITORY, type IUserRepository } from '../../../auth/domain/auth.port';
-import { CreateNotificationUseCase } from '../../../notification/application/use-cases/create-notification.use-case';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../../team/domain/team.port';
 import type { DocumentCommentEntity } from '../../domain/document-comment.entity';
 import { DOCUMENT_COMMENT_REPOSITORY, type IDocumentCommentRepository } from '../../domain/document-comment.port';
 import { DOCUMENT_REPOSITORY, type IDocumentRepository } from '../../domain/document.port';
+import {
+    NOTIFICATION_EVENTS,
+    type MentionedEvent,
+    type ThreadRepliedEvent,
+} from '../../../../shared/events/notification-events';
 
 interface CreateDocumentCommentInput {
     teamId: string;
@@ -26,7 +31,7 @@ export class CreateDocumentCommentUseCase {
         private readonly teamRepo: ITeamRepository,
         @Inject(USER_REPOSITORY)
         private readonly userRepo: IUserRepository,
-        private readonly createNotification: CreateNotificationUseCase,
+        private readonly eventEmitter: EventEmitter2,
     ) {}
 
     async execute(input: CreateDocumentCommentInput) {
@@ -60,31 +65,29 @@ export class CreateDocumentCommentUseCase {
         const mentionRecipientIds = await this.resolveMentionUserIds(document.teamId, document.id, input.createdBy, content);
 
         if (mentionRecipientIds.length > 0) {
-            void this.createNotification.executeBulk(
-                mentionRecipientIds.map((recipientId) => ({
-                    teamId: input.teamId,
-                    recipientId,
-                    type: 'mention',
-                    actorId: input.createdBy,
-                    actorName,
-                    content: content.slice(0, 160) || '새 문서 코멘트 멘션',
-                    resourceType: 'document',
-                    resourceId: input.documentId,
-                })),
-            );
+            const event: MentionedEvent = {
+                teamId: input.teamId,
+                recipientIds: mentionRecipientIds,
+                actorId: input.createdBy,
+                actorName,
+                content,
+                resourceType: 'document',
+                resourceId: input.documentId,
+            };
+            this.eventEmitter.emit(NOTIFICATION_EVENTS.MENTIONED, event);
         }
 
         if (parentComment && parentComment.createdBy !== input.createdBy && !mentionRecipientIds.includes(parentComment.createdBy)) {
-            void this.createNotification.execute({
+            const event: ThreadRepliedEvent = {
                 teamId: input.teamId,
                 recipientId: parentComment.createdBy,
-                type: 'thread_reply',
                 actorId: input.createdBy,
                 actorName,
-                content: content.slice(0, 160) || '문서 코멘트 답글',
+                content,
                 resourceType: 'document',
                 resourceId: input.documentId,
-            });
+            };
+            this.eventEmitter.emit(NOTIFICATION_EVENTS.THREAD_REPLIED, event);
         }
 
         return comment;

@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
 import { TeamModule } from '../team/team.module';
-import { NotificationModule } from '../notification/notification.module';
 import { Issue, IssueSchema } from './infrastructure/persistence/issue.schema';
 import { IssueRepository } from './infrastructure/persistence/issue.repository';
 import { ISSUE_REPOSITORY } from './domain/issue.port';
@@ -14,7 +13,7 @@ import { IssueNotificationService } from './application/services/issue-notificat
 import { IssueController } from './infrastructure/http/issue.controller';
 
 @Module({
-    imports: [MongooseModule.forFeature([{ name: Issue.name, schema: IssueSchema }]), AuthModule, TeamModule, NotificationModule],
+    imports: [MongooseModule.forFeature([{ name: Issue.name, schema: IssueSchema }]), AuthModule, TeamModule],
     controllers: [IssueController],
     providers: [
         { provide: ISSUE_REPOSITORY, useClass: IssueRepository },

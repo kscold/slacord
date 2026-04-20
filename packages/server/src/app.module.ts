@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './modules/auth/auth.module';
 import { TeamModule } from './modules/team/team.module';
@@ -32,6 +33,7 @@ import { HealthController } from './shared/http/health.controller';
     ],
     imports: [
         ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+        EventEmitterModule.forRoot({ wildcard: false, maxListeners: 20 }),
         MongooseModule.forRootAsync({
             imports: [ConfigModule],
             useFactory: (configService: ConfigService) => ({

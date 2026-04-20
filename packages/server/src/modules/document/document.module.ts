@@ -28,7 +28,6 @@ import { ConfluenceApiClient } from './infrastructure/external/confluence-api.cl
 import { DocumentController } from './infrastructure/http/document.controller';
 import { DocumentUploadController } from './infrastructure/http/document-upload.controller';
 import { AuthModule } from '../auth/auth.module';
-import { NotificationModule } from '../notification/notification.module';
 import { TeamModule } from '../team/team.module';
 import { StorageModule } from '../../shared/storage/storage.module';
 
@@ -40,7 +39,6 @@ import { StorageModule } from '../../shared/storage/storage.module';
             { name: DocVersion.name, schema: DocumentVersionSchema },
         ]),
         AuthModule,
-        NotificationModule,
         TeamModule,
         StorageModule,
     ],

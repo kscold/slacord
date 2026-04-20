@@ -1,10 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { IMessageRepository } from '../../domain/message.port';
 import { MESSAGE_REPOSITORY } from '../../domain/message.port';
 import { Attachment, MessageEntity, MessageType } from '../../domain/message.entity';
-import { CreateNotificationUseCase } from '../../../notification/application/use-cases/create-notification.use-case';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../../team/domain/team.port';
 import { USER_REPOSITORY, type IUserRepository } from '../../../auth/domain/auth.port';
+import {
+    NOTIFICATION_EVENTS,
+    type MentionedEvent,
+    type ThreadRepliedEvent,
+} from '../../../../shared/events/notification-events';
 
 export interface SendMessageInput {
     teamId: string;
@@ -17,14 +22,17 @@ export interface SendMessageInput {
     replyToId?: string;
 }
 
-/** 메시지 전송 유스케이스 */
+/**
+ * 메시지 전송 유스케이스.
+ * 알림은 도메인 이벤트로 발행하고 NotificationEventListener가 처리.
+ */
 @Injectable()
 export class SendMessageUseCase {
     constructor(
         @Inject(MESSAGE_REPOSITORY) private readonly messageRepo: IMessageRepository,
-        private readonly createNotification: CreateNotificationUseCase,
         @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
         @Inject(USER_REPOSITORY) private readonly userRepo: IUserRepository,
+        private readonly eventEmitter: EventEmitter2,
     ) {}
 
     async execute(input: SendMessageInput): Promise<MessageEntity> {
@@ -46,36 +54,33 @@ export class SendMessageUseCase {
         });
 
         if (mentionUserIds.length > 0) {
-            void this.createNotification.executeBulk(
-                mentionUserIds.map((recipientId) => ({
-                    teamId: input.teamId,
-                    recipientId,
-                    type: 'mention',
-                    actorId: input.authorId,
-                    actorName: input.authorName ?? '알 수 없음',
-                    content: content.slice(0, 160) || '새 멘션',
-                    resourceType: 'message',
-                    resourceId: message.id,
-                    channelId: input.channelId,
-                })),
-            );
+            const event: MentionedEvent = {
+                teamId: input.teamId,
+                recipientIds: mentionUserIds,
+                actorId: input.authorId,
+                actorName: input.authorName ?? '알 수 없음',
+                content,
+                resourceType: 'message',
+                resourceId: message.id,
+                channelId: input.channelId,
+            };
+            this.eventEmitter.emit(NOTIFICATION_EVENTS.MENTIONED, event);
         }
 
-        // 스레드 답글 알림 — 원본 메시지 작성자에게
         if (input.replyToId) {
             const parent = await this.messageRepo.findById(input.replyToId);
             if (parent && parent.authorId !== input.authorId) {
-                void this.createNotification.execute({
+                const event: ThreadRepliedEvent = {
                     teamId: input.teamId,
                     recipientId: parent.authorId,
-                    type: 'thread_reply',
                     actorId: input.authorId,
                     actorName: input.authorName ?? '알 수 없음',
-                    content: content.slice(0, 100) || '새 답글',
+                    content,
                     resourceType: 'message',
                     resourceId: message.id,
                     channelId: input.channelId,
-                });
+                };
+                this.eventEmitter.emit(NOTIFICATION_EVENTS.THREAD_REPLIED, event);
             }
         }
 
