@@ -10,6 +10,7 @@ import {
     type MentionedEvent,
     type ThreadRepliedEvent,
 } from '../../../../shared/events/notification-events';
+import { extractMentionTokens, resolveMentionUserIds } from '../../../../shared/lib/mention-extraction';
 
 export interface SendMessageInput {
     teamId: string;
@@ -39,7 +40,7 @@ export class SendMessageUseCase {
         const content = input.content?.trim() ?? '';
         const attachments = input.attachments ?? [];
         const type = attachments.length > 0 ? 'file' : (input.type ?? 'text');
-        const mentionUserIds = await this.resolveMentionUserIds(input.teamId, input.authorId, content);
+        const mentionUserIds = await this.findMentionedUserIds(input.teamId, input.authorId, content);
 
         const message = await this.messageRepo.save({
             teamId: input.teamId,
@@ -87,32 +88,18 @@ export class SendMessageUseCase {
         return message;
     }
 
-    private async resolveMentionUserIds(teamId: string, authorId: string, content: string) {
-        const mentionTokens = this.extractMentionTokens(content);
-        if (mentionTokens.length === 0) return [];
+    private async findMentionedUserIds(teamId: string, authorId: string, content: string) {
+        const tokens = extractMentionTokens(content);
+        if (tokens.length === 0) return [];
 
         const team = await this.teamRepo.findById(teamId);
         if (!team) return [];
 
         const users = await this.userRepo.findByIds(team.members.map((member) => member.userId));
-        const userIdByUsername = new Map(users.map((user) => [user.username.toLowerCase(), user.id]));
-
-        return [
-            ...new Set(
-                mentionTokens
-                    .map((token) => userIdByUsername.get(token))
-                    .filter((userId): userId is string => Boolean(userId) && userId !== authorId),
-            ),
-        ];
-    }
-
-    private extractMentionTokens(content: string) {
-        const mentionPattern = /@([^\s@]+)/g;
-        const mentionTokens: string[] = [];
-        let match: RegExpExecArray | null;
-        while ((match = mentionPattern.exec(content)) !== null) {
-            mentionTokens.push(match[1].replace(/[.,!?;:]+$/g, '').toLowerCase());
-        }
-        return mentionTokens;
+        return resolveMentionUserIds(
+            tokens,
+            users.map((u) => ({ userId: u.id, username: u.username })),
+            authorId,
+        );
     }
 }

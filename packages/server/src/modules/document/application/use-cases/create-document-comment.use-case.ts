@@ -10,6 +10,7 @@ import {
     type MentionedEvent,
     type ThreadRepliedEvent,
 } from '../../../../shared/events/notification-events';
+import { extractMentionTokens, resolveMentionUserIds } from '../../../../shared/lib/mention-extraction';
 
 interface CreateDocumentCommentInput {
     teamId: string;
@@ -62,7 +63,7 @@ export class CreateDocumentCommentUseCase {
 
         const author = await this.userRepo.findById(input.createdBy);
         const actorName = author?.username ?? '알 수 없음';
-        const mentionRecipientIds = await this.resolveMentionUserIds(document.teamId, document.id, input.createdBy, content);
+        const mentionRecipientIds = await this.findMentionedUserIds(document.teamId, document.id, input.createdBy, content);
 
         if (mentionRecipientIds.length > 0) {
             const event: MentionedEvent = {
@@ -93,39 +94,25 @@ export class CreateDocumentCommentUseCase {
         return comment;
     }
 
-    private async resolveMentionUserIds(teamId: string, documentId: string, authorId: string, content: string) {
-        const mentionTokens = extractMentionTokens(content);
-        if (mentionTokens.length === 0) return [];
+    private async findMentionedUserIds(teamId: string, documentId: string, authorId: string, content: string) {
+        const tokens = extractMentionTokens(content);
+        if (tokens.length === 0) return [];
 
         const team = await this.teamRepo.findById(teamId);
         const document = await this.documentRepo.findById(documentId);
         if (!team || !document) return [];
 
-        const members = team.members.filter((member) => document.canView(member.userId, member.role));
-        const users = await this.userRepo.findByIds(members.map((member) => member.userId));
-        const userIdByUsername = new Map(users.map((user) => [user.username.toLowerCase(), user.id]));
-
-        return [
-            ...new Set(
-                mentionTokens
-                    .map((token) => userIdByUsername.get(token))
-                    .filter((userId): userId is string => Boolean(userId) && userId !== authorId),
-            ),
-        ];
+        const viewableMembers = team.members.filter((member) => document.canView(member.userId, member.role));
+        const users = await this.userRepo.findByIds(viewableMembers.map((member) => member.userId));
+        return resolveMentionUserIds(
+            tokens,
+            users.map((u) => ({ userId: u.id, username: u.username })),
+            authorId,
+        );
     }
 }
 
 function sanitizeAnchorText(anchorText?: string | null) {
     const value = anchorText?.trim();
     return value ? value.slice(0, 280) : null;
-}
-
-function extractMentionTokens(content: string) {
-    const mentionPattern = /@([^\s@]+)/g;
-    const tokens: string[] = [];
-    let match: RegExpExecArray | null;
-    while ((match = mentionPattern.exec(content)) !== null) {
-        tokens.push(match[1].replace(/[.,!?;:]+$/g, '').toLowerCase());
-    }
-    return tokens;
 }
