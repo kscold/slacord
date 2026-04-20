@@ -16,7 +16,6 @@ export class PresenceController {
     @Get()
     @ApiOperation({ summary: '팀원 온라인 상태 전체 조회' })
     async getAll() {
-        const presences = this.presenceService.getAll();
-        return { success: true, data: presences.map((p) => p.toPublic()) };
+        return this.presenceService.getAll();
     }
 }

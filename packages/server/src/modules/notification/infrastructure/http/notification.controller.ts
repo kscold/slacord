@@ -24,28 +24,25 @@ export class NotificationController {
     @Get()
     @ApiOperation({ summary: '내 알림 목록 (최근 50개)' })
     async getNotifications(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
-        const notifications = await this.getNotificationsUseCase.execute(teamId, user.userId);
-        return { success: true, data: notifications.map((n) => n.toPublic()) };
+        return this.getNotificationsUseCase.execute(teamId, user.userId);
     }
 
     @Get('unread-count')
     @ApiOperation({ summary: '읽지 않은 알림 수' })
     async getUnreadCount(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
         const count = await this.getUnreadCountUseCase.execute(teamId, user.userId);
-        return { success: true, data: { count } };
+        return { count };
     }
 
     @Patch(':id/read')
     @ApiOperation({ summary: '알림 읽음 처리' })
     async markAsRead(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
         await this.markAsReadUseCase.execute(id, user.userId);
-        return { success: true };
     }
 
     @Patch('read-all')
     @ApiOperation({ summary: '전체 읽음 처리' })
     async markAllAsRead(@Param('teamId') teamId: string, @CurrentUser() user: { userId: string }) {
         await this.markAllAsReadUseCase.execute(teamId, user.userId);
-        return { success: true };
     }
 }

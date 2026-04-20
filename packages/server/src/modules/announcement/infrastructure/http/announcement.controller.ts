@@ -27,8 +27,7 @@ export class AnnouncementController {
     @TeamRole('member')
     @ApiOperation({ summary: '팀 공지사항 목록 조회 (핀 고정 우선)' })
     async getAnnouncements(@Param('teamId') teamId: string) {
-        const list = await this.getUseCase.execute(teamId);
-        return { success: true, data: list.map((a) => a.toPublic()) };
+        return this.getUseCase.execute(teamId);
     }
 
     @Post()
@@ -41,7 +40,7 @@ export class AnnouncementController {
     ) {
         const announcement = await this.createUseCase.execute({ ...dto, teamId, createdBy: user.userId });
         await this.bridgeEnqueueService.enqueueAnnouncement(announcement);
-        return { success: true, data: announcement.toPublic() };
+        return announcement;
     }
 
     @Patch(':announcementId/pin')
@@ -51,7 +50,6 @@ export class AnnouncementController {
         @Param('announcementId') announcementId: string,
         @Body() dto: PinAnnouncementDto,
     ) {
-        const announcement = await this.pinUseCase.execute(announcementId, dto.isPinned);
-        return { success: true, data: announcement.toPublic() };
+        return this.pinUseCase.execute(announcementId, dto.isPinned);
     }
 }

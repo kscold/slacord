@@ -38,12 +38,11 @@ export class IssueController {
         @Query('q') query?: string,
         @Query('assigneeId') assigneeId?: string,
     ) {
-        const issues = await this.getIssuesUseCase.execute(teamId, {
+        return this.getIssuesUseCase.execute(teamId, {
             status: status as IssueStatus | undefined,
             query,
             assigneeId,
         });
-        return { success: true, data: issues.map((i) => i.toPublic()) };
     }
 
     @Post()
@@ -62,7 +61,7 @@ export class IssueController {
             issueId: issue.id,
             issueTitle: issue.title,
         });
-        return { success: true, data: issue.toPublic() };
+        return issue;
     }
 
     @Patch(':issueId')
@@ -90,7 +89,7 @@ export class IssueController {
                 issueTitle: issue.title,
             });
         }
-        return { success: true, data: issue.toPublic() };
+        return issue;
     }
 
     @Delete(':issueId')
@@ -98,6 +97,5 @@ export class IssueController {
     @ApiOperation({ summary: '이슈 삭제' })
     async deleteIssue(@Param('issueId') issueId: string) {
         await this.deleteIssueUseCase.execute(issueId);
-        return { success: true };
     }
 }
