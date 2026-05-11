@@ -1,10 +1,14 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../domain/team.port';
 import { createTeamAuditLogEntry } from '../../domain/team.entity';
+import { CLOCK, type Clock } from '../../../../shared/lib/clock';
 
 @Injectable()
 export class RevokeInviteLinkUseCase {
-    constructor(@Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository) {}
+    constructor(
+        @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
+        @Inject(CLOCK) private readonly clock: Clock,
+    ) {}
 
     async execute(teamId: string, code: string, userId: string) {
         const team = await this.teamRepo.findById(teamId);
@@ -14,7 +18,7 @@ export class RevokeInviteLinkUseCase {
         const updated = await this.teamRepo.replaceAccess(
             teamId,
             team.members,
-            team.inviteLinks.map((invite) => (invite.code === code ? { ...invite, revokedAt: new Date() } : invite)),
+            team.inviteLinks.map((invite) => (invite.code === code ? { ...invite, revokedAt: this.clock.now() } : invite)),
             createTeamAuditLogEntry({
                 actorId: userId,
                 category: 'access',

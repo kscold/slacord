@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { FILE_STORAGE } from '../../../../shared/storage/domain/file-storage.port';
 import type { IFileStorage } from '../../../../shared/storage/domain/file-storage.port';
+import { CLOCK, type Clock } from '../../../../shared/lib/clock';
 
 interface UploadFile {
     buffer: Buffer;
@@ -19,11 +20,14 @@ export interface DocumentFileResult {
 
 @Injectable()
 export class UploadDocumentFileUseCase {
-    constructor(@Inject(FILE_STORAGE) private readonly fileStorage: IFileStorage) {}
+    constructor(
+        @Inject(FILE_STORAGE) private readonly fileStorage: IFileStorage,
+        @Inject(CLOCK) private readonly clock: Clock,
+    ) {}
 
     async execute(input: { teamId: string; documentId?: string; file: UploadFile }): Promise<DocumentFileResult> {
         const fileName = input.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-') || 'file';
-        const datePath = new Date().toISOString().slice(0, 10);
+        const datePath = this.clock.now().toISOString().slice(0, 10);
         const subPath = input.documentId ? `doc/${input.documentId}` : 'inline';
         const objectName = `slacord/docs/${input.teamId}/${subPath}/${datePath}/${Date.now()}-${randomUUID()}-${fileName}`;
 

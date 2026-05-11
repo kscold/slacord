@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { TEAM_REPOSITORY, type ITeamRepository } from '../../domain/team.port';
 import { createTeamAuditLogEntry, type TeamInviteRole } from '../../domain/team.entity';
+import { CLOCK, type Clock } from '../../../../shared/lib/clock';
 
 export interface CreateInviteLinkInput {
     teamId: string;
@@ -14,12 +15,15 @@ export interface CreateInviteLinkInput {
 
 @Injectable()
 export class CreateInviteLinkUseCase {
-    constructor(@Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository) {}
+    constructor(
+        @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
+        @Inject(CLOCK) private readonly clock: Clock,
+    ) {}
 
     async execute(input: CreateInviteLinkInput) {
         const team = await this.teamRepo.findById(input.teamId);
         if (!team || !team.canManageInvites(input.userId)) throw new BadRequestException('초대를 관리할 수 없습니다.');
-        const expiresAt = input.expiresInDays ? new Date(Date.now() + input.expiresInDays * 86400000) : null;
+        const expiresAt = input.expiresInDays ? new Date(this.clock.now().getTime() + input.expiresInDays * 86400000) : null;
         const next = {
             code: randomBytes(9).toString('base64url'),
             label: input.label?.trim() || null,
@@ -29,7 +33,7 @@ export class CreateInviteLinkUseCase {
             maxUses: input.maxUses ?? null,
             useCount: 0,
             revokedAt: null,
-            createdAt: new Date(),
+            createdAt: this.clock.now(),
         } as const;
         const updated = await this.teamRepo.replaceAccess(
             input.teamId,

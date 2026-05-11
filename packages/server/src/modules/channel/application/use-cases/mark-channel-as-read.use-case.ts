@@ -6,6 +6,7 @@ import { TEAM_REPOSITORY, type ITeamRepository } from '../../../team/domain/team
 import { CHANNEL_READ_REPOSITORY, type IChannelReadRepository } from '../../domain/channel-read.port';
 import { ChannelReadEntity } from '../../domain/channel-read.entity';
 import { Message, MessageDocument } from '../../../message/infrastructure/persistence/message.schema';
+import { CLOCK, type Clock } from '../../../../shared/lib/clock';
 
 @Injectable()
 export class MarkChannelAsReadUseCase {
@@ -14,6 +15,7 @@ export class MarkChannelAsReadUseCase {
         @Inject(TEAM_REPOSITORY) private readonly teamRepo: ITeamRepository,
         @Inject(CHANNEL_READ_REPOSITORY) private readonly channelReadRepo: IChannelReadRepository,
         @InjectModel(Message.name) private readonly messageModel: Model<MessageDocument>,
+        @Inject(CLOCK) private readonly clock: Clock,
     ) {}
 
     async execute(channelId: string, userId: string): Promise<ChannelReadEntity> {
@@ -39,7 +41,7 @@ export class MarkChannelAsReadUseCase {
             .select({ createdAt: 1 })
             .lean();
 
-        const lastReadAt = latestMessage?.createdAt ?? new Date();
+        const lastReadAt = latestMessage?.createdAt ?? this.clock.now();
 
         return this.channelReadRepo.markRead({
             teamId: channel.teamId,

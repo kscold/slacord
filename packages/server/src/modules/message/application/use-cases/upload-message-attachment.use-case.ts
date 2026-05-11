@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Attachment } from '../../domain/message.entity';
 import { FILE_STORAGE } from '../../../../shared/storage/domain/file-storage.port';
 import type { IFileStorage } from '../../../../shared/storage/domain/file-storage.port';
+import { CLOCK, type Clock } from '../../../../shared/lib/clock';
 
 interface UploadFile {
     buffer: Buffer;
@@ -20,11 +21,14 @@ interface UploadMessageAttachmentInput {
 
 @Injectable()
 export class UploadMessageAttachmentUseCase {
-    constructor(@Inject(FILE_STORAGE) private readonly fileStorage: IFileStorage) {}
+    constructor(
+        @Inject(FILE_STORAGE) private readonly fileStorage: IFileStorage,
+        @Inject(CLOCK) private readonly clock: Clock,
+    ) {}
 
     async execute(input: UploadMessageAttachmentInput): Promise<Attachment> {
         const fileName = this.sanitizeName(input.file.originalname);
-        const datePath = new Date().toISOString().slice(0, 10);
+        const datePath = this.clock.now().toISOString().slice(0, 10);
         const objectName = [
             'slacord',
             'chat',
