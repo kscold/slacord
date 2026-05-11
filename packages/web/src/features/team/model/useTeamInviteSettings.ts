@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { teamApi } from '@/lib/api-client';
+import { teamApi, unwrapApiArray } from '@/lib/api-client';
 import { publicAppUrl } from '@/lib/runtime-config';
 import { resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
 import type { TeamInviteLink, TeamMemberSummary } from '@/src/entities/team/types';
@@ -27,7 +27,7 @@ export function useTeamInviteSettings(teamId: string) {
         if (!allowed) return void setInvites([]);
 
         const inviteRes = await teamApi.getInviteLinks(teamId);
-        setInvites((inviteRes.data ?? []) as TeamInviteLink[]);
+        setInvites(unwrapApiArray<TeamInviteLink>(inviteRes));
     };
 
     useEffect(() => {

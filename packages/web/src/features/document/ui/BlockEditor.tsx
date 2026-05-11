@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import type { BlockNoteEditor } from '@blocknote/core';
 import { BlockNoteViewRaw, useCreateBlockNote } from '@blocknote/react';
-import { documentApi } from '@/lib/api-client';
+import { documentApi, unwrapApiData } from '@/lib/api-client';
 
 interface Props {
     teamId: string;
@@ -27,7 +27,8 @@ export function BlockEditor({ teamId, initialContent, onChange, editable = true 
         initialContent: initialBlocks,
         uploadFile: async (file: File) => {
             const res = await documentApi.uploadDocumentImage(teamId, file);
-            if (res.success && res.data?.url) return res.data.url;
+            const url = unwrapApiData<{ url: string }>(res)?.url;
+            if (url) return url;
             throw new Error('이미지 업로드에 실패했습니다.');
         },
     });

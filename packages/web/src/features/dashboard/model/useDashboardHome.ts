@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { authApi, teamApi } from '@/lib/api-client';
+import { authApi, teamApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import type { TeamSummary } from '@/src/entities/team/types';
 import type { User } from '@/src/entities/user/types';
 
@@ -14,10 +14,10 @@ export function useDashboardHome() {
         let active = true;
         Promise.all([authApi.getMe().catch(() => null), teamApi.getMyTeams().catch(() => null)]).then(([meRes, teamRes]) => {
             if (!active) return;
-            if (meRes?.success && meRes.data) setCurrentUser(meRes.data as User);
-            if (teamRes?.success && Array.isArray(teamRes.data)) {
-                const nextTeams = (teamRes.data as TeamSummary[]).sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-                setTeams(nextTeams);
+            const user = meRes && unwrapApiData<User>(meRes);
+            if (user) setCurrentUser(user);
+            if (teamRes?.success) {
+                setTeams(unwrapApiArray<TeamSummary>(teamRes).sort((left, right) => right.createdAt.localeCompare(left.createdAt)));
             }
             setLoading(false);
         });

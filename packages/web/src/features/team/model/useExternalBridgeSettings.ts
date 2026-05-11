@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { teamApi } from '@/lib/api-client';
+import { teamApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import type {
     BridgeConfig,
     BridgeJobPlatform,
@@ -82,7 +82,7 @@ export function useExternalBridgeSettings(teamId: string) {
             status: filters.status === 'all' ? undefined : filters.status,
             platform: filters.platform === 'all' ? undefined : filters.platform,
         });
-        return (jobsRes.data ?? []) as BridgeJobSummary[];
+        return unwrapApiArray<BridgeJobSummary>(jobsRes);
     };
 
     useEffect(() => {
@@ -175,7 +175,7 @@ export function useExternalBridgeSettings(teamId: string) {
         setSaveError('');
         try {
             const response = await teamApi.updateBridgeConfig(teamId, form);
-            const nextTeam = (response.data ?? null) as TeamSettingsSummary | null;
+            const nextTeam = unwrapApiData<TeamSettingsSummary>(response);
             const nextForm = nextTeam?.bridgeConfig ?? form;
             syncKeyRef.current = JSON.stringify(nextForm);
             setForm(nextForm);

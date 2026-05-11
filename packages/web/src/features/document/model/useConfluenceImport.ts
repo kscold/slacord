@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { documentApi } from '@/lib/api-client';
+import { documentApi, unwrapApiData } from '@/lib/api-client';
 
 const EMPTY_FORM = {
     siteUrl: 'https://',
@@ -32,7 +32,7 @@ export function useConfluenceImport(teamId: string, onImported: () => Promise<vo
                 rootPageId: form.rootPageId.trim() || undefined,
             });
             await onImported();
-            const importedCount = (response.data as { importedCount?: number } | undefined)?.importedCount ?? 0;
+            const importedCount = unwrapApiData<{ importedCount?: number }>(response)?.importedCount ?? 0;
             setMessage(`${importedCount}개 문서를 Confluence에서 동기화했음.`);
         } catch (caught) {
             setError(caught instanceof Error ? caught.message : 'Confluence 가져오기에 실패했습니다.');

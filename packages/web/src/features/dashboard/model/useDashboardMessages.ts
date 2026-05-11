@@ -1,7 +1,7 @@
 'use client';
 
 import { useDeferredValue, useEffect, useState } from 'react';
-import { authApi, messageApi } from '@/lib/api-client';
+import { authApi, messageApi, unwrapApiData } from '@/lib/api-client';
 import type { MessageSearchResult } from '@/src/entities/message/search.types';
 
 export function useDashboardMessages() {
@@ -22,11 +22,13 @@ export function useDashboardMessages() {
         Promise.all([authApi.getMe().catch(() => null), messageApi.searchMessages(undefined).catch(() => null)])
             .then(([meRes, searchRes]) => {
                 if (!active) return;
-                if (meRes?.success && meRes.data) setCurrentUserName((meRes.data as { username?: string }).username);
-                if (searchRes?.success && searchRes.data) {
-                    setPinnedResults(searchRes.data.pinnedResults ?? []);
-                    setRecentResults(searchRes.data.recentResults ?? []);
-                    setTeamCount(searchRes.data.teamCount ?? 0);
+                const meData = meRes && unwrapApiData<{ username?: string }>(meRes);
+                if (meData) setCurrentUserName(meData.username);
+                const searchData = searchRes && unwrapApiData<{ pinnedResults?: MessageSearchResult[]; recentResults?: MessageSearchResult[]; teamCount?: number }>(searchRes);
+                if (searchData) {
+                    setPinnedResults(searchData.pinnedResults ?? []);
+                    setRecentResults(searchData.recentResults ?? []);
+                    setTeamCount(searchData.teamCount ?? 0);
                 }
                 setBooting(false);
             })

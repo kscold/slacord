@@ -16,7 +16,7 @@ import { SidebarWorkspaceHeader } from './SidebarWorkspaceHeader';
 import { CreateChannelButton } from './CreateChannelButton';
 import { WorkspaceMobileNav } from './WorkspaceMobileNav';
 import { NotificationBell } from '@/src/features/notification/ui/NotificationBell';
-import { channelApi } from '@/lib/api-client';
+import { channelApi, unwrapApiData } from '@/lib/api-client';
 
 interface Props {
     teamId: string;
@@ -66,10 +66,10 @@ export function TeamSidebar({ teamId, teamName, channels }: Props) {
         if (!trimmed || channelLoading) return;
         setChannelLoading(true);
         try {
-            const res = await channelApi.createChannel(teamId, { name: trimmed, type: channelType });
-            if (res.success && res.data?.id) {
+            const created = unwrapApiData<{ id: string }>(await channelApi.createChannel(teamId, { name: trimmed, type: channelType }));
+            if (created?.id) {
                 setChannelFormOpen(false);
-                router.push(`/${teamId}/channel/${res.data.id}`);
+                router.push(`/${teamId}/channel/${created.id}`);
                 router.refresh();
             }
         } finally {

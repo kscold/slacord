@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { authApi, channelApi, messageApi, teamApi } from '@/lib/api-client';
+import { authApi, channelApi, messageApi, teamApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import type { Message } from '@/src/entities/message/types';
 import type { TeamSummary } from '@/src/entities/team/types';
 
@@ -25,8 +25,9 @@ export function useDashboardStats() {
         Promise.all([authApi.getMe().catch(() => null), teamApi.getMyTeams().catch(() => null)])
             .then(async ([meRes, teamRes]) => {
                 if (!active) return;
-                if (meRes?.success && meRes.data) setCurrentUserName((meRes.data as { username?: string }).username);
-                const teams = (teamRes?.data ?? []) as TeamSummary[];
+                const meData = meRes && unwrapApiData<{ username?: string }>(meRes);
+                if (meData) setCurrentUserName(meData.username);
+                const teams = teamRes ? unwrapApiArray<TeamSummary>(teamRes) : [];
                 setStats(await buildStats(teams));
             })
             .finally(() => active && setLoading(false));
@@ -54,8 +55,8 @@ async function buildStats(teams: TeamSummary[]) {
     const today = new Date().toDateString();
     return Promise.all(
         teams.map(async (team) => {
-            const channels = (((await channelApi.getChannels(team.id)).data ?? []) as { id: string; type: string }[]).filter((item) => item.type !== 'dm');
-            const messages = await Promise.all(channels.map((channel) => messageApi.getMessages(channel.id, undefined, 50).then((res) => (res.data ?? []) as Message[])));
+            const channels = unwrapApiArray<{ id: string; type: string }>(await channelApi.getChannels(team.id)).filter((item) => item.type !== 'dm');
+            const messages = await Promise.all(channels.map((channel) => messageApi.getMessages(channel.id, undefined, 50).then((res) => unwrapApiArray<Message>(res))));
             const flat = messages.flat();
             return {
                 id: team.id,

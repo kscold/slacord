@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { messageApi } from '@/lib/api-client';
+import { messageApi, unwrapApiArray } from '@/lib/api-client';
 import { resolveChannelLabel } from '@/src/entities/channel/lib/resolveChannelLabel';
 import type { Channel } from '@/src/entities/channel/types';
 import type { Message } from '@/src/entities/message/types';
@@ -45,8 +45,8 @@ export function useChannelRoomBootstrap({ teamId, channelId, reset, setLoading, 
             .then((messageRes) => {
                 if (!active) return;
 
-                if (messageRes.success && Array.isArray(messageRes.data)) {
-                    const nextMessages = messageRes.data as Message[];
+                if (messageRes.success) {
+                    const nextMessages = unwrapApiArray<Message>(messageRes);
                     setMessages(nextMessages);
                     setInitialMessageCount(nextMessages.length);
                 }

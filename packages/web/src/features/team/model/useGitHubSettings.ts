@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { teamApi } from '@/lib/api-client';
+import { teamApi, unwrapApiData } from '@/lib/api-client';
 import type { Channel } from '@/src/entities/channel/types';
 import type { TeamMemberSummary, TeamSettingsSummary, TeamSummary } from '@/src/entities/team/types';
 import { useTeamWorkspaceData } from './useTeamWorkspaceData';
@@ -90,7 +90,7 @@ export function useGitHubSettings(teamId: string) {
         setSaveError('');
         try {
             const response = await teamApi.updateGithubConfig(teamId, form);
-            const settings = (response.data ?? null) as TeamSettingsSummary | null;
+            const settings = unwrapApiData<TeamSettingsSummary>(response);
             setHasStoredSecret(Boolean(settings?.githubConfig?.webhookSecret));
             const nextForm = {
                 repoUrl: settings?.githubConfig?.repoUrl ?? form.repoUrl,

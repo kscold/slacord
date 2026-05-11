@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { teamApi } from '@/lib/api-client';
+import { teamApi, unwrapApiArray } from '@/lib/api-client';
 import type { TeamAuditLogCategory, TeamAuditLogSummary } from '@/src/entities/team/types';
 import { useTeamWorkspaceData } from './useTeamWorkspaceData';
 
@@ -37,7 +37,7 @@ export function useTeamAuditLog(teamId: string, options: Options = {}) {
                 category: categoryFilter === 'all' ? undefined : categoryFilter,
                 limit: 20,
             });
-            setLogs((response.data ?? []) as TeamAuditLogSummary[]);
+            setLogs(unwrapApiArray<TeamAuditLogSummary>(response));
         } catch (err: any) {
             setError(err.message ?? '운영 감사 로그를 불러오지 못했습니다.');
         } finally {

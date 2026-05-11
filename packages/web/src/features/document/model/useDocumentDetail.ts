@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { documentApi } from '@/lib/api-client';
+import { documentApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import type { DocumentFull, DocumentNode } from '@/src/entities/document/types';
 
 export function useDocumentDetail(teamId: string, docId: string) {
@@ -15,8 +15,9 @@ export function useDocumentDetail(teamId: string, docId: string) {
         Promise.all([documentApi.getDocument(teamId, docId), documentApi.getDocuments(teamId)])
             .then(([docResponse, docsResponse]) => {
                 if (!active) return;
-                if (docResponse.success && docResponse.data) setDoc(docResponse.data as DocumentFull);
-                if (docsResponse.success && Array.isArray(docsResponse.data)) setDocuments(docsResponse.data as DocumentNode[]);
+                const docData = unwrapApiData<DocumentFull>(docResponse);
+                if (docData) setDoc(docData);
+                if (docsResponse.success) setDocuments(unwrapApiArray<DocumentNode>(docsResponse));
             })
             .finally(() => active && setLoading(false));
         return () => {

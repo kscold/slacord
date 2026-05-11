@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { teamApi } from '@/lib/api-client';
+import { teamApi, unwrapApiData } from '@/lib/api-client';
 import type { DiscordImportSummary } from '@/src/entities/team/types';
 
 const EMPTY_FORM = { botToken: '', guildId: '', channelIds: '' };
@@ -56,7 +56,7 @@ export function useDiscordImportSettings(teamId: string, onImported?: () => Prom
                     .map((item) => item.trim())
                     .filter(Boolean),
             });
-            setSummary((response.data ?? null) as DiscordImportSummary | null);
+            setSummary(unwrapApiData<DiscordImportSummary>(response));
             setForm((current) => ({ ...current, botToken: '' }));
             await onImported?.();
         } catch (caught) {
