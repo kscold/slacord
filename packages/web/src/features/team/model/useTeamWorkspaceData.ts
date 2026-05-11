@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
-import { authApi, channelApi, teamApi } from '@/lib/api-client';
+import { authApi, channelApi, teamApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import type { Channel } from '@/src/entities/channel/types';
 import { hasTeamWriteAccess, resolveCurrentTeamMember } from '@/src/entities/team/lib/access';
 import type { TeamMemberSummary, TeamSettingsSummary, TeamSummary } from '@/src/entities/team/types';
@@ -90,19 +90,13 @@ const useTeamWorkspaceStore = create<TeamWorkspaceStore>((set, get) => ({
         ])
             .then(([meResponse, membersResponse, teamResponse, channelResponse]) => {
                 const nextEntry: Partial<TeamWorkspaceEntry> = {
-                    channels:
-                        isApiSuccess(channelResponse) && Array.isArray(channelResponse.data)
-                            ? (channelResponse.data as Channel[])
-                            : [],
+                    channels: isApiSuccess(channelResponse) ? unwrapApiArray<Channel>(channelResponse) : [],
                     error: collectWorkspaceError([meResponse, membersResponse, teamResponse, channelResponse]),
                     loadedAt: Date.now(),
                     loading: false,
-                    me: isApiSuccess(meResponse) && meResponse.data ? (meResponse.data as User) : null,
-                    members:
-                        isApiSuccess(membersResponse) && Array.isArray(membersResponse.data)
-                            ? (membersResponse.data as TeamMemberSummary[])
-                            : [],
-                    team: isApiSuccess(teamResponse) && teamResponse.data ? (teamResponse.data as TeamSummary) : null,
+                    me: isApiSuccess(meResponse) ? unwrapApiData<User>(meResponse) : null,
+                    members: isApiSuccess(membersResponse) ? unwrapApiArray<TeamMemberSummary>(membersResponse) : [],
+                    team: isApiSuccess(teamResponse) ? unwrapApiData<TeamSummary>(teamResponse) : null,
                 };
 
                 get().patchEntry(teamId, nextEntry);
@@ -143,7 +137,7 @@ const useTeamWorkspaceStore = create<TeamWorkspaceStore>((set, get) => ({
             .getTeamSettings(teamId)
             .then((response) => {
                 get().patchEntry(teamId, {
-                    settings: response.success && response.data ? (response.data as TeamSettingsSummary) : null,
+                    settings: unwrapApiData<TeamSettingsSummary>(response),
                     settingsError: '',
                     settingsLoadedAt: Date.now(),
                     settingsLoading: false,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { messageApi } from '@/lib/api-client';
+import { messageApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import type { Message } from '@/src/entities/message/types';
 import { getChatSocket } from './socket';
 import { uploadChannelFiles } from './uploadChannelFiles';
@@ -53,12 +53,9 @@ async function waitForPersistedMessage(
 ) {
     for (let attempt = 0; attempt < 10; attempt += 1) {
         const response = await messageApi.getMessages(channelId, undefined, 20);
-        if (response.success && Array.isArray(response.data)) {
-            const match = (response.data as Message[]).find((message) =>
-                matchesOutgoingMessage(message, payload, currentUserId),
-            );
-            if (match) return match;
-        }
+        const messages = unwrapApiArray<Message>(response);
+        const match = messages.find((message) => matchesOutgoingMessage(message, payload, currentUserId));
+        if (match) return match;
         await new Promise((resolve) => setTimeout(resolve, 250));
     }
     return null;
@@ -161,16 +158,15 @@ export function useChannelRoomActions({
 
         try {
             const response = await messageApi.getMessages(channelId, oldestMessage.createdAt, HISTORY_PAGE_SIZE);
+            const fetched = unwrapApiArray<Message>(response);
             const existingMessageIds = new Set(messages.map((message) => message.id));
-            const olderMessages = ((response.data ?? []) as Message[]).filter(
-                (message) => !existingMessageIds.has(message.id),
-            );
+            const olderMessages = fetched.filter((message) => !existingMessageIds.has(message.id));
 
             if (olderMessages.length > 0) {
                 prependMessages(olderMessages);
             }
 
-            setHasOlderMessages(((response.data ?? []) as Message[]).length >= HISTORY_PAGE_SIZE);
+            setHasOlderMessages(fetched.length >= HISTORY_PAGE_SIZE);
             return olderMessages.length > 0;
         } finally {
             setIsLoadingOlder(false);
@@ -202,17 +198,13 @@ export function useChannelRoomActions({
             void messageApi.deleteMessage(channelId, messageId);
         },
         editMessage: async (messageId: string, content: string) => {
-            const response = await messageApi.editMessage(channelId, messageId, content);
-            if (response.success && response.data) {
-                updateMessage(messageId, response.data as Message);
-            }
+            const updated = unwrapApiData<Message>(await messageApi.editMessage(channelId, messageId, content));
+            if (updated) updateMessage(messageId, updated);
         },
         togglePinMessage: async (message: Message) => {
-            const response = await messageApi.pinMessage(channelId, message.id, !message.isPinned);
-            if (response.success && response.data) {
-                updateMessage(message.id, response.data as Message);
-            }
-            return response.data as Message;
+            const pinned = unwrapApiData<Message>(await messageApi.pinMessage(channelId, message.id, !message.isPinned));
+            if (pinned) updateMessage(message.id, pinned);
+            return pinned;
         },
     };
 }

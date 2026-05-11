@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { startTransition, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { channelApi, documentApi, issueApi } from '@/lib/api-client';
+import { channelApi, documentApi, issueApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import { resolveChannelLabel } from '@/src/entities/channel/lib/resolveChannelLabel';
 import type { Channel } from '@/src/entities/channel/types';
 import type { DocumentNode } from '@/src/entities/document/types';
@@ -69,16 +69,8 @@ export function WorkspaceSearchPalette({ onClose, open, restoreFocusRef, workspa
         Promise.all([documentApi.getDocuments(workspace.teamId), issueApi.getIssues(workspace.teamId)])
             .then(([documentsResponse, issuesResponse]) => {
                 if (!active) return;
-                if (documentsResponse.success && Array.isArray(documentsResponse.data)) {
-                    setDocuments(documentsResponse.data as DocumentNode[]);
-                } else {
-                    setDocuments([]);
-                }
-                if (issuesResponse.success && Array.isArray(issuesResponse.data)) {
-                    setIssues(issuesResponse.data as Issue[]);
-                } else {
-                    setIssues([]);
-                }
+                setDocuments(unwrapApiArray<DocumentNode>(documentsResponse));
+                setIssues(unwrapApiArray<Issue>(issuesResponse));
                 setResourcesTeamId(workspace.teamId);
             })
             .catch((error: Error) => {
@@ -213,14 +205,13 @@ export function WorkspaceSearchPalette({ onClose, open, restoreFocusRef, workspa
                         setActionError('');
                         setBusyActionId('create-channel');
                         try {
-                            const response = await channelApi.createChannel(workspace.teamId, {
-                                name: trimmedQuery,
-                                type: 'public',
-                            });
-                            if (response.success && response.data?.id) {
+                            const created = unwrapApiData<{ id: string }>(
+                                await channelApi.createChannel(workspace.teamId, { name: trimmedQuery, type: 'public' }),
+                            );
+                            if (created?.id) {
                                 startTransition(() => {
                                     onClose();
-                                    router.push(`/${workspace.teamId}/channel/${response.data.id}`);
+                                    router.push(`/${workspace.teamId}/channel/${created.id}`);
                                     router.refresh();
                                 });
                             }
@@ -239,15 +230,17 @@ export function WorkspaceSearchPalette({ onClose, open, restoreFocusRef, workspa
                         setActionError('');
                         setBusyActionId('create-document');
                         try {
-                            const response = await documentApi.createDocument(workspace.teamId, {
-                                title: trimmedQuery,
-                                content: '',
-                                contentFormat: 'json',
-                            });
-                            if (response.success && response.data?.id) {
+                            const created = unwrapApiData<{ id: string }>(
+                                await documentApi.createDocument(workspace.teamId, {
+                                    title: trimmedQuery,
+                                    content: '',
+                                    contentFormat: 'json',
+                                }),
+                            );
+                            if (created?.id) {
                                 startTransition(() => {
                                     onClose();
-                                    router.push(`/${workspace.teamId}/docs/${response.data.id}?edit=1`);
+                                    router.push(`/${workspace.teamId}/docs/${created.id}?edit=1`);
                                     router.refresh();
                                 });
                             }

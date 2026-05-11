@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { notificationApi } from '@/lib/api-client';
+import { notificationApi, unwrapApiArray, unwrapApiData } from '@/lib/api-client';
 import type { AppNotification } from '@/src/entities/notification/types';
 import { getNotificationSocket } from '@/lib/socket';
 import {
@@ -21,8 +21,9 @@ export function useNotifications(teamId: string) {
             notificationApi.getNotifications(teamId),
             notificationApi.getUnreadCount(teamId),
         ]);
-        if (listRes.success && Array.isArray(listRes.data)) setNotifications(listRes.data as AppNotification[]);
-        if (countRes.success && countRes.data) setUnreadCount((countRes.data as { count: number }).count);
+        if (listRes.success) setNotifications(unwrapApiArray<AppNotification>(listRes));
+        const countData = unwrapApiData<{ count: number }>(countRes);
+        if (countData) setUnreadCount(countData.count);
     }, [teamId]);
 
     useEffect(() => {
