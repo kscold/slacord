@@ -203,7 +203,8 @@ export function useChannelRoomActions({
         },
         togglePinMessage: async (message: Message) => {
             const pinned = unwrapApiData<Message>(await messageApi.pinMessage(channelId, message.id, !message.isPinned));
-            if (pinned) updateMessage(message.id, pinned);
+            if (!pinned) throw new Error('핀 메시지 변경에 실패했습니다.');
+            updateMessage(message.id, pinned);
             return pinned;
         },
     };

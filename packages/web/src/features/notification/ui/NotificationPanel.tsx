@@ -94,7 +94,11 @@ export const NotificationPanel = forwardRef<HTMLElement, Props>(function Notific
                         <button
                             key={n.id}
                             onClick={async () => {
-                                if (!n.isRead) await onMarkAsRead(n.id);
+                                try {
+                                    if (!n.isRead) await onMarkAsRead(n.id);
+                                } catch {
+                                    // 읽음 처리 실패해도 알림은 열어줌
+                                }
                                 onOpen(n);
                             }}
                             className={`w-full flex gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03] border-b border-border-primary ${n.isRead ? 'opacity-60' : ''}`}

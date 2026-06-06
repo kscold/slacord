@@ -37,7 +37,17 @@ export function PinnedMessagesPanel({ channelId, onClose, onOpenThread, onToggle
                         <p className="mt-2 text-sm text-text-secondary">{message.content}</p>
                         <div className="mt-3 flex gap-2">
                             <button onClick={() => onOpenThread(message)} className="text-xs text-slack-green">스레드</button>
-                            <button onClick={async () => { await onTogglePin(message); setMessages((current) => current.filter((item) => item.id !== message.id)); }} className="text-xs text-text-tertiary hover:text-white">
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await onTogglePin(message);
+                                        setMessages((current) => current.filter((item) => item.id !== message.id));
+                                    } catch {
+                                        // 핀 해제 실패 — 메시지 목록 유지
+                                    }
+                                }}
+                                className="text-xs text-text-tertiary hover:text-white"
+                            >
                                 해제
                             </button>
                         </div>

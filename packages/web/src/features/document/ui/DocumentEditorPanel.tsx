@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { BlockNoteEditor } from '@blocknote/core';
 import { BlockNoteViewRaw, useCreateBlockNote } from '@blocknote/react';
-import { documentApi } from '@/lib/api-client';
+import { documentApi, unwrapApiData } from '@/lib/api-client';
 import { DocumentAttachmentButton } from './DocumentAttachmentButton';
 
 interface Props {
@@ -16,11 +16,13 @@ interface Props {
 }
 
 export function DocumentEditorPanel({ contentFormat, documentId, initialContent, onChange, syncKey, teamId }: Props) {
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange;
+
     const editor = useCreateBlockNote({
         initialContent: [{ type: 'paragraph' }],
         uploadFile: async (file) => {
-            const response = await documentApi.uploadDocumentImage(teamId, file);
-            const url = (response.data as { url?: string } | undefined)?.url;
+            const url = unwrapApiData<{ url: string }>(await documentApi.uploadDocumentImage(teamId, file))?.url;
             if (!url) throw new Error('이미지 업로드에 실패했습니다.');
             return url;
         },
@@ -28,8 +30,7 @@ export function DocumentEditorPanel({ contentFormat, documentId, initialContent,
 
     useEffect(() => {
         syncEditor(editor, initialContent, contentFormat);
-        onChange(initialContent);
-    }, [contentFormat, editor, initialContent, onChange, syncKey]);
+    }, [contentFormat, editor, initialContent, syncKey]);
 
     return (
         <div className="space-y-3">
@@ -42,7 +43,7 @@ export function DocumentEditorPanel({ contentFormat, documentId, initialContent,
                     editor={editor}
                     className="slacord-blocknote"
                     theme="dark"
-                    onChange={() => onChange(contentFormat === 'json' ? JSON.stringify(editor.document) : editor.blocksToFullHTML())}
+                    onChange={() => onChangeRef.current(contentFormat === 'json' ? JSON.stringify(editor.document) : editor.blocksToFullHTML())}
                 />
             </div>
         </div>

@@ -11,7 +11,7 @@ interface Props {
 
 export function MentionSuggestions({ activeIndex, members, onSelect }: Props) {
     return (
-        <div className="absolute bottom-full left-0 right-0 z-30 mb-1 overflow-hidden rounded-lg border border-[rgba(201,162,114,0.25)] bg-[#1e1814] shadow-xl">
+        <div className="absolute bottom-full left-0 right-0 z-30 mb-1 max-h-48 overflow-y-auto rounded-lg border border-[rgba(201,162,114,0.25)] bg-[#1e1814] shadow-xl">
             {members.map((member, index) => {
                 const name = member.user?.username ?? member.userId;
                 return (

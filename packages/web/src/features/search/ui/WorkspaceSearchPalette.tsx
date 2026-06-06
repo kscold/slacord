@@ -84,7 +84,7 @@ export function WorkspaceSearchPalette({ onClose, open, restoreFocusRef, workspa
         return () => {
             active = false;
         };
-    }, [documents.length, issues.length, open, resourceError, resourcesTeamId, workspace?.teamId]);
+    }, [open, resourcesTeamId, workspace?.teamId]);
 
     const trimmedQuery = search.query.trim();
     const normalizedQuery = trimmedQuery.toLowerCase();

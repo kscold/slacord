@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { BlockNoteEditor } from '@blocknote/core';
-import { documentApi } from '@/lib/api-client';
+import { documentApi, unwrapApiData } from '@/lib/api-client';
 
 interface Props {
     documentId: string;
@@ -24,8 +24,9 @@ export function DocumentAttachmentButton({ documentId, editor, onUploaded, teamI
         try {
             const uploaded = await Promise.all(
                 files.map(async (file) => {
-                    const response = await documentApi.uploadDocumentFile(teamId, documentId, file);
-                    const data = response.data as { name: string; url: string } | undefined;
+                    const data = unwrapApiData<{ name: string; url: string }>(
+                        await documentApi.uploadDocumentFile(teamId, documentId, file),
+                    );
                     if (!data?.url) throw new Error('파일 업로드에 실패했습니다.');
                     return data;
                 }),
